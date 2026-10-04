@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "eastus2" },
+    "resourceGroupName": { "value": "rg-partyhause-prod" },
+    "environmentTag": { "value": "prod" },
+
+    "postgresAdminLogin": { "value": "partyadmin" },
+    "postgresDbName": { "value": "partyhause" },
+
+    "RESEND_FROM_EMAIL": { "value": "PartyHause <noreply@partyhause.uk>" },
+
+    "linkCustomEmailDomain": { "value": true },
+
+    "entraTenantId": { "value": "" },
+    "entraApiClientId": { "value": "" },
+    "entraSpaClientId": { "value": "" },
+    "entraSignUpSignInPolicy": { "value": "B2C_1_susi" },
+
+    "deployerObjectId": { "value": "7adb1e8d-4944-4714-8192-fe2efa8a34bc" },
+
+    "postgresAdminPassword": {
+      "reference": {
+        "keyVault": { "id": "/subscriptions/45bc20c4-efcb-4bd4-9c70-ee1dcf271880/resourceGroups/rg-partyhause-prod/providers/Microsoft.KeyVault/vaults/kvphk2xoe7s452aja" },
+        "secretName": "postgres-password"
+      }
+    },
+    "RESEND_API_KEY": {
+      "reference": {
+        "keyVault": { "id": "/subscriptions/45bc20c4-efcb-4bd4-9c70-ee1dcf271880/resourceGroups/rg-partyhause-prod/providers/Microsoft.KeyVault/vaults/kvphk2xoe7s452aja" },
+        "secretName": "resend-api-key"
+      }
+    },
+    "entraApiClientSecret": {
+      "value": ""
+    },
+    "jwtSecret": {
+      "reference": {
+        "keyVault": { "id": "/subscriptions/45bc20c4-efcb-4bd4-9c70-ee1dcf271880/resourceGroups/rg-partyhause-prod/providers/Microsoft.KeyVault/vaults/kvphk2xoe7s452aja" },
+        "secretName": "jwt-secret"
+      }
+    },
+    "invitationTokenSecret": {
+      "reference": {
+        "keyVault": { "id": "/subscriptions/45bc20c4-efcb-4bd4-9c70-ee1dcf271880/resourceGroups/rg-partyhause-prod/providers/Microsoft.KeyVault/vaults/kvphk2xoe7s452aja" },
+        "secretName": "invitation-token-secret"
+      }
+    },
+
+    "stripeSecretKey": { "value": "" },
+    "stripeWebhookSecret": { "value": "" },
+    "stripePriceCreator": { "value": "" },
+    "stripePriceVendor": { "value": "" }
+  }
+}

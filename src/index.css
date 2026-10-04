@@ -1,0 +1,2043 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PartyHause Premium Design System - Professional Event Management Platform */
+
+@layer base {
+  :root {
+    /* ============================================ */
+    /* PARTYHAUSE BRAND PALETTE (docs/BRAND.md s4) */
+    /* ============================================ */
+    /*
+      The authoritative palette. Every value is taken from docs/BRAND.md, which
+      solved each step for a contrast target rather than picking it by eye.
+
+      The rule that matters: #FF5233 is the BRAND colour, not a button colour.
+      White on it measures 3.23:1 and WCAG AA needs 4.5:1, so the anchor is
+      split by role. Use --brand for logo, decorative fill and large display
+      type. Use --primary (coral-700) wherever white text sits on top.
+
+      Hue drifts 10 -> 6 as lightness falls, deliberately. Dark oranges read as
+      muddy brown unless they shift toward red.
+    */
+    --coral-50: 10 100% 97%;
+    --coral-100: 10 100% 94%;
+    --coral-200: 10 100% 88%;
+    --coral-300: 10 100% 79%;
+    --coral-400: 9 100% 70%;
+    --coral-500: 9 100% 60%;   /* #FF5233 brand anchor, 3.23:1 on white */
+    --coral-600: 8 83% 51%;    /* #EA361A focus ring, passes 1.4.11 everywhere */
+    --coral-700: 7 79% 42%;    /* #C02A16 solid button + white label, 5.86:1 AA */
+    --coral-800: 6 74% 34%;    /* #972317 link/body text, 8.18:1 AAA */
+    --coral-900: 6 68% 28%;
+    --coral-950: 6 72% 16%;
+
+    /* Secondary. Exists because from-orange-500 to-pink-500 was already the one
+       consistent visual signal in the codebase, used 23 times in src/. */
+    --magenta-50: 330 100% 97%;
+    --magenta-100: 330 100% 94%;
+    --magenta-200: 330 96% 88%;
+    --magenta-300: 330 92% 80%;
+    --magenta-400: 330 86% 70%;
+    --magenta-500: 330 81% 60%;  /* #EC4699, 3.56:1 on white. Same rule as coral. */
+    --magenta-600: 331 74% 51%;
+    --magenta-700: 332 70% 42%;  /* use this when text sits on it */
+    --magenta-800: 333 66% 34%;
+    --magenta-900: 333 62% 28%;
+    --magenta-950: 333 66% 16%;
+
+    /* ============================================ */
+    /* CONCEPT PALETTE (docs/BRAND.md s12.1)       */
+    /* ============================================ */
+    /*
+      Three scales generated 2026-09-30 from the reference mockups at the repo
+      root, adapted to the event-planning domain. Same lightness ramp as coral
+      and magenta above (97 down to 16). Roles: cream is the surface family
+      (page background, warm cards). teal is the cool accent, a category and
+      surface colour, never a status colour (success above stays the only
+      semantic green). periwinkle is the evening accent and adopts the logo
+      house colour at periwinkle-400; text-bearing surfaces use 500 or darker.
+    */
+    --cream-50: 38 35% 97%;
+    --cream-100: 38 35% 94%;
+    --cream-200: 38 35% 88%;
+    --cream-300: 38 35% 79%;
+    --cream-400: 38 35% 70%;
+    --cream-500: 38 35% 60%;
+    --cream-600: 38 35% 51%;
+    --cream-700: 38 35% 42%;
+    --cream-800: 38 35% 34%;
+    --cream-900: 38 35% 28%;
+    --cream-950: 38 35% 16%;
+
+    --teal-50: 170 48% 97%;
+    --teal-100: 170 48% 94%;
+    --teal-200: 170 48% 88%;
+    --teal-300: 170 48% 79%;
+    --teal-400: 170 48% 70%;
+    --teal-500: 170 48% 60%;
+    --teal-600: 170 48% 51%;
+    --teal-700: 170 48% 42%;   /* 3.22:1 with white. Decorative fills, large text */
+    --teal-800: 170 48% 34%;   /* #2D8072, 4.73:1 with white, AA. Text-bearing surface */
+    --teal-900: 170 48% 28%;
+    --teal-950: 170 48% 16%;
+
+    --periwinkle-50: 244 100% 97%;
+    --periwinkle-100: 244 100% 94%;
+    --periwinkle-200: 244 100% 88%;
+    --periwinkle-300: 244 100% 79%;
+    --periwinkle-400: 244 100% 70%;  /* #7066FF, the logo step. 4.17:1 on white */
+    --periwinkle-500: 244 100% 60%;  /* #4133FF, 6.68:1 with white */
+    --periwinkle-600: 244 100% 51%;
+    --periwinkle-700: 244 100% 42%;  /* #0E00D6, 10.55:1 with white */
+    --periwinkle-800: 244 100% 34%;
+    --periwinkle-900: 244 100% 28%;
+    --periwinkle-950: 244 100% 16%;
+
+    /* Warm-tinted at hue 20 so neutrals sit with coral instead of fighting it.
+       A pure grey next to #FF5233 reads blue. */
+    --neutral-0: 0 0% 100%;
+    --neutral-50: 20 20% 98%;
+    --neutral-100: 20 16% 96%;
+    --neutral-200: 20 13% 91%;
+    --neutral-300: 20 11% 83%;
+    --neutral-400: 20 9% 64%;    /* 2.55:1. Disabled controls only, never readable text. */
+    --neutral-500: 20 8% 48%;
+    --neutral-600: 20 9% 38%;    /* secondary text, 6.26:1 */
+    --neutral-700: 20 10% 29%;   /* body text, 9.0:1 */
+    --neutral-800: 20 12% 20%;
+    --neutral-900: 20 14% 13%;   /* primary text, 16.07:1. Logo body. */
+    --neutral-950: 20 18% 8%;
+
+    /* Each solved to the lightest tone that still passes 4.5:1 with white, so
+       every one works as both a fill and a text colour. danger sits at hue 358,
+       clearly separated from coral at hue 9. */
+    --success: 160 84% 28%;      /* #0B835B, 4.76:1 */
+    --warning: 38 92% 33%;       /* #A26907, 4.61:1 */
+    --danger: 358 75% 53%;       /* #E12D33, 4.54:1 */
+    --info: 213 80% 49%;         /* #1973E1, 4.58:1 */
+    --success-surface: 165 71% 96%;
+    --warning-surface: 36 83% 96%;
+    --danger-surface: 356 71% 96%;
+    --info-surface: 213 71% 96%;
+
+    /* Both endpoints sit at exactly L=60%, so the gradient is iso-lightness and
+       holds constant perceived weight without banding or a dark middle.
+       Icon, social card, hero surfaces, celebration moments. Never body text,
+       never buttons: a varying background makes label contrast unverifiable. */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--coral-500)) 0%, hsl(var(--magenta-500)) 100%);
+
+    /* ============================================ */
+    /* LIQUID METAL DESIGN SYSTEM - PHASE 1       */
+    /* ============================================ */
+    
+    /* Foundation Colors - Clean & Sophisticated */
+    --bg-primary: 0 0% 100%; /* Pure white */
+    --bg-secondary: 0 0% 98%; /* Off-white */
+    --bg-tertiary: 0 0% 97%; /* Very light gray */
+    --bg-soft: 220 14% 96%; /* Soft background */
+    --text-primary: 34 6% 13%; /* Soft black (#222222) */
+    --text-secondary: 0 0% 46%; /* Medium gray (#767676) */
+    --text-muted: 0 0% 62%; /* Light gray */
+
+    /* Metallic Color Palette - Liquid Metal Core */
+    --metal-chrome-light: 0 0% 95%; /* #f2f2f2 */
+    --metal-chrome: 0 0% 91%; /* #e8eaed */
+    --metal-chrome-dark: 0 0% 77%; /* #c5cad1 */
+    --metal-silver-light: 0 0% 98%; /* #fafafa */
+    --metal-silver: 0 0% 86%; /* #dadce0 */
+    --metal-platinum: 0 0% 97%; /* #f8f9fa */
+    --metal-titanium: 220 9% 46%; /* #6b7280 */
+    --metal-steel: 220 13% 69%; /* #9ca3af */
+    
+    /* Iridescent Accent Colors - Holographic Effects */
+    --iridescent-blue-start: 233 81% 71%; /* #667eea */
+    --iridescent-blue-end: 271 48% 57%; /* #764ba2 */
+    --iridescent-purple-start: 218 100% 84%; /* #a8c0ff */
+    --iridescent-purple-end: 257 60% 41%; /* #3f2b96 */
+    --iridescent-pink-start: 316 91% 77%; /* #f093fb */
+    --iridescent-pink-end: 352 90% 61%; /* #f5576c */
+    --iridescent-gold-start: 32 100% 91%; /* #ffecd2 */
+    --iridescent-gold-end: 14 91% 79%; /* #fcb69f */
+
+    /* Brand Colors - Maintaining Orange Compatibility */
+    --orange-50: 24 100% 98%;
+    --orange-100: 24 100% 96%;
+    --orange-200: 24 100% 91%;
+    --orange-300: 24 100% 84%;
+    --orange-400: 24 100% 75%;
+    --orange-500: 9 100% 60%; /* Primary coral-orange (#FF385C) */
+    --orange-600: 349 88% 56%; /* Darker coral (#E51E40) */
+    --orange-700: 17 96% 58%; /* Accent orange (#FC642D) */
+    --orange-800: 17 85% 40%;
+    --orange-900: 15 79% 35%;
+
+    /* Status & Utility Colors */
+    --success-green: 173 64% 42%; /* #00A699 */
+    --warning-amber: 43 96% 56%; /* #FFB400 */
+    --error-red: 9 100% 60%; /* Error red */
+    --info-blue: 213 94% 68%; /* Soft blue */
+
+    /* Legacy Variables for Compatibility - Soft Modern Theme */
+    --background: var(--cream-50);
+    --foreground: var(--text-primary);
+    --card: var(--bg-primary);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bg-primary);
+    --popover-foreground: var(--text-primary);
+    /* coral-700, not coral-500. --primary always carries a white label, and
+       white on #FF5233 is 3.23:1 against an AA requirement of 4.5:1. That was a
+       live defect on every button in the app, not a theoretical one.
+       coral-700 #C02A16 measures 5.86:1. Use --brand for the anchor colour. */
+    --primary: var(--coral-700);
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: var(--coral-200);
+    /* The anchor. Logo, decorative fill, large display type. Never behind
+       body-size white text. */
+    --brand: var(--coral-500);
+    --secondary: var(--bg-tertiary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-tertiary);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--orange-400);
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: var(--orange-100);
+    /* Was var(--error-red), which is 9 100% 60%: byte-identical to --orange-500.
+       The same colour signalled "primary action" and "destructive". --danger is
+       hue 358, visibly separated from coral at hue 9, and passes 4.5:1 white. */
+    --destructive: var(--danger);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--neutral-200);
+    --input: var(--bg-primary);
+    /* coral-600, not coral-500. A coral-500 ring measures 2.94:1 on neutral-100
+       and 2.63:1 on neutral-200, both failing 1.4.11. coral-600 passes on every
+       surface the app defines. */
+    --ring: var(--coral-600);
+    --radius: 0.75rem; /* Softer radius */
+
+    /* Gradient tokens consumed by tailwind.config.ts backgroundImage
+       (bg-gradient-primary / bg-gradient-hero / bg-gradient-card).
+       These were referenced by the config but never defined, which made
+       bg-clip-text headings render invisible. */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--orange-500)), hsl(var(--orange-700)));
+    --gradient-hero: linear-gradient(160deg, hsl(var(--orange-50)), hsl(var(--bg-soft)) 55%, hsl(var(--orange-100)));
+    --gradient-card: linear-gradient(180deg, hsl(var(--bg-primary)), hsl(var(--bg-secondary)));
+
+    /* ============================================ */
+    /* PARTYHAUSE SOLID COLOR SYSTEM              */
+    /* ============================================ */
+    
+    /* Burnt Orange Primary */
+    --burnt-orange: 28 92% 43%; /* #D97706 */
+    --burnt-orange-dark: 24 91% 36%; /* #B45309 */
+    --burnt-orange-light: 24 95% 53%; /* #F97316 */
+    
+    /* Background Solid Colors - Dark Theme */
+    --bg-dark-base: 222 47% 11%; /* #0F172A Deep Slate */
+    --bg-dark-elevated: 215 25% 17%; /* #1E293B Charcoal */
+    --bg-dark-panel: 215 20% 27%; /* #334155 Slate Gray */
+    
+    /* Text Colors - High Contrast (dark theme named vars, do not override --text-primary) */
+    --text-dark-primary: 0 0% 100%; /* #FFFFFF Pure White */
+    --text-dark-secondary: 215 20% 82%; /* #CBD5E1 Light Gray */
+    --text-white: 0 0% 100%; /* #FFFFFF Pure White */
+    
+    /* Accent Colors - Party Vibes */
+    --accent-pink: 330 81% 60%; /* #EC4899 Sunset Pink */
+    --accent-purple: 271 91% 65%; /* #A855F7 Party Purple */
+    --accent-amber: 43 96% 56%; /* #FBBF24 Golden Amber */
+    --accent-coral: 17 96% 58%; /* #FC642D Bright Coral */
+    
+    /* ============================================ */
+    /* LIQUID METAL SHADOW SYSTEM                  */
+    /* ============================================ */
+    
+    /* Base Shadows - Soft & Refined */
+    --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 6px 16px rgba(0, 0, 0, 0.12);
+    --shadow-elevated: 0 12px 24px rgba(0, 0, 0, 0.16);
+    
+    /* Liquid Metal Shadows - Multi-layered 3D */
+    --shadow-liquid-sm: 
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      0 1px 4px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    
+    --shadow-liquid-md: 
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    
+    --shadow-liquid-lg: 
+      0 16px 48px rgba(0, 0, 0, 0.16),
+      0 4px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.08);
+    
+    --shadow-liquid-xl: 
+      0 24px 64px rgba(0, 0, 0, 0.2),
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      inset 0 2px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    
+    /* Iridescent Glow Shadows */
+    --shadow-glow-blue: 
+      0 0 20px hsla(var(--iridescent-blue-start), 0.3),
+      0 0 40px hsla(var(--iridescent-blue-start), 0.15);
+    
+    --shadow-glow-purple: 
+      0 0 20px hsla(var(--iridescent-purple-end), 0.3),
+      0 0 40px hsla(var(--iridescent-purple-end), 0.15);
+    
+    --shadow-glow-pink: 
+      0 0 20px hsla(var(--iridescent-pink-end), 0.3),
+      0 0 40px hsla(var(--iridescent-pink-end), 0.15);
+    
+    /* Brand Shadows - Orange */
+    --shadow-floating: 0 4px 12px rgba(255, 56, 92, 0.3);
+    --shadow-floating-hover: 0 8px 20px rgba(255, 56, 92, 0.4);
+
+    /* Legacy Shadows */
+    --shadow-glow: var(--shadow-liquid-md);
+    --shadow-accent-glow: var(--shadow-glow-blue);
+
+    /* ============================================ */
+    /* LIQUID METAL ANIMATION SYSTEM               */
+    /* ============================================ */
+    
+    /* Easing Functions - Liquid Motion */
+    --ease-liquid: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy elastic */
+    --ease-fluid: cubic-bezier(0.4, 0, 0.2, 1); /* Smooth flow */
+    --ease-organic: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Elastic */
+    --ease-metallic: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Refined */
+    
+    /* Transition Presets */
+    --transition-smooth: all 0.3s var(--ease-fluid);
+    --transition-bounce: all 0.3s var(--ease-organic);
+    --transition-elastic: all 0.5s var(--ease-liquid);
+    --transition-metallic: all 0.4s var(--ease-metallic);
+    
+    /* Animation Durations */
+    --duration-fast: 150ms;
+    --duration-normal: 300ms;
+    --duration-slow: 500ms;
+    --duration-slower: 800ms;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar - Updated for Light Theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background-color: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary));
+    border-radius: 9999px;
+    box-shadow: var(--shadow-primary);
+  }
+
+  /* High Contrast Mode Support */
+  @media (prefers-contrast: high) {
+    :root {
+      --electric-purple: 270 100% 75%;
+      --electric-gold: 45 100% 70%;
+      --bg-cosmic-deep: 220 15% 2%;
+      --text-cosmic-primary: 0 0% 100%;
+    }
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Keyboard-navigation focus: visible ring on :focus-visible only, so
+     mouse users don't get outlines but keyboard users always do. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring, 24 95% 53%));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background: hsl(var(--primary, 24 95% 53%) / 0.25);
+  }
+}
+
+@layer components {
+  /* ============================================ */
+  /* PHASE 2: LIQUID METAL COMPONENTS            */
+  /* ============================================ */
+  
+  /* ============================================ */
+  /* 1. LIQUID METAL CARDS                       */
+  /* ============================================ */
+  
+  /* Base Liquid Card */
+  .liquid-card {
+    background: hsl(var(--bg-primary));
+    border: 1px solid rgba(217, 151, 6, 0.2);
+    border-radius: 20px;
+    box-shadow: var(--shadow-liquid-md);
+    backdrop-filter: blur(20px);
+    transition: all 0.4s var(--ease-liquid);
+    transform-style: preserve-3d;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .liquid-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(217, 151, 6, 0.3);
+    opacity: 0.6;
+  }
+  
+  .liquid-card:hover {
+    transform: translateY(-8px) rotateX(2deg);
+    box-shadow: var(--shadow-liquid-lg);
+    border-color: hsla(var(--metal-chrome-dark), 0.2);
+  }
+  
+  /* Card with 3D Effect */
+  .liquid-card-3d {
+    background: hsl(var(--bg-primary));
+    border: 1px solid rgba(217, 151, 6, 0.3);
+    border-radius: 24px;
+    box-shadow: var(--shadow-liquid-lg);
+    backdrop-filter: blur(40px);
+    transition: all 0.4s var(--ease-liquid);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    position: relative;
+  }
+  
+  .liquid-card-3d::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(217, 151, 6, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .liquid-card-3d:hover {
+    transform: translateY(-12px) rotateX(3deg) scale(1.02);
+    box-shadow: var(--shadow-liquid-xl);
+  }
+  
+  .liquid-card-3d:hover::after {
+    opacity: 1;
+  }
+  
+  /* Metallic Card */
+  .card-metallic {
+    background: hsl(var(--burnt-orange));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: var(--shadow-liquid-md);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s var(--ease-metallic);
+  }
+  
+  .card-metallic::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    transition: all 0.6s;
+  }
+  
+  .card-metallic:hover::before {
+    left: 100%;
+  }
+  
+  /* ============================================ */
+  /* 2. METALLIC BUTTONS                         */
+  /* ============================================ */
+  
+  /* Liquid Metal Button */
+  .btn-liquid-metal {
+    background: hsl(var(--burnt-orange));
+    color: white;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-liquid-md);
+    transition: all 0.3s var(--ease-liquid);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-liquid-metal::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(45deg);
+    transition: all 0.6s;
+  }
+  
+  .btn-liquid-metal:hover::before {
+    left: 100%;
+  }
+  
+  .btn-liquid-metal:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-liquid-lg);
+  }
+  
+  .btn-liquid-metal:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-liquid-sm);
+  }
+  
+  /* Iridescent Button */
+  .btn-iridescent {
+    background: hsl(var(--accent-coral));
+    color: white;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-glow-blue);
+    transition: all 0.3s var(--ease-liquid);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-iridescent:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-glow-purple);
+  }
+  
+  .btn-iridescent:active {
+    transform: translateY(-1px) scale(1);
+  }
+  
+  /* Glass Button */
+  .btn-glass {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: hsl(var(--burnt-orange));
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    box-shadow: var(--shadow-liquid-sm);
+    transition: all 0.3s var(--ease-fluid);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: hsl(var(--burnt-orange));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-liquid-md);
+    color: hsl(var(--accent-orange));
+  }
+  
+  /* ============================================ */
+  /* 3. 3D ICON BUTTONS                          */
+  /* ============================================ */
+  
+  .icon-btn-liquid {
+    width: 56px;
+    height: 56px;
+    background: hsl(var(--bg-primary));
+    border-radius: 16px;
+    border: 1px solid rgba(217, 151, 6, 0.3);
+    box-shadow: var(--shadow-liquid-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s var(--ease-liquid);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    cursor: pointer;
+    position: relative;
+    color: hsl(var(--burnt-orange));
+  }
+  
+  .icon-btn-liquid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(217, 151, 6, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .icon-btn-liquid:hover {
+    transform: translateY(-4px) rotateX(8deg) scale(1.05);
+    box-shadow: var(--shadow-liquid-lg);
+  }
+  
+  .icon-btn-liquid:hover::before {
+    opacity: 1;
+  }
+  
+  .icon-btn-liquid:active {
+    transform: translateY(-2px) rotateX(4deg) scale(1.02);
+  }
+  
+  /* Iridescent Icon Button */
+  .icon-btn-iridescent {
+    width: 56px;
+    height: 56px;
+    background: hsl(var(--burnt-orange));
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-glow-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s var(--ease-liquid);
+    cursor: pointer;
+    color: white;
+  }
+  
+  .icon-btn-iridescent:hover {
+    transform: translateY(-4px) scale(1.08);
+    box-shadow: var(--shadow-glow-purple);
+  }
+  
+  /* ============================================ */
+  /* 4. GLASS MORPHISM PANELS                    */
+  /* ============================================ */
+  
+  .glass-panel-liquid {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    box-shadow: var(--shadow-liquid-lg);
+    position: relative;
+  }
+  
+  .glass-panel-liquid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(217, 151, 6, 0.3);
+  }
+  
+  /* Glass Navigation Bar */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* ============================================ */
+  /* 5. LIQUID METAL INPUTS                      */
+  /* ============================================ */
+  
+  .input-liquid {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid hsla(var(--metal-chrome-dark), 0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: hsl(var(--text-primary));
+    transition: all 0.3s var(--ease-fluid);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+  }
+  
+  .input-liquid:focus {
+    outline: none;
+    border-color: hsla(var(--iridescent-blue-start), 0.5);
+    box-shadow: 
+      0 0 0 4px hsla(var(--iridescent-blue-start), 0.1),
+      var(--shadow-liquid-sm);
+    transform: translateY(-1px);
+  }
+  
+  .input-liquid:hover:not(:focus) {
+    border-color: hsla(var(--metal-chrome-dark), 0.3);
+    box-shadow: var(--shadow-card);
+  }
+  
+  .input-liquid::placeholder {
+    color: hsl(var(--text-muted));
+  }
+  
+  /* Input with Shimmer Effect */
+  .input-shimmer {
+    background: hsl(var(--bg-dark-elevated));
+    border: 1px solid rgba(217, 151, 6, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: hsl(var(--text-white));
+    transition: all 0.3s var(--ease-fluid);
+  }
+  
+  .input-shimmer:focus {
+    outline: none;
+    box-shadow: var(--shadow-glow-blue);
+    animation-play-state: paused;
+  }
+  
+  /* ============================================ */
+  /* LEGACY COLOR UTILITIES                      */
+  /* ============================================ */
+  
+  .bg-orange-50 { background-color: hsl(var(--orange-50)); }
+  .bg-orange-100 { background-color: hsl(var(--orange-100)); }
+  .bg-orange-200 { background-color: hsl(var(--orange-200)); }
+  .bg-orange-300 { background-color: hsl(var(--orange-300)); }
+  .bg-orange-400 { background-color: hsl(var(--orange-400)); }
+  .bg-orange-500 { background-color: hsl(var(--orange-500)); }
+  .bg-orange-600 { background-color: hsl(var(--orange-600)); }
+  .bg-orange-700 { background-color: hsl(var(--orange-700)); }
+  .bg-orange-800 { background-color: hsl(var(--orange-800)); }
+  .bg-orange-900 { background-color: hsl(var(--orange-900)); }
+  
+  .text-orange-500 { color: hsl(var(--orange-500)); }
+  .text-orange-600 { color: hsl(var(--orange-600)); }
+  .text-orange-700 { color: hsl(var(--orange-700)); }
+  .text-soft-black { color: hsl(var(--text-primary)); }
+  .text-soft-gray { color: hsl(var(--text-secondary)); }
+  .text-muted { color: hsl(var(--text-muted)); }
+  
+  .border-orange-200 { border-color: hsl(var(--orange-200)); }
+  .border-orange-300 { border-color: hsl(var(--orange-300)); }
+  .border-orange-500 { border-color: hsl(var(--orange-500)); }
+  .border-soft { border-color: hsl(0 0% 90%); }
+
+  /* ============================================ */
+  /* 6. SPECIAL EFFECTS & ENHANCEMENTS           */
+  /* ============================================ */
+  
+  /* Particle Container */
+  .particle-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(217, 151, 6, 0.6);
+    border-radius: 50%;
+    animation: particle-float 6s ease-in-out infinite;
+    opacity: 0.6;
+  }
+  
+  /* Light Ray Effect */
+  .light-ray {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    background: rgba(217, 151, 6, 0.3);
+    animation: light-sweep 4s ease-in-out infinite;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+  
+  /* Liquid Background */
+  .liquid-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: hsl(var(--bg-soft));
+  }
+  
+  /* Card Shine Effect */
+  .card-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: rgba(217, 151, 6, 0.2);
+    transform: skewX(-20deg);
+    transition: left 0.8s;
+    pointer-events: none;
+  }
+  
+  .liquid-card:hover .card-shine,
+  .liquid-card-3d:hover .card-shine {
+    left: 150%;
+  }
+  
+  /* Holographic Border */
+  .border-holographic {
+    position: relative;
+    border: 2px solid hsl(var(--burnt-orange));
+  }
+  
+  /* Metallic Text */
+  .text-metallic {
+    color: hsl(var(--burnt-orange));
+    font-weight: 600;
+  }
+  
+  /* Status Dot with Pulse */
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: relative;
+    display: inline-block;
+  }
+  
+  .status-online {
+    background: hsl(var(--success-green));
+    box-shadow: 0 0 0 0 hsla(var(--success-green), 0.7);
+    animation: status-pulse 2s infinite;
+  }
+  
+  @keyframes status-pulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 currentColor;
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px transparent;
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+  
+  /* Loading Shimmer */
+  .loading-shimmer {
+    background: hsl(var(--bg-dark-elevated));
+    animation: loading-shimmer 1.5s infinite;
+  }
+  
+  @keyframes loading-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  /* Interactive Ripple Feedback */
+  .interactive-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .interactive-ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+  }
+  
+  .interactive-ripple:active::after {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Hero Section - Soft Clean Design */
+  .hero-soft {
+    background: hsl(var(--bg-soft));
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Liquid Metal Hero */
+  .hero-liquid-metal {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--bg-dark-base));
+  }
+
+  /* Video Background Styles */
+  .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.7) contrast(1.1);
+  }
+
+  .video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  /* Logo and Typography - Soft Modern */
+  .logo-soft {
+    color: hsl(var(--orange-500));
+    font-weight: 800;
+    letter-spacing: -0.05em;
+  }
+
+  .text-gradient-soft {
+    color: hsl(var(--burnt-orange));
+  }
+
+  .text-hero {
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: hsl(var(--text-primary));
+  }
+
+  .text-hero-accent {
+    color: hsl(var(--orange-500));
+  }
+
+  /* Modern Card Components - Inspired by template */
+  .modern-card {
+    background: hsl(var(--bg-primary));
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    overflow: hidden;
+  }
+
+  .modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-elevated);
+    border-color: hsl(var(--orange-200));
+  }
+
+  .card-soft {
+    background: hsl(var(--bg-primary));
+    border: 1px solid hsl(0 0% 93%);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+  }
+
+  .card-soft:hover {
+    box-shadow: var(--shadow-card);
+    border-color: hsl(var(--orange-300));
+    transform: translateY(-2px);
+  }
+
+  .card-elevated {
+    background: hsl(var(--bg-primary));
+    border: 1px solid hsl(var(--orange-100));
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s ease;
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-elevated);
+    border-color: hsl(var(--orange-300));
+    transform: translateY(-4px);
+  }
+
+  /* Button Components - Floating Soft Style */
+  .btn-floating {
+    background: hsl(var(--orange-500));
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-floating);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-floating:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-floating-hover);
+  }
+
+  .btn-floating:active {
+    transform: translateY(0);
+  }
+
+  .btn-soft-secondary {
+    background: hsl(var(--bg-primary));
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border: 1px solid hsl(0 0% 90%);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn-soft-secondary:hover {
+    background: hsl(var(--orange-50));
+    border-color: hsl(var(--orange-300));
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Icon Button with 3D Effect */
+  .icon-button-3d {
+    width: 3.5rem;
+    height: 3.5rem;
+    background: hsl(var(--orange-500));
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 
+      0 4px 8px rgba(255, 56, 92, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .icon-button-3d:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 16px rgba(255, 56, 92, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .icon-button-3d:active {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 4px rgba(255, 56, 92, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Input Components - Soft Style */
+  .input-soft {
+    background: hsl(var(--bg-primary));
+    border: 1px solid hsl(0 0% 90%);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: hsl(34 6% 13%);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .input-soft:focus {
+    outline: none;
+    border-color: hsl(var(--orange-500));
+    box-shadow: 
+      0 0 0 3px hsl(var(--orange-500) / 0.1),
+      var(--shadow-card);
+  }
+
+  .input-soft::placeholder {
+    color: hsl(var(--text-muted));
+  }
+
+  /* Glass Effects */
+  .glass {
+    backdrop-filter: blur(20px);
+    background: hsl(var(--card) / 0.8);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .glass-sm {
+    backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.9);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  .glass-dark {
+    backdrop-filter: blur(16px);
+    background: hsl(var(--background) / 0.95);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+
+  .glow-accent {
+    box-shadow: var(--glow-secondary);
+  }
+
+  .glow-subtle {
+    box-shadow: var(--glow-subtle);
+  }
+
+  /* Party Button Effects (Legacy Compatibility) */
+  .btn-party {
+    background: hsl(var(--burnt-orange));
+    font-weight: 700;
+    transition: var(--transition-bounce);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .btn-party:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 60px hsl(var(--primary-glow) / 0.5);
+  }
+
+  .btn-party:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Card Effects */
+  .card-hover {
+    transition: var(--transition-smooth);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+  }
+
+  /* Loading Effects */
+  .cosmic-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid hsl(var(--electric-purple) / 0.2);
+    border-top: 3px solid hsl(var(--electric-purple));
+    border-radius: 50%;
+    animation: cosmic-spin 1s linear infinite;
+  }
+
+  .shimmer {
+    background: hsl(var(--bg-dark-elevated));
+    animation: shimmer 2s infinite;
+  }
+
+  /* QR Code Container */
+  .qr-container {
+    background: hsl(var(--bg-dark-elevated));
+    border: 2px solid hsl(var(--burnt-orange) / 0.3);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+  }
+
+  /* Focus Management */
+  .focus-cosmic {
+    outline: 2px solid hsl(var(--electric-cyan));
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  /* Accessibility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Layout Utilities */
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .container-responsive {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* Responsive Typography */
+  .responsive-hero {
+    font-size: clamp(2.5rem, 5vw, 6rem);
+    padding: clamp(1rem, 3vw, 3rem);
+  }
+
+  .responsive-card {
+    width: clamp(300px, 90vw, 500px);
+    margin: clamp(1rem, 3vw, 2rem);
+  }
+  
+  /* ============================================ */
+  /* 7. DASHBOARD & GRID LAYOUTS                  */
+  /* ============================================ */
+  
+  /* Event Cards Grid */
+  .event-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .event-grid-3d {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+    perspective: 1000px;
+  }
+  
+  /* Event Card Enhanced */
+  .event-card-enhanced {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-liquid-md);
+    position: relative;
+    transition: all var(--transition-normal);
+    overflow: hidden;
+  }
+  
+  .event-card-enhanced::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(249, 115, 22, 0.05));
+    border-radius: inherit;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+  }
+  
+  .event-card-enhanced:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-liquid-lg);
+    border-color: hsl(var(--burnt-orange));
+    background: rgba(255, 255, 255, 1);
+  }
+  
+  .event-card-enhanced:hover::before {
+    opacity: 1;
+  }
+  
+  /* Stats Panel */
+  .stats-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all var(--transition-normal);
+  }
+  
+  .stat-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: hsl(var(--burnt-orange));
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+    color: hsl(var(--text-secondary));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* Form Container */
+  .form-container-liquid {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@layer utilities {
+  /* ============================================ */
+  /* LIQUID METAL ANIMATION KEYFRAMES            */
+  /* ============================================ */
+  
+  /* Liquid Motion Animations */
+  @keyframes liquid-ripple {
+    0% {
+      transform: scale(0.95);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(0.95);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes liquid-flow {
+    0%, 100% { 
+      background-position: 0% 50%; 
+    }
+    50% { 
+      background-position: 100% 50%; 
+    }
+  }
+  
+  @keyframes liquid-morph {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    33% {
+      transform: translate(50px, -30px) scale(1.1);
+      border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+    66% {
+      transform: translate(-40px, 20px) scale(0.95);
+      border-radius: 50% 60% 30% 60% / 30% 70% 50% 40%;
+    }
+  }
+  
+  /* Metallic Shimmer */
+  @keyframes metal-shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+  
+  @keyframes shimmer-premium {
+    0% { 
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.6;
+    }
+    100% { 
+      opacity: 0.3;
+    }
+  }
+  
+  /* Smooth Floating */
+  @keyframes float-smooth {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    33% {
+      transform: translateY(-8px) rotate(2deg);
+    }
+    66% {
+      transform: translateY(-4px) rotate(-2deg);
+    }
+  }
+  
+  @keyframes float-gentle {
+    0%, 100% { 
+      transform: translateY(0px); 
+    }
+    50% { 
+      transform: translateY(-8px); 
+    }
+  }
+  
+  /* Glow Pulse Effects */
+  @keyframes glow-pulse-liquid {
+    0%, 100% {
+      box-shadow: 
+        0 0 20px hsla(var(--iridescent-blue-start), 0.2),
+        0 0 40px hsla(var(--iridescent-blue-start), 0.1);
+    }
+    50% {
+      box-shadow: 
+        0 0 40px hsla(var(--iridescent-blue-start), 0.4),
+        0 0 80px hsla(var(--iridescent-blue-start), 0.2);
+    }
+  }
+  
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px hsla(var(--iridescent-pink-end), 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px hsla(var(--iridescent-pink-end), 0.6);
+    }
+  }
+  
+  /* Gradient Shift */
+  @keyframes gradient-shift {
+    0%, 100% { 
+      background-position: 0% 50%; 
+    }
+    50% { 
+      background-position: 100% 50%; 
+    }
+  }
+  
+  /* Particle Float */
+  @keyframes particle-float {
+    0%, 100% {
+      transform: translateY(0) translateX(0) scale(1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100vh) translateX(50px) scale(0);
+      opacity: 0;
+    }
+  }
+  
+  /* Light Sweep */
+  @keyframes light-sweep {
+    0%, 100% {
+      left: -5%;
+      opacity: 0;
+    }
+    50% {
+      left: 105%;
+      opacity: 1;
+    }
+  }
+  
+  /* Legacy Animations - Orange Theme */
+  @keyframes orange-glow-pulse {
+    0%, 100% { 
+      filter: drop-shadow(0 2px 8px hsl(var(--orange-500) / 0.4));
+    }
+    50% { 
+      filter: drop-shadow(0 4px 16px hsl(var(--orange-400) / 0.6));
+    }
+  }
+
+  @keyframes orange-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(var(--orange-500) / 0.2);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(var(--orange-400) / 0.4);
+    }
+  }
+  
+  @keyframes cosmic-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.5; }
+}  /* Page Transitions */
+  .page-transition-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .page-transition-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-transition-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============================================ */
+  /* LIQUID METAL ANIMATION UTILITIES            */
+  /* ============================================ */
+  
+  /* Liquid Motion Classes */
+  .animate-liquid-ripple {
+    animation: liquid-ripple 3s ease-in-out infinite;
+  }
+  
+  .animate-liquid-flow {
+    background-size: 200% 200%;
+    animation: liquid-flow 8s ease infinite;
+  }
+  
+  .animate-liquid-morph {
+    animation: liquid-morph 20s ease-in-out infinite;
+  }
+  
+  /* Metallic Effects */
+  .animate-metal-shimmer {
+    background-size: 200% auto;
+    animation: metal-shimmer 3s linear infinite;
+  }
+  
+  .animate-shimmer-premium {
+    background: rgba(217, 151, 6, 0.1);
+    animation: shimmer-premium 3s infinite;
+  }
+  
+  /* Float & Glow */
+  .animate-float-smooth {
+    animation: float-smooth 6s ease-in-out infinite;
+  }
+  
+  .animate-float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
+  }
+  
+  .animate-glow-pulse-liquid {
+    animation: glow-pulse-liquid 2s ease-in-out infinite;
+  }
+  
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  /* Gradient Animations */
+  .animate-gradient-shift {
+    background-size: 400% 400%;
+    animation: gradient-shift 8s ease infinite;
+  }
+  
+  .animate-gradient-holographic {
+    background-size: 400% 400%;
+    animation: gradient-shift 10s ease infinite;
+  }
+  
+  /* Particle & Light */
+  .animate-particle-float {
+    animation: particle-float 6s ease-in-out infinite;
+  }
+  
+  .animate-light-sweep {
+    animation: light-sweep 4s ease-in-out infinite;
+  }
+  
+  /* Legacy Orange Animations */
+  .animate-orange-glow {
+    animation: orange-glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-orange-pulse {
+    animation: orange-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* ============================================ */
+/* LIQUID METAL UTILITY CLASSES                */
+/* ============================================ */
+
+/* Solid Color Backgrounds - Burnt Orange Theme */
+.bg-burnt-orange { background: hsl(var(--burnt-orange)); }
+.bg-burnt-orange-dark { background: hsl(var(--burnt-orange-dark)); }
+.bg-burnt-orange-light { background: hsl(var(--burnt-orange-light)); }
+.bg-dark-base { background: hsl(var(--bg-dark-base)); }
+.bg-dark-elevated { background: hsl(var(--bg-dark-elevated)); }
+.bg-dark-panel { background: hsl(var(--bg-dark-panel)); }
+
+/* Accent Backgrounds */
+.bg-accent-pink { background: hsl(var(--accent-pink)); }
+.bg-accent-purple { background: hsl(var(--accent-purple)); }
+.bg-accent-amber { background: hsl(var(--accent-amber)); }
+.bg-accent-coral { background: hsl(var(--accent-coral)); }
+
+/* Solid Color Text - Burnt Orange Theme */
+.text-burnt-orange { color: hsl(var(--burnt-orange)); }
+.text-burnt-orange-dark { color: hsl(var(--burnt-orange-dark)); }
+.text-burnt-orange-light { color: hsl(var(--burnt-orange-light)); }
+.text-white { color: hsl(var(--text-white)); }
+.text-primary { color: hsl(var(--text-primary)); }
+.text-secondary { color: hsl(var(--text-secondary)); }
+
+/* Liquid Metal Shadows */
+.shadow-liquid-sm { box-shadow: var(--shadow-liquid-sm); }
+.shadow-liquid-md { box-shadow: var(--shadow-liquid-md); }
+.shadow-liquid-lg { box-shadow: var(--shadow-liquid-lg); }
+.shadow-liquid-xl { box-shadow: var(--shadow-liquid-xl); }
+.shadow-glow-blue { box-shadow: var(--shadow-glow-blue); }
+.shadow-glow-purple { box-shadow: var(--shadow-glow-purple); }
+.shadow-glow-pink { box-shadow: var(--shadow-glow-pink); }
+
+/* Legacy Support - Orange Theme */
+.bg-orange { background: hsl(var(--burnt-orange)); }
+.bg-orange-dark { background: hsl(var(--burnt-orange-dark)); }
+.text-primary-glow { color: hsl(var(--burnt-orange)); }
+.text-orange { color: hsl(var(--burnt-orange)); }
+.shadow-orange { box-shadow: var(--shadow-floating); }
+.shadow-orange-lg { box-shadow: var(--shadow-elevated); }
+
+/* ============================================ */
+/* PREMIUM POLISH & MICRO-INTERACTIONS */
+/* ============================================ */
+
+/* Enhanced Button Interactions */
+.btn-floating {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+.btn-floating::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: left 0.5s;
+}
+
+.btn-floating:hover::before {
+  left: 100%;
+}
+
+.btn-floating:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-floating:focus {
+  outline: none;
+  box-shadow: var(--shadow-floating-hover), 0 0 0 4px hsl(var(--orange-200) / 0.3);
+}
+
+/* Enhanced Card Interactions */
+.modern-card {
+  transform-style: preserve-3d;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modern-card:hover {
+  transform: translateY(-8px) rotateX(2deg);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 0 0 1px hsl(var(--orange-200) / 0.2);
+}
+
+  .modern-card-elevated {
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: hsl(var(--bg-primary));
+    color: hsl(var(--text-primary));
+  }.modern-card-elevated:hover {
+  transform: translateY(-12px) rotateX(3deg);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.15),
+    0 0 0 1px hsl(var(--orange-300) / 0.3);
+}
+
+/* Enhanced Icon Button 3D Effects */
+.icon-button-3d {
+  perspective: 100px;
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.icon-button-3d::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.icon-button-3d:hover::before {
+  opacity: 1;
+}
+
+.icon-button-3d:hover {
+  transform: translateY(-4px) rotateX(8deg) scale(1.05);
+  box-shadow: 
+    0 15px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.icon-button-3d:active {
+  transform: translateY(-2px) rotateX(4deg) scale(1.02);
+}
+
+/* Premium Input Enhancements */
+.input-soft {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-soft:focus {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    0 0 0 4px hsl(var(--orange-200) / 0.3);
+}
+
+.input-soft:hover:not(:focus) {
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Advanced Animations */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-premium {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.02);
+  }
+}
+
+@keyframes shimmer-premium {
+  0% { 
+    background-position: -200% 0; 
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% { 
+    background-position: 200% 0; 
+    opacity: 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--orange-400) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--orange-400) / 0.6);
+  }
+}
+
+/* Premium Animation Classes */
+.float-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.pulse-premium {
+  animation: pulse-premium 3s ease-in-out infinite;
+}
+
+  .shimmer-premium {
+    background: rgba(217, 151, 6, 0.1);
+    animation: shimmer-premium 3s infinite;
+  }.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Scroll-triggered Animations */
+.scroll-fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scroll-fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-slide-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scroll-slide-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-slide-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scroll-slide-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Glass Morphism Effects */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-card-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Status Indicators with Premium Animation */
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+}
+
+.status-online {
+  background: hsl(var(--success-500));
+  box-shadow: 0 0 0 0 hsl(var(--success-400) / 0.7);
+  animation: status-pulse 2s infinite;
+}
+
+.status-busy {
+  background: hsl(var(--orange-500));
+  box-shadow: 0 0 0 0 hsl(var(--orange-400) / 0.7);
+  animation: status-pulse 2s infinite;
+}
+
+.status-offline {
+  background: hsl(var(--text-tertiary));
+}
+
+@keyframes status-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Loading States */
+.loading-shimmer {
+  background: hsl(var(--bg-dark-elevated));
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Interactive Feedback */
+.interactive-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.interactive-feedback::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.interactive-feedback:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Accessibility Enhancements */
+.focus-visible {
+  outline: 2px solid hsl(var(--orange-500));
+  outline-offset: 2px;
+}
+
+.reduced-motion {
+  animation-duration: 0.01s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-gentle,
+  .pulse-premium,
+  .shimmer-premium,
+  .glow-pulse {
+    animation: none;
+  }
+  
+  .modern-card,
+  .modern-card-elevated,
+  .icon-button-3d,
+  .btn-floating {
+    transition-duration: 0.1s;
+  }
+}

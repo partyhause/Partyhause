@@ -1,0 +1,40 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.test.json"
+    },
+    {
+      "path": "./packages/core/tsconfig.json"
+    }
+  ],
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "target": "ESNext"
+  }
+}
