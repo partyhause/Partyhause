@@ -51,8 +51,12 @@ export default function RootLayout() {
       <AppProviders>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="events" options={{ headerShown: false }} />
+            {/* title is the fallback iOS uses for the back-button label on
+                screens pushed above the tabs. Without it the previous route
+                has no title and the header renders the literal group name
+                "(tabs)". */}
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
+            <Stack.Screen name="events" options={{ headerShown: false, title: 'Events' }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
