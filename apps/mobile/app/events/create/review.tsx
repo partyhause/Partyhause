@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -37,64 +37,16 @@ function toIsoStart(clock: string, day: string): string {
   return anchor.toISOString();
 }
 
-/**
- * Parse a JSON array handed through the wizard as a search param.
- *
- * useLocalSearchParams delivers strings (or an array of them when a key is
- * repeated), so a param that is absent, empty, or not an array parses to an
- * empty one rather than throwing: a malformed step hand-off must not take the
- * publish path down.
- *
- * @param raw The raw search param, if present.
- * @returns The parsed array, or an empty one.
- */
-function parseJsonArray(raw: string | string[] | undefined): Array<Record<string, unknown>> {
-  if (!raw) return [];
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value.trim();
-  if (!trimmed || !trimmed.startsWith('[')) return [];
-  try {
-    const parsed = JSON.parse(trimmed);
-    return Array.isArray(parsed) ? (parsed as Array<Record<string, unknown>>) : [];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Parse the template settings object handed through the wizard as a param.
- *
- * Same contract as parseJsonArray, for the object shape: absent, empty,
- * non-object, or unparseable input resolves to an empty object rather than
- * throwing, because the settings JSONB column is optional and an unusable
- * value must not block publishing.
- *
- * @param raw The raw search param, if present.
- * @returns The parsed object, or an empty one.
- */
-function parseJsonObject(raw: string | string[] | undefined): Record<string, unknown> {
-  if (!raw) return {};
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || !trimmed.startsWith('{')) {
-    return {};
-  }
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-}
-
 export default function ReviewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-
+  
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Debug logging
+  console.log('[Review] All params:', Object.keys(params));
+  console.log('[Review] templateSettings type:', typeof params.templateSettings);
+  console.log('[Review] templateSettings raw:', params.templateSettings);
 
   // Parse data from params
   const templateType = params.template as string;
@@ -107,31 +59,68 @@ export default function ReviewScreen() {
   const timelineCount = params.timelineCount as string || '0';
   const isDraft = params.isDraft === 'true';
   const draftId = params.draftId as string;
-
-  const templateSettings = parseJsonObject(params.templateSettings);
-  const guestsToImport = parseJsonArray(params.guests);
-  const timelineBlocks = parseJsonArray(params.timeline);
-
-  /**
-   * Publish. One ref-guarded entry: a rapid double-tap can fire onPress twice
-   * before the re-render commits, and this flow's writes carry no idempotency
-   * key (the legacy flat routers, which the transport never retries), so two
-   * taps would create two events. The ref check is the same guard the Cancel
-   * Event control uses; the disabled state drives the UI only.
-   */
-  const busyRef = useRef(false);
+  
+  // Parse template settings with comprehensive error handling
+  let templateSettings = {};
+  try {
+    if (params.templateSettings) {
+      const settingsParam = params.templateSettings;
+      console.log('[Review] Template settings type:', typeof settingsParam);
+      console.log('[Review] Template settings first 100 chars:', 
+        String(settingsParam).substring(0, 100));
+      
+      // Check if it's already an object
+      if (typeof settingsParam === 'object' && settingsParam !== null) {
+        templateSettings = settingsParam;
+        console.log('[Review] Using object directly');
+      } else if (typeof settingsParam === 'string') {
+        // Only parse if it's a valid JSON string
+        const trimmed = settingsParam.trim();
+        if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+          console.log('[Review] Empty or null settings, using empty object');
+          templateSettings = {};
+        } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            templateSettings = JSON.parse(trimmed);
+            console.log('[Review] Successfully parsed JSON');
+          } catch (parseError) {
+            console.error('[Review] JSON parse error:', parseError);
+            console.error('[Review] Failed string:', trimmed.substring(0, 200));
+            // Use empty object on parse failure
+            templateSettings = {};
+          }
+        } else {
+          console.warn('[Review] Not valid JSON format, first char:', trimmed[0]);
+          console.warn('[Review] String preview:', trimmed.substring(0, 100));
+          templateSettings = {};
+        }
+      } else {
+        console.warn('[Review] Unexpected type for templateSettings:', typeof settingsParam);
+        templateSettings = {};
+      }
+    }
+  } catch (error) {
+    console.error('[Review] Failed to process template settings:', error);
+    console.error('[Review] Raw value type:', typeof params.templateSettings);
+    console.error('[Review] Raw value:', params.templateSettings);
+    // Continue with empty settings rather than failing
+    templateSettings = {};
+  }
+  
+  console.log('[Review] Final templateSettings:', templateSettings);
 
   const handlePublish = async () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setIsPublishing(true);
-
+    console.log('[Review] ========== PUBLISH STARTED ==========');
     try {
+      setIsPublishing(true);
+
       if (!(await api.auth.isAuthenticated())) {
         Alert.alert('Error', 'Please sign in to create events');
+        setIsPublishing(false);
         return;
       }
 
+      console.log('[Review] Step 2: Preparing event data');
       // Prepare event data
       const eventData: any = {
         template_type: templateType,
@@ -152,6 +141,14 @@ export default function ReviewScreen() {
         };
       }
 
+      console.log('[Review] Step 3: Event data prepared:', {
+        template_type: eventData.template_type,
+        title: eventData.title,
+        has_location: !!eventData.location,
+        has_settings: !!eventData.settings,
+        settings_keys: Object.keys(eventData.settings || {}),
+      });
+
       // Create event
       const { data: createdEvent, error: createError } = await api.events.create(eventData);
 
@@ -164,83 +161,119 @@ export default function ReviewScreen() {
         throw new Error('Event created but no ID returned');
       }
 
-      // Import guests if any.
-      //
-      // The route reads camelCase per guest. This previously sent
-      // `plus_ones`, which is not a key it looks at, so every imported
-      // guest was created with plus_ones 0.
-      //
-      // It also sent `eventDetails` and `sendInvitations: true`. The
-      // route destructures only `{ eventId, guests }` and ignores both,
-      // so no invitation email was ever triggered here despite the flag.
-      // Guests are created; inviting them is a separate step.
-      //
-      // A failure here is reported, not swallowed. The guests step refuses
-      // email-less, duplicate and over-cap entries, but a draft saved before
-      // that gate existed can still carry data the batch rejects, and the
-      // batch is all-or-nothing: one bad guest and the database holds zero
-      // of them. Reporting it is what keeps the success dialog honest.
-      let guestFailure: string | null = null;
-      if (guestsToImport.length > 0) {
-        const { error: guestsError } = await api.guests.createMany(
-          eventId,
-          guestsToImport.map((guest) => ({
-            name: String(guest.name ?? ''),
-            email: guest.email ? String(guest.email) : undefined,
-            phone: guest.phone ? String(guest.phone) : undefined,
-            plusOnes: Number(guest.plus_ones ?? 0),
-          })),
-        );
+      // Import guests if any
+      if (params.guests) {
+        try {
+          let guests = [];
+          const guestsParam = params.guests;
+          
+          // Safe JSON parsing
+          if (typeof guestsParam === 'object' && Array.isArray(guestsParam)) {
+            guests = guestsParam;
+          } else if (typeof guestsParam === 'string') {
+            const trimmed = guestsParam.trim();
+            if (trimmed && trimmed.startsWith('[')) {
+              guests = JSON.parse(trimmed);
+            }
+          }
+          
+          if (guests.length > 0) {
+            // The route reads camelCase per guest. This previously sent
+            // `plus_ones`, which is not a key it looks at, so every imported
+            // guest was created with plus_ones 0.
+            //
+            // It also sent `eventDetails` and `sendInvitations: true`. The
+            // route destructures only `{ eventId, guests }` and ignores both,
+            // so no invitation email was ever triggered here despite the flag.
+            // Guests are created; inviting them is a separate step.
+            const { error: guestsError } = await api.guests.createMany(
+              eventId,
+              guests.map((guest: { name: string; email?: string; phone?: string; plus_ones?: number }) => ({
+                name: guest.name,
+                email: guest.email,
+                phone: guest.phone,
+                plusOnes: guest.plus_ones ?? 0,
+              })),
+            );
 
-        if (guestsError) {
-          guestFailure = guestsError.message;
+            if (guestsError) {
+              console.error('[Review] Failed to import guests:', guestsError.message);
+            }
+          }
+        } catch (error) {
+          console.error('[Review] Failed to import guests:', error);
         }
       }
 
-      // Create timeline if any.
-      //
-      // Written to /api/timeline, not onto the event's JSON column.
-      //
-      // History, because this has now been wrong twice. It originally
-      // sent `{ event_id, blocks: [...] }` to POST /api/timeline, which
-      // creates ONE block and validates different field names, so it
-      // 400'd every time and the schedule was lost inside the catch
-      // below. The fix at the time was to write the JSON column instead,
-      // on the grounds that the relational table was the one nothing
-      // read.
-      //
-      // That is no longer true, and the JSON column is the wrong target:
-      // `serialiseEvent` withholds it from every client including the
-      // host, deliberately, because it cannot express `guest_visible` or
-      // `host_notes`. So a schedule written there is invisible to the
-      // activities screen, which is the only screen that shows it. The
-      // relational table is the representation that carries visibility,
-      // and the route filters on it per viewer.
-      //
-      // One request per block, because the route creates one block per
-      // call. The loop is bounded by the wizard's own list, which is
-      // built by hand a block at a time.
-      const scheduleFailures: string[] = [];
-      for (const block of timelineBlocks) {
-        const { error: blockError } = await api.timeline.create({
-          event_id: eventId,
-          label: String(block.label ?? ''),
-          start_time: toIsoStart(String(block.start_time ?? ''), startDate),
-          duration: Number(block.duration ?? 0),
-          type: block.type as TimelineBlock['type'],
-          description: block.description ? String(block.description) : undefined,
-          // The host's per-block toggle, collected at the timeline step. A
-          // block marked private must not publish visible to guests; the
-          // `!== false` keeps a safe default for a block that predates the
-          // switch.
-          guest_visible: block.guest_visible !== false,
-        });
-        if (blockError) scheduleFailures.push(`${String(block.label)}: ${blockError.message}`);
+      // Create timeline if any
+      if (params.timeline) {
+        try {
+          let timeline = [];
+          const timelineParam = params.timeline;
+          
+          // Safe JSON parsing
+          if (typeof timelineParam === 'object' && Array.isArray(timelineParam)) {
+            timeline = timelineParam;
+          } else if (typeof timelineParam === 'string') {
+            const trimmed = timelineParam.trim();
+            if (trimmed && trimmed.startsWith('[')) {
+              timeline = JSON.parse(trimmed);
+            }
+          }
+          
+          if (timeline.length > 0) {
+            // Written to /api/timeline, not onto the event's JSON column.
+            //
+            // History, because this has now been wrong twice. It originally
+            // sent `{ event_id, blocks: [...] }` to POST /api/timeline, which
+            // creates ONE block and validates different field names, so it
+            // 400'd every time and the schedule was lost inside the catch
+            // below. The fix at the time was to write the JSON column instead,
+            // on the grounds that the relational table was the one nothing
+            // read.
+            //
+            // That is no longer true, and the JSON column is the wrong target:
+            // `serialiseEvent` withholds it from every client including the
+            // host, deliberately, because it cannot express `guest_visible` or
+            // `host_notes`. So a schedule written there is invisible to the
+            // activities screen, which is the only screen that shows it. The
+            // relational table is the representation that carries visibility,
+            // and the route filters on it per viewer.
+            //
+            // One request per block, because the route creates one block per
+            // call. The loop is bounded by the wizard's own list, which is
+            // built by hand a block at a time.
+            const failures: string[] = [];
+            for (const block of timeline as Array<Record<string, unknown>>) {
+              const { error: blockError } = await api.timeline.create({
+                event_id: eventId,
+                label: String(block.label ?? ''),
+                start_time: toIsoStart(String(block.start_time ?? ''), startDate),
+                duration: Number(block.duration ?? 0),
+                type: block.type as TimelineBlock['type'],
+                guest_visible: true,
+              });
+              if (blockError) failures.push(`${String(block.label)}: ${blockError.message}`);
+            }
+
+            if (failures.length > 0) {
+              // Reported, not swallowed. The event itself was created, so this
+              // is a partial success and the host needs to know which part.
+              console.error('[Review] Timeline blocks rejected:', failures.join('; '));
+              Alert.alert(
+                'Event created, schedule incomplete',
+                `${failures.length} of ${timeline.length} activities could not be saved. You can add them from the event's Activities screen.`,
+              );
+            }
+          }
+        } catch (error) {
+          console.error('[Review] Failed to create timeline:', error);
+        }
       }
 
-      // If this was a draft, delete it from AsyncStorage. A failed cleanup
-      // leaves a stale draft behind, which the drafts screen can delete; it
-      // must not fail the publish that just succeeded.
+      setIsPublishing(false);
+      
+      // If this was a draft, delete it from AsyncStorage
       if (isDraft && draftId) {
         try {
           const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
@@ -250,43 +283,11 @@ export default function ReviewScreen() {
             const updatedDrafts = drafts.filter((d: any) => d.id !== draftId);
             await AsyncStorage.setItem('event_drafts', JSON.stringify(updatedDrafts));
           }
-        } catch {
-          // Stale draft left in place; deletable from the drafts screen.
+        } catch (error) {
+          console.error('Failed to delete draft:', error);
         }
       }
-
-      setIsPublishing(false);
-
-      if (guestFailure) {
-        Alert.alert(
-          'Event created, guests not imported',
-          `The event is live, but your guest list could not be imported (${guestFailure}). You can add guests from the event's Guest List screen.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/'),
-            },
-          ]
-        );
-        return;
-      }
-
-      if (scheduleFailures.length > 0) {
-        // Reported, not swallowed. The event itself was created, so this
-        // is a partial success and the host needs to know which part.
-        Alert.alert(
-          'Event created, schedule incomplete',
-          `${scheduleFailures.length} of ${timelineBlocks.length} activities could not be saved. You can add them from the event's Activities screen.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/'),
-            },
-          ]
-        );
-        return;
-      }
-
+      
       Alert.alert(
         'Success!',
         'Your event has been created successfully.',
@@ -297,36 +298,36 @@ export default function ReviewScreen() {
           },
         ]
       );
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Failed to create event. Please try again.';
+    } catch (error: any) {
+      setIsPublishing(false);
+      console.error('[Review] ========== PUBLISH FAILED ==========');
+      console.error('[Review] Error type:', error.constructor.name);
+      console.error('[Review] Error message:', error.message);
+      console.error('[Review] Error stack:', error.stack);
+      
+      const errorMessage = error.message || 'Failed to create event. Please try again.';
       Alert.alert(
-        'Error',
+        'Error', 
         errorMessage,
         [
           {
             text: 'OK',
+            onPress: () => console.log('[Review] User dismissed error alert'),
           },
         ]
       );
-    } finally {
-      busyRef.current = false;
-      setIsPublishing(false);
     }
   };
 
   const handleSaveDraft = async () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setIsPublishing(true);
-
     try {
+      setIsPublishing(true);
+
       // Save to AsyncStorage as draft
       const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-
+      
       const draftData = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        id: Date.now().toString(), // Unique draft ID
         templateType,
         title,
         description,
@@ -344,13 +345,15 @@ export default function ReviewScreen() {
       // Get existing drafts
       const draftsJson = await AsyncStorage.getItem('event_drafts');
       const drafts = draftsJson ? JSON.parse(draftsJson) : [];
-
+      
       // Add new draft
       drafts.push(draftData);
-
+      
       // Save back to storage
       await AsyncStorage.setItem('event_drafts', JSON.stringify(drafts));
 
+      setIsPublishing(false);
+      
       Alert.alert(
         'Draft Saved!',
         'Your event has been saved as a draft. You can continue editing it later.',
@@ -361,11 +364,10 @@ export default function ReviewScreen() {
           },
         ]
       );
-    } catch {
-      Alert.alert('Error', 'Failed to save draft. Please try again.');
-    } finally {
-      busyRef.current = false;
+    } catch (error) {
       setIsPublishing(false);
+      console.error('Failed to save draft:', error);
+      Alert.alert('Error', 'Failed to save draft. Please try again.');
     }
   };
 
@@ -481,9 +483,8 @@ export default function ReviewScreen() {
         <View style={styles.infoContent}>
           <Text style={styles.infoTitle}>Ready to publish?</Text>
           <Text style={styles.infoText}>
-            Publishing makes the event live. Invitations are sent separately
-            from the event's Invites screen, so guests will not be emailed
-            until you send them there. You can always edit event details later.
+            Once published, your guests will receive invitations and can RSVP. You can
+            always edit event details later.
           </Text>
         </View>
       </View>

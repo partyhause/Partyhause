@@ -20,6 +20,11 @@ import {
   usernameChangeAvailableAt,
   validateUsername,
 } from '../lib/username';
+import {
+  validateBirthDate,
+  validateInterests,
+  validateMediaUrl,
+} from '../lib/profile-validation';
 
 const router = Router();
 
@@ -35,8 +40,12 @@ const OWN_PROFILE_SELECT = {
   display_name: true,
   bio: true,
   avatar_url: true,
+  cover_photo_url: true,
   location: true,
   website_url: true,
+  birth_date: true,
+  interests: true,
+  marketing_opt_in: true,
   is_private: true,
   show_attending_events: true,
   show_partycrew_list: true,
@@ -215,13 +224,57 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
       }
     }
 
+    // Profile photo and header. Only URLs the journey just received from
+    // POST /api/storage/upload ever reach this legitimately, but the endpoint
+    // is authenticated-not-authorised, so anything client-supplied is
+    // validated the same way. Empty string clears, mirroring website_url.
+    for (const key of ['avatar_url', 'cover_photo_url'] as const) {
+      if (key in body) {
+        const problem = validateMediaUrl(body[key]);
+        if (problem) {
+          return res.status(400).json({ error: `${key} ${problem}` });
+        }
+        const trimmed = (body[key] as string).trim();
+        data[key] = trimmed.length === 0 ? null : trimmed;
+      }
+    }
+
+    // B2C identity fields for the about-you step. Birth date is a real
+    // calendar date, never the future; interests are a closed taxonomy so
+    // recommendations never fragment; the marketing flag is a strict boolean
+    // like the privacy flags above, defaulting to opted out.
+    if ('birth_date' in body) {
+      const problem = validateBirthDate(body.birth_date);
+      if (problem) {
+        return res.status(400).json({ error: `birth_date ${problem}` });
+      }
+      data.birth_date = body.birth_date === '' ? null : new Date(`${body.birth_date}T00:00:00Z`);
+    }
+    if ('interests' in body) {
+      const problem = validateInterests(body.interests);
+      if (problem) {
+        return res.status(400).json({ error: `interests ${problem}` });
+      }
+      data.interests = body.interests as string[];
+    }
+    if ('marketing_opt_in' in body) {
+      if (typeof body.marketing_opt_in !== 'boolean') {
+        return res.status(400).json({ error: 'marketing_opt_in must be a boolean' });
+      }
+      data.marketing_opt_in = body.marketing_opt_in;
+    }
+
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'No updatable fields provided' });
     }
 
-    const profile = await prisma.userProfile.update({
+    const profile = await prisma.userProfile.upsert({
       where: { id: userId },
-      data,
+      update: data,
+      create: {
+        id: userId,
+        ...data,
+      },
       select: OWN_PROFILE_SELECT,
     });
 
@@ -229,6 +282,39 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
   } catch (err) {
     console.error('[Users] update me/profile error:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PUT /api/users/me/role - record which personality the caller registered as.
+//
+// Separate from PUT /me/profile on purpose: profile is free-text identity,
+// role is a closed enum the journey gates on, and a bulk patch that accepted
+// both would let a profile edit silently change the gate. The CHECK
+// constraint users_account_role_check is the authority; this membership test
+// only turns a 500 into a 400 with a sentence.
+// ---------------------------------------------------------------------------
+const ACCOUNT_ROLES = ['creator', 'vendor', 'attendee'] as const;
+
+router.put('/me/role', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const role = (req.body as Record<string, unknown> | null)?.account_role;
+
+    if (typeof role !== 'string' || !(ACCOUNT_ROLES as readonly string[]).includes(role)) {
+      return res.status(400).json({ error: 'account_role must be one of creator, vendor, attendee' });
+    }
+
+    const row = await prisma.user.update({
+      where: { id: userId },
+      data: { account_role: role },
+      select: { account_role: true },
+    });
+
+    res.json({ account_role: row.account_role });
+  } catch (err) {
+    console.error('[Users] update me/role error:', err);
+    res.status(500).json({ error: 'Failed to save your role' });
   }
 });
 
