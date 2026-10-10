@@ -542,7 +542,7 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.neutral[950],
+    backgroundColor: COLORS.cream[50],
   },
   scrollContent: {
     flexGrow: 1,
@@ -569,13 +569,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#fff',
+    color: COLORS.neutral[900],
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     textAlign: 'center',
   },
   form: {
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.neutral[800],
     marginBottom: 8,
   },
   consentRow: {
@@ -637,11 +637,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: COLORS.primary.main,
+    backgroundColor: COLORS.teal[700],
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 28,
     alignItems: 'center',
-    shadowColor: COLORS.primary.main,
+    shadowColor: COLORS.teal[700],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

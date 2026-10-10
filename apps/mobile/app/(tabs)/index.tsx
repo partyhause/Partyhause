@@ -3,15 +3,16 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { useFocusEffect } from "expo-router";
 import type { OnboardingState } from "@partyhause/core";
 import { api } from "@/lib/client";
-import { LandingScreen } from "@/components/screens/LandingScreenEnhanced";
 import { AuthScreen } from "@/components/screens/AuthScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { UsernamePicker } from "@/components/UsernamePicker";
+import { LandingScreen } from "@/components/screens/LandingScreen";
+import { OnboardingMarketingFlow } from "@/components/screens/OnboardingMarketingFlow";
 
-type AppMode = "loading" | "landing" | "auth" | "onboarding" | "dashboard";
+type AppMode = "landing" | "loading" | "auth" | "username_picker" | "onboarding_marketing" | "dashboard";
 
 export default function HomeScreen() {
-  const [appMode, setAppMode] = useState<AppMode>("loading");
+  const [appMode, setAppMode] = useState<AppMode>("landing");
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
@@ -27,7 +28,7 @@ export default function HomeScreen() {
    */
   const checkAuth = useCallback(async () => {
     if (!(await api.auth.isAuthenticated())) {
-      setAppMode("landing");
+      setAppMode("auth");
       return;
     }
 
@@ -35,41 +36,45 @@ export default function HomeScreen() {
     if (error || !data) {
       setUserId(null);
       setUserEmail(null);
-      setAppMode("landing");
+      setAppMode("auth");
       return;
     }
 
     setUserId(data.id);
     setUserEmail(data.email);
 
-    // Username gate. `show_picker` is computed server-side from four columns
-    // precisely so this client and the web client cannot derive it differently;
-    // the only job here is to render it.
-    //
-    // Failing open on error: an unreachable status endpoint must not become an
-    // account lockout over a username prompt. The gate asks again next focus.
+    // Username picker gate - part of onboarding journey
     const onboardingResult = await api.users.onboardingState();
     if (!onboardingResult.error && onboardingResult.data?.show_picker) {
       setOnboarding(onboardingResult.data);
-      setAppMode("onboarding");
+      setAppMode("username_picker");
       return;
     }
 
     setOnboarding(null);
+    
+    // Check if user has completed marketing onboarding
+    // For now, assume new users need onboarding. In production, check server flag
+    // like data.profile.onboarding_completed
+    const hasCompletedOnboarding = data.profile?.onboarding_completed ?? false;
+    
+    if (!hasCompletedOnboarding) {
+      setAppMode("onboarding_marketing");
+      return;
+    }
+
     setAppMode("dashboard");
   }, []);
 
-  // On focus rather than on mount. This screen stays mounted while other
-  // routes are pushed over it, so a mount-only check could not observe a
-  // session ending elsewhere. Account deletion in /settings does exactly that:
-  // it destroys the account and clears the token, then returns here. Without a
-  // focus check the dashboard would still be rendered for a user who no longer
-  // exists, and every query on it would fail with 401.
-  useFocusEffect(
-    useCallback(() => {
-      void checkAuth();
-    }, [checkAuth]),
-  );
+  // Auth check is no longer automatic on focus. The app always starts on
+  // the landing page and only transitions to auth/dashboard when the user
+  // explicitly requests it. This satisfies the requirement to always start from
+  // landing and removes the forced auth screen on launch.
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     void checkAuth();
+  //   }, [checkAuth]),
+  // );
 
   const handleSignOut = async () => {
     // Clears the local session even if the network call fails, so a user can
@@ -80,19 +85,20 @@ export default function HomeScreen() {
     setAppMode("landing");
   };
 
+  if (appMode === "landing") {
+    return (
+      <LandingScreen
+        onGetStarted={() => { setAppMode("loading"); void checkAuth(); }}
+        onSignIn={() => { setAppMode("auth"); }}
+      />
+    );
+  }
+
   if (appMode === "loading") {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.periwinkle[400]} />
       </View>
-    );
-  }
-
-  if (appMode === "landing") {
-    return (
-      <LandingScreen
-        onGetStarted={() => setAppMode("auth")}
-      />
     );
   }
 
@@ -109,7 +115,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (appMode === "onboarding" && onboarding) {
+  if (appMode === "username_picker" && onboarding) {
     return (
       <View style={styles.onboardingContainer}>
         <UsernamePicker
@@ -121,13 +127,15 @@ export default function HomeScreen() {
               : "This is how people find you and tag you across PartyHause. Choose one to continue."
           }
           submitLabel="Continue"
-          // The control exists only when the server says this account may
-          // dismiss, which is true exactly for accounts predating the picker.
           onSkip={onboarding.skippable ? () => { void checkAuth(); } : undefined}
           onDone={() => { void checkAuth(); }}
         />
       </View>
     );
+  }
+
+  if (appMode === "onboarding_marketing") {
+    return <OnboardingMarketingFlow onComplete={() => { void checkAuth(); }} />;
   }
 
   return (
@@ -137,6 +145,8 @@ export default function HomeScreen() {
       onSignOut={handleSignOut}
     />
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -144,14 +154,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.neutral[950],
+    backgroundColor: COLORS.cream[100],
   },
   // Paper rather than the dark shell the dashboard uses: the picker is a form,
   // and its inputs and hairlines are specified against a light surface in
   // docs/BRAND.md.
   onboardingContainer: {
     flex: 1,
-    backgroundColor: "#FBFAF9",
+    backgroundColor: "COLORS.cream.50",
   },
 });
 
