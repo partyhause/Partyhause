@@ -167,7 +167,9 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
               }
             >
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🎈</Text>
+                <View style={[styles.emptyIconWrap, { backgroundColor: COLORS.pastels.lavender }]}>
+                  <Ionicons name="calendar-outline" size={32} color={COLORS.neutral[900]} />
+                </View>
                 <Text style={styles.emptyTitle}>No events yet</Text>
                 <Text style={styles.emptyText}>
                   Create your first event and start inviting guests!
@@ -181,23 +183,29 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
           ) : (
             <>
               {/* Dotted-border stat pills: the concept's signature detail. */}
-              <View style={styles.statPills}>
-                <View style={styles.statPill}>
-                  <Ionicons name="calendar" size={18} color={COLORS.periwinkle[500]} />
-                  <Text style={styles.statValue}>{events.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <Ionicons name="document-text" size={18} color={COLORS.warning.main} />
-                  <Text style={styles.statValue}>{draftCount}</Text>
-                  <Text style={styles.statLabel}>Drafts</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <Ionicons name="time" size={18} color={COLORS.teal[800]} />
-                  <Text style={styles.statValue}>{upcomingCount}</Text>
-                  <Text style={styles.statLabel}>Upcoming</Text>
-                </View>
-              </View>
+               <View style={styles.statPills}>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.periwinkle }]}>
+                     <Ionicons name="calendar" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{events.length}</Text>
+                   <Text style={styles.statLabel}>Total</Text>
+                 </View>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.peach }]}>
+                     <Ionicons name="document-text" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{draftCount}</Text>
+                   <Text style={styles.statLabel}>Drafts</Text>
+                 </View>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.teal }]}>
+                     <Ionicons name="time" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{upcomingCount}</Text>
+                   <Text style={styles.statLabel}>Upcoming</Text>
+                 </View>
+               </View>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Your Events</Text>
                 <Text style={styles.sectionSubtitle}>
@@ -336,14 +344,18 @@ const styles = StyleSheet.create({
   },
   statPill: {
     flex: 1,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: COLORS.cream[300],
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 24,
+    paddingVertical: 16,
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.background.primary,
+    gap: 10,
+    backgroundColor: COLORS.cream[100],
+  },
+  statIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 22,
@@ -384,9 +396,14 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
   },
-  emptyIcon: {
-    fontSize: 64,
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: COLORS.pastels.lavender,
   },
   emptyTitle: {
     fontSize: 22,
