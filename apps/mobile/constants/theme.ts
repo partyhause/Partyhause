@@ -85,7 +85,7 @@ export const COLORS = {
   // text-bearing surfaces use 500 or darker.
   cream: {
     50: '#E8D3B9',
-    100: '#FFF9E5',
+    100: '#E8D3B9',
     200: '#F1E7D1',
     300: '#DCCEB7',
     400: '#CDBA98',
@@ -96,6 +96,15 @@ export const COLORS = {
     900: '#604E2E',
     950: '#372D1B',
   },
+  pastels: {
+    coral: '#FF8A80',
+    teal: '#80CBC4',
+    periwinkle: '#B39DDB',
+    peach: '#FFCCBC',
+    sage: '#C5E1A5',
+    lavender: '#E1BEE7',
+  },
+
   teal: {
     50: '#F4FBFA',
     100: '#E8F7F5',
