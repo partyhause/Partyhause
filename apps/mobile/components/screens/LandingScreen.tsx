@@ -150,8 +150,8 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
                   ]}
                   onPress={() => setSelectedArchetype(idx)}
                 >
-                  <View style={[styles.archetypeIcon, { backgroundColor: isSelected ? a.color : COLORS.neutral[100] }]}>
-                    <Text style={{ color: isSelected ? '#FFFFFF' : COLORS.neutral[600] }}>◈</Text>
+                  <View style={[styles.archetypeIcon, { backgroundColor: isSelected ? a.color : COLORS.pastels.lavender }]}>
+                    <Text style={{ color: isSelected ? '#FFFFFF' : COLORS.neutral[900] }}>◈</Text>
                   </View>
                   <Text style={styles.archetypeTitle}>{a.title}</Text>
                   <Text style={styles.archetypeBody}>{a.description}</Text>
@@ -301,17 +301,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.neutral[200],
   },
   principleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary.light,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.pastels.periwinkle,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
   principleIconText: {
     fontSize: 24,
-    color: '#FFFFFF',
+    color: COLORS.neutral[900],
   },
   principleTitle: {
     fontSize: TYPOGRAPHY.h4.fontSize,
@@ -344,9 +344,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   archetypeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
