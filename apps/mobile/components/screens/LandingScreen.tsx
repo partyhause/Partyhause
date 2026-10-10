@@ -92,8 +92,9 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
         {/* Hero */}
         <View style={styles.heroContainer}>
           <View style={styles.heroCurve} />
+
           <View style={styles.heroContentWrap}>
-            <Text style={styles.heroBadge}>Plan. Party. Perfect.</Text>
+            <Text style={styles.heroBadge}>PLAN. PARTY. PERFECT.</Text>
             <Text style={styles.heroTitle}>
               Throw the party.
               <Text style={styles.heroAccent}> Skip the admin.</Text>
@@ -186,7 +187,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.cream[100],
+    backgroundColor: COLORS.cream[50],
   },
   hero: {
     height: height * 0.85,
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: COLORS.cream[50],
     justifyContent: 'flex-end',
     paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING.xxxl,
@@ -239,37 +240,33 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 56,
-    backgroundColor: COLORS.primary.main,
+    backgroundColor: COLORS.pastels.coral,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.neutral[900],
     fontSize: TYPOGRAPHY.body.fontSize,
     fontWeight: '600' as any,
   },
   secondaryButton: {
     height: 56,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: COLORS.cream[50],
+    borderWidth: 2,
+    borderColor: COLORS.pastels.peach,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: TYPOGRAPHY.body.fontSize,
-    fontWeight: '600' as any,
-  },
+
   section: {
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.xxxl,
-    backgroundColor: COLORS.cream[100],
+    backgroundColor: COLORS.cream[50],
   },
   sectionAlt: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cream[50],
   },
   sectionLead: {
     fontSize: TYPOGRAPHY.h3.fontSize,
@@ -297,7 +294,7 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
   },
   principleCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cream[100],
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.xl,
     borderWidth: 1,
@@ -332,7 +329,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   archetypeCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cream[100],
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.xl,
     borderWidth: 1,
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   archetypeHighlight: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.cream[100],
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.xl,
     borderWidth: 1,
@@ -389,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.xxxl,
     alignItems: 'center',
-    backgroundColor: COLORS.cream[100],
+    backgroundColor: COLORS.cream[50],
   },
   ctaTitle: {
     fontSize: TYPOGRAPHY.h3.fontSize,

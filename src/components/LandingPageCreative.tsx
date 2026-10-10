@@ -31,9 +31,9 @@
 
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
-import { usePartyStore } from '@/store/usePartyStore';
 import {
   ArrowRight,
   BookOpen,
@@ -203,7 +203,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
   const [selectedArchetype, setSelectedArchetype] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
 
   /**
    * `useReducedMotion` returns the live value of `prefers-reduced-motion`.
@@ -236,7 +236,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
 
   const goToBlog = () => {
     setMobileNavOpen(false);
-    setCurrentPage('party-culture-blog');
+    navigate('/party-culture-blog');
   };
 
   /**
@@ -252,7 +252,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
    */
   const goToAuth = (intent: LandingIntent) => {
     setMobileNavOpen(false);
-    setCurrentPage('auth');
+    navigate('/auth');
     onStartAuth?.(intent);
   };
 
@@ -508,7 +508,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* ---------------------------------------------------------------- */}
       <div className="relative z-10 bg-neutral-50">
         {/* How it works */}
-        <section id={SECTION_HOW} className="scroll-mt-20 border-b border-neutral-200 bg-white py-20 md:py-24">
+        <section id={SECTION_HOW} className="scroll-mt-20 border-b border-neutral-200 bg-cream-50 py-20 md:py-24">
           <div className="container mx-auto px-6">
             <SectionHeading
               lead="Hosting is a logistics problem"
@@ -525,9 +525,9 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                   whileHover={prefersReducedMotion ? undefined : { y: -6 }}
                   transition={{ duration: 0.45, delay: index * 0.1 }}
                   viewport={{ once: true, amount: 0.3 }}
-                  className="rounded-lg border border-neutral-200 bg-white p-7 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
+                  className="rounded-[3rem] border border-neutral-200 bg-cream-100 p-7 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                 >
-                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-coral-500">
+                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[2.5rem] bg-coral-500">
                     <principle.icon className="h-6 w-6 text-white" strokeWidth={2} />
                   </div>
                   <h3 className="text-xl font-semibold text-neutral-900">{principle.title}</h3>
@@ -539,7 +539,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
         </section>
 
         {/* Find your style */}
-        <section id={SECTION_STYLE} className="scroll-mt-20 bg-neutral-50 py-20 md:py-24">
+        <section id={SECTION_STYLE} className="scroll-mt-20 bg-cream-50 py-20 md:py-24">
           <div className="container mx-auto px-6">
             <SectionHeading
               lead="Four kinds of host"
@@ -563,16 +563,16 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                       transition={{ duration: 0.4, delay: index * 0.08 }}
                       viewport={{ once: true, amount: 0.2 }}
                       className={[
-                        'rounded-lg border p-7 text-left transition-colors',
+                        'rounded-[3rem] border p-7 text-left transition-colors',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600 focus-visible:ring-offset-2',
                         isSelected
-                          ? 'border-coral-500 bg-white shadow-[0_6px_16px_rgb(0_0_0/0.08)]'
-                          : 'border-neutral-200 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)] hover:border-neutral-300',
+                          ? 'border-coral-500 bg-cream-100 shadow-[0_6px_16px_rgb(0_0_0/0.08)]'
+                          : 'border-neutral-200 bg-cream-100 shadow-[0_1px_2px_rgb(0_0_0/0.04)] hover:border-neutral-300',
                       ].join(' ')}
                     >
                       <div
                         className={[
-                          'mb-5 inline-flex h-12 w-12 items-center justify-center rounded-lg transition-colors',
+                          'mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[2.5rem] transition-colors',
                           isSelected ? 'bg-coral-500' : 'bg-neutral-100',
                         ].join(' ')}
                       >
@@ -600,7 +600,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="mt-6 rounded-lg border border-neutral-200 bg-white p-7 text-center shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
+                className="mt-6 rounded-[3rem] border border-neutral-200 bg-cream-100 p-7 text-center shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
                 aria-live="polite"
               >
                 <p className="text-sm font-semibold uppercase tracking-[0.14em] text-coral-700">
@@ -623,7 +623,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
         </section>
 
         {/* Party culture */}
-        <section id={SECTION_CULTURE} className="scroll-mt-20 border-y border-neutral-200 bg-white py-20 md:py-24">
+        <section id={SECTION_CULTURE} className="scroll-mt-20 border-y border-neutral-200 bg-cream-50 py-20 md:py-24">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-2xl text-center">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-coral-50 px-4 py-1.5">
@@ -648,7 +648,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                   whileHover={prefersReducedMotion ? undefined : { y: -6 }}
                   transition={{ duration: 0.45, delay: index * 0.1 }}
                   viewport={{ once: true, amount: 0.2 }}
-                  className="flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
+                  className="flex flex-col overflow-hidden rounded-[3rem] border border-neutral-200 bg-cream-100 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                 >
                   {/*
                     A gradient panel, not an <img>. Each preview used to carry
@@ -758,7 +758,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
         {/* support.html are built, served by nginx with their own cache       */}
         {/* rules, and were reachable only by typing the URL.                  */}
         {/* ---------------------------------------------------------------- */}
-        <footer className="border-t border-neutral-200 bg-white">
+        <footer className="border-t border-neutral-200 bg-cream-50">
           <div className="container mx-auto px-6 py-12">
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
               <div className="max-w-sm">
