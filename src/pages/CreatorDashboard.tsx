@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PageShell, UserMenu } from '@/components/layout/PageShell';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { format } from 'date-fns';
 import { BrandLockup } from '@/components/BrandMark';
 
@@ -46,42 +47,46 @@ export default function CreatorDashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Events', value: events.length, icon: Calendar, color: 'text-blue-600 bg-blue-50' },
-            { label: 'Upcoming', value: upcomingEvents.length, icon: Sparkles, color: 'text-orange-600 bg-orange-50' },
-            { label: 'Total Guests', value: totalGuests, icon: Users, color: 'text-purple-600 bg-purple-50' },
-            { label: 'Analytics', value: 'Soon', icon: BarChart2, color: 'text-green-600 bg-green-50' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label}>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${color}`}>
+            { label: 'Total Events', value: events.length, icon: Calendar, variant: 'lavender' as const },
+            { label: 'Upcoming', value: upcomingEvents.length, icon: Sparkles, variant: 'peach' as const },
+            { label: 'Total Guests', value: totalGuests, icon: Users, variant: 'mint' as const },
+            { label: 'Analytics', value: 'Soon', icon: BarChart2, variant: 'butter' as const },
+          ].map(({ label, value, icon: Icon, variant }) => (
+            <PastelCard key={label} variant={variant}>
+              <div className="flex items-center gap-3">
+                <div className="pastel-icon-wrap">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xl font-bold text-foreground">{value}</p>
                   <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </PastelCard>
           ))}
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: Plus, label: 'Create Event', page: '/create-event', color: 'bg-orange-500 text-white' },
-            { icon: Sparkles, label: 'Templates', page: '/templates', color: 'bg-purple-50 text-purple-600' },
-            { icon: QrCode, label: 'QR Scanner', page: '/qr-scanner', color: 'bg-blue-50 text-blue-600' },
-            { icon: Users, label: 'Crew', page: '/feed', color: 'bg-green-50 text-green-600' },
-          ].map(({ icon: Icon, label, page, color }) => (
+            { icon: Plus, label: 'Create Event', page: '/create-event', variant: 'peach' as const },
+            { icon: Sparkles, label: 'Templates', page: '/templates', variant: 'lavender' as const },
+            { icon: QrCode, label: 'QR Scanner', page: '/qr-scanner', variant: 'teal' as const },
+            { icon: Users, label: 'Crew', page: '/feed', variant: 'mint' as const },
+          ].map(({ icon: Icon, label, page, variant }) => (
             <button
               key={page}
               onClick={() => navigate(page)}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-card hover:shadow-md transition-all"
+              className="w-full"
             >
-              <div className={`p-3 rounded-xl ${color}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-medium text-foreground">{label}</span>
+              <PastelCard variant={variant}>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="pastel-icon-wrap">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-medium text-foreground">{label}</span>
+                </div>
+              </PastelCard>
             </button>
           ))}
         </div>
