@@ -34,6 +34,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
+import { PastelCard } from '@/components/ui/PastelCard';
 
 import {
   ArrowRight,
@@ -518,23 +519,27 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             />
 
             <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
-              {PRINCIPLES.map((principle, index) => (
-                <motion.article
+              {PRINCIPLES.map((principle, index) => {
+                const variants: Array<'lavender' | 'pink' | 'peach' | 'mint' | 'teal' | 'butter'> = ['lavender','pink','peach'];
+                const variant = variants[index % variants.length];
+                return (
+                <motion.div
                   key={principle.title}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   whileHover={prefersReducedMotion ? undefined : { y: -6 }}
                   transition={{ duration: 0.45, delay: index * 0.1 }}
                   viewport={{ once: true, amount: 0.3 }}
-                  className="rounded-[3rem] border border-neutral-200 bg-cream-100 p-7 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                 >
-                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[2.5rem] bg-coral-500">
-                    <principle.icon className="h-6 w-6 text-white" strokeWidth={2} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-neutral-900">{principle.title}</h3>
-                  <p className="mt-3 leading-relaxed text-neutral-600">{principle.body}</p>
-                </motion.article>
-              ))}
+                  <PastelCard variant={variant}>
+                    <div className="mb-5 pastel-icon-wrap">
+                      <principle.icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-neutral-900">{principle.title}</h3>
+                    <p className="mt-3 leading-relaxed text-neutral-600">{principle.body}</p>
+                  </PastelCard>
+                </motion.div>
+              )})}
             </div>
           </div>
         </section>
@@ -552,39 +557,32 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
               <div className="grid gap-4 sm:grid-cols-2">
                 {ARCHETYPES.map((archetype, index) => {
                   const isSelected = selectedArchetype === index;
+                  const variants: Array<'lavender' | 'pink' | 'peach' | 'mint' | 'teal' | 'butter'> = ['lavender','pink','mint','teal'];
+                  const variant = variants[index % variants.length];
                   return (
-                    <motion.button
+                    <motion.div
                       key={archetype.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => setSelectedArchetype(index)}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       whileHover={prefersReducedMotion ? undefined : { y: -4 }}
                       transition={{ duration: 0.4, delay: index * 0.08 }}
                       viewport={{ once: true, amount: 0.2 }}
-                      className={[
-                        'rounded-[3rem] border p-7 text-left transition-colors',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600 focus-visible:ring-offset-2',
-                        isSelected
-                          ? 'border-coral-500 bg-cream-100 shadow-[0_6px_16px_rgb(0_0_0/0.08)]'
-                          : 'border-neutral-200 bg-cream-100 shadow-[0_1px_2px_rgb(0_0_0/0.04)] hover:border-neutral-300',
-                      ].join(' ')}
                     >
-                      <div
-                        className={[
-                          'mb-5 inline-flex h-12 w-12 items-center justify-center rounded-[2.5rem] transition-colors',
-                          isSelected ? 'bg-coral-500' : 'bg-neutral-100',
-                        ].join(' ')}
+                      <button
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedArchetype(index)}
+                        className="text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pastel-lavender)] focus-visible:ring-offset-2"
                       >
-                        <archetype.icon
-                          className={`h-6 w-6 ${isSelected ? 'text-white' : 'text-neutral-500'}`}
-                          strokeWidth={2}
-                        />
-                      </div>
-                      <h3 className="text-xl font-semibold text-neutral-900">{archetype.title}</h3>
-                      <p className="mt-3 leading-relaxed text-neutral-600">{archetype.description}</p>
-                    </motion.button>
+                        <PastelCard variant={variant} className={isSelected ? 'ring-2 ring-[var(--pastel-lavender)]' : ''}>
+                          <div className="mb-5 pastel-icon-wrap">
+                            <archetype.icon className="h-6 w-6" strokeWidth={2} />
+                          </div>
+                          <h3 className="text-xl font-semibold text-neutral-900">{archetype.title}</h3>
+                          <p className="mt-3 leading-relaxed text-neutral-600">{archetype.description}</p>
+                        </PastelCard>
+                      </button>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -601,23 +599,24 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="mt-6 rounded-[3rem] border border-neutral-200 bg-cream-100 p-7 text-center shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
                 aria-live="polite"
               >
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-coral-700">
-                  {activeArchetype.title}
-                </p>
-                <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-neutral-700">
-                  {activeArchetype.signature}
-                </p>
-                <Button
-                  size="lg"
-                  className="mt-7 h-12 bg-coral-700 px-8 text-base text-white hover:bg-coral-800"
-                  onClick={() => goToAuth('create_event')}
-                >
-                  Start with this setup
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                <PastelCard variant="lavender" className="mt-6 text-center">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--pastel-dark-charcoal)]">
+                    {activeArchetype.title}
+                  </p>
+                  <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-neutral-700">
+                    {activeArchetype.signature}
+                  </p>
+                  <Button
+                    size="lg"
+                    className="mt-7 h-12 pastel-pill"
+                    onClick={() => goToAuth('create_event')}
+                  >
+                    Start with this setup
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </PastelCard>
               </motion.div>
             </div>
           </div>
