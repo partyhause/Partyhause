@@ -14,6 +14,7 @@ import { HardenedErrorBoundary } from '@/components/HardenedErrorBoundary';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { initializeAuthStateListener } from '@/lib/auth';
 import { RoleGuard } from "@/components/RoleGuard";
+import { ROUTES } from '@/routes';
 
 const PartyCultureBlog = lazy(() => import("@/components/PartyCultureBlog"));
 const EventCreation = lazy(() => import("@/components/EventCreation").then(m => ({ default: m.EventCreation })));
@@ -72,28 +73,28 @@ const AuthenticatedApplication = () => {
             <div className="min-h-screen bg-background text-foreground">
               <Suspense fallback={<PageFallback />}>
                 <Routes>
-                  <Route path="/" element={!user ? <LandingPageCreative onStartAuth={(intent) => setUserIntent(intent)} /> : <Navigate to="/dashboard" replace />} />
-                  <Route path="/auth" element={!user ? <AuthScreen initialMode="auth" userIntent={userIntent} /> : <Navigate to="/dashboard" replace />} />
-                  <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/join/:token" element={<JoinEventPage />} />
-                  <Route path="/join/*" element={<JoinEventPage />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/create-event" element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard></ProtectedRoute>} />
-                  <Route path="/event-management" element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                  <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-                  <Route path="/privacy-settings" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
-                  <Route path="/templates" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
-                  <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                  <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
-                  <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-                  <Route path="/party-culture-blog" element={<PartyCultureBlog />} />
-                  <Route path="/qr-scanner" element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><QRScanner /></RoleGuard></ProtectedRoute>} />
-                  <Route path="/role-selection" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
-                  <Route path="/guest-view/:guestId" element={<GuestViewRoute />} />
-                  <Route path="/logout" element={<Logout />} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  <Route path={ROUTES.HOME} element={!user ? <LandingPageCreative onStartAuth={(intent) => setUserIntent(intent)} /> : <Navigate to={ROUTES.DASHBOARD} replace />} />
+                  <Route path={ROUTES.AUTH} element={!user ? <AuthScreen initialMode="auth" userIntent={userIntent} /> : <Navigate to={ROUTES.DASHBOARD} replace />} />
+                  <Route path={ROUTES.AUTH_VERIFY_EMAIL} element={<VerifyEmailPage />} />
+                  <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
+                  <Route path={ROUTES.JOIN_TOKEN} element={<JoinEventPage />} />
+                  <Route path={ROUTES.JOIN_WILDCARD} element={<JoinEventPage />} />
+                  <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path={ROUTES.CREATE_EVENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard></ProtectedRoute>} />
+                  <Route path={ROUTES.EVENT_MANAGEMENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard></ProtectedRoute>} />
+                  <Route path={ROUTES.SETTINGS} element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                  <Route path={ROUTES.PRIVACY_SETTINGS} element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
+                  <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+                  <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                  <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
+                  <Route path={ROUTES.EXPLORE} element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+                  <Route path={ROUTES.PARTY_CULTURE_BLOG} element={<PartyCultureBlog />} />
+                  <Route path={ROUTES.QR_SCANNER} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><QRScanner /></RoleGuard></ProtectedRoute>} />
+                  <Route path={ROUTES.ROLE_SELECTION} element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
+                  <Route path={ROUTES.GUEST_VIEW} element={<GuestViewRoute />} />
+                  <Route path={ROUTES.LOGOUT} element={<Logout />} />
+                  <Route path={ROUTES.CATCH_ALL} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
                 </Routes>
               </Suspense>
             </div>
@@ -120,8 +121,8 @@ const App = () => {
         <HardenedErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
-              <Route path="/join/:token" element={<JoinEventPage />} />
-              <Route path="/join/*" element={<JoinEventPage />} />
+              <Route path={ROUTES.JOIN_TOKEN} element={<JoinEventPage />} />
+              <Route path={ROUTES.JOIN_WILDCARD} element={<JoinEventPage />} />
             </Routes>
           </Suspense>
         </HardenedErrorBoundary>
