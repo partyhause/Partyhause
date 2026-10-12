@@ -23,6 +23,11 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     enableSoftDelete: true
     softDeleteRetentionInDays: 7
     publicNetworkAccess: 'Enabled'
+    // An empty array is valid on create: the deployer grant is added by the
+    // child accessPolicies resource below (additive, never replacing). Omitting
+    // the property entirely makes the RP answer BadRequest
+    // ("The parameter accessPolicies is not specified") on a fresh vault.
+    accessPolicies: []
   }
 }
 
