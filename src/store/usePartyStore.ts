@@ -75,14 +75,12 @@ export interface PartyState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  currentPage: 'auth' | 'dashboard' | 'create-event' | 'event-management' | 'qr-scanner' | 'party-culture-blog' | 'games' | 'user-dashboard' | 'creator-dashboard' | 'vendor-dashboard' | string;
   events: Event[];
   currentEvent: Event | null;
   guests: Guest[];
   loadedEventIds: Set<string>;
   fetchingEventId: string | null;
   setUser: (user: User | null) => void;
-  setCurrentPage: (page: string) => void;
   setEvents: (events: Event[]) => void;
   setCurrentEvent: (event: Event | null) => Promise<void>;
   setGuests: (guests: Guest[]) => void;
@@ -98,7 +96,6 @@ export const usePartyStore = create<PartyState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      currentPage: 'auth',
       events: [],
       currentEvent: null,
       guests: [],
@@ -159,10 +156,6 @@ export const usePartyStore = create<PartyState>()(
             loadedEventIds: new Set<string>()
           });
         }
-      },
-
-      setCurrentPage: (page) => {
-        if (get().currentPage !== page) set({ currentPage: page });
       },
 
       setEvents: (events) => set((state) => {
@@ -249,7 +242,6 @@ export const usePartyStore = create<PartyState>()(
         set({
           user: null,
           isAuthenticated: false,
-          currentPage: 'auth',
           events: [],
           currentEvent: null,
           guests: [],
@@ -271,7 +263,6 @@ export const usePartyStore = create<PartyState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        currentPage: state.currentPage,
         events: state.events,
         currentEvent: state.currentEvent
       }),

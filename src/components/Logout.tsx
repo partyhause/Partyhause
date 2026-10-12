@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { usePartyStore } from '@/store/usePartyStore';
@@ -5,14 +6,14 @@ import { Loader2, LogOut } from 'lucide-react';
 
 const Logout = () => {
   const { signOut } = useAuth();
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleLogout = async () => {
       try {
         await signOut();
-        setCurrentPage('auth');
+        navigate('/auth');
       } catch (err) {
         setError('An error occurred during logout. Please try again.');
       }
@@ -27,7 +28,7 @@ const Logout = () => {
         <div className="text-center space-y-3">
           <p className="text-destructive font-medium">{error}</p>
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="text-sm text-muted-foreground underline"
           >
             Back to dashboard

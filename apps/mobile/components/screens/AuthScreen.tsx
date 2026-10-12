@@ -637,13 +637,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: COLORS.teal[700],
+    backgroundColor: COLORS.pastels.teal,
     paddingVertical: 16,
     borderRadius: 28,
     alignItems: 'center',
-    shadowColor: COLORS.teal[700],
+    shadowColor: COLORS.pastels.teal,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
   },
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.neutral[900],
     fontSize: 16,
     fontWeight: '700',
   },
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
     textDecorationLine: 'underline',
   },
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   recoveryBody: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
     lineHeight: 20,
   },
@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchText: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
   },
   switchTextBold: {
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: 14,
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     marginBottom: 8,
     paddingLeft: 8,
   },

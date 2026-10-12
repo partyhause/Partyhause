@@ -17,6 +17,7 @@ import { Platform } from "react-native";
 
 import { AppProviders } from "../providers/AppProviders";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { COLORS } from "@/constants/theme";
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -47,10 +48,10 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.cream[50] }}>
       <AppProviders>
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-          <Stack>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: COLORS.cream[50] } }}>
             {/* title is the fallback iOS uses for the back-button label on
                 screens pushed above the tabs. Without it the previous route
                 has no title and the header renders the literal group name

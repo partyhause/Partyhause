@@ -32,16 +32,16 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { COLORS } from '@/constants/theme';
 import type { OnboardingState, UserProfileUpdate } from '@partyhause/core';
 import { api } from '@/lib/client';
 import { UsernamePicker } from '@/components/UsernamePicker';
-
 /** docs/BRAND.md section 4. */
 const BRAND = {
   coral: '#FF5233',
   coralDark: '#C02A16',
   ink: '#26201D',
-  paper: '#FBFAF9',
+  paper: COLORS.cream[50],
   muted: '#6A5E58',
   hairline: '#EBE7E5',
   success: '#0B835B',

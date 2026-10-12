@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePartyStore } from '@/store/usePartyStore';
@@ -33,7 +34,8 @@ interface EventTemplate {
 
 
 export const EventCreation = () => {
-  const { setCurrentPage, setEvents, events, user } = usePartyStore();
+  const { setEvents, events, user } = usePartyStore();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     event_type: 'single_day' as 'single_day' | 'multi_day',
@@ -532,7 +534,7 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setStep('invite-template')}>
+                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => setStep('invite-template')}>
                   <CardHeader>
                     <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
                       <Send className="w-6 h-6 text-white" />
@@ -550,7 +552,7 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setCurrentPage('event-management')}>
+                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => navigate('/event-management')}>
                   <CardHeader>
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
                       <Users className="w-6 h-6 text-white" />
@@ -568,7 +570,7 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setCurrentPage('dashboard')}>
+                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => navigate('/dashboard')}>
                   <CardHeader>
                     <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
                       <Check className="w-6 h-6 text-white" />
@@ -590,7 +592,7 @@ export const EventCreation = () => {
               className="text-center"
             >
               <Button 
-                onClick={() => setCurrentPage('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 size="lg"
                 className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold px-8 py-6 text-lg"
               >
@@ -614,7 +616,7 @@ export const EventCreation = () => {
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <button
-                onClick={() => setCurrentPage('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="icon-btn-liquid"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -1074,7 +1076,7 @@ export const EventCreation = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentPage('dashboard')}
+                      onClick={() => navigate('/dashboard')}
                       disabled={isSubmitting}
                       className="flex-1"
                     >

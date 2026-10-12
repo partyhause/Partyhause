@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import sanitize from 'sanitize-html';
 import { useToast } from '@/hooks/use-toast';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api-client';
@@ -76,6 +77,7 @@ interface Template {
 
 export const TemplateManager: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
@@ -244,7 +246,7 @@ export const TemplateManager: React.FC = () => {
       title="Invite Templates"
       subtitle="Reusable email templates for your event invitations"
       maxWidth="lg"
-      onBack={() => usePartyStore.getState().setCurrentPage('dashboard')}
+      onBack={() => navigate('/dashboard')}
       actions={
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" /> Create Template

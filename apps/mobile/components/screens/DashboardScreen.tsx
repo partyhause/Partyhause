@@ -38,7 +38,7 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
     queryKey: ['user-events', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const res = await api.events.list({ userId });
+      const res = await api.events.list();
       return toLocalEvents(res.data ?? []);
     },
     enabled: !!userId,

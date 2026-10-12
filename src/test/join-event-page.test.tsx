@@ -4,8 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '@/App';
 import { JoinEventPage } from '@/components/JoinEventPage';
-import { useAuth } from '@/hooks/use-auth';
-import { authService } from '@/lib/auth';
+import { authService, initializeAuthStateListener } from '@/lib/auth';
 import { setStoredToken, setStoredUser } from '@/lib/auth-storage';
 import { resolveRsvp, submitRsvp, type BrowserRsvpInvitation } from '@/lib/rsvp-client';
 
@@ -18,6 +17,7 @@ vi.mock('@/lib/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/auth')>();
   return {
     ...actual,
+    initializeAuthStateListener: vi.fn(),
     authService: {
       ...actual.authService,
       signIn: vi.fn(),
@@ -257,6 +257,9 @@ describe('browser RSVP page', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Dinner' })).toBeInTheDocument();
-    expect(useAuth).not.toHaveBeenCalled();
+    // The authenticated shell's one init side effect is the session listener.
+    // If /join mounted AuthenticatedApplication, this would have run before
+    // any user interaction; on the public fast path it must never run.
+    expect(initializeAuthStateListener).not.toHaveBeenCalled();
   });
 });

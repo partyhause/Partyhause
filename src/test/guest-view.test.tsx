@@ -26,7 +26,6 @@ const resetStore = () => {
   usePartyStore.setState({
     user: null,
     isAuthenticated: false,
-    currentPage: 'auth',
     events: [],
     currentEvent: null,
     guests: [],

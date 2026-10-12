@@ -73,7 +73,6 @@ export const AuthScreen = ({
 
     const { setUser, setLoading, isLoading } = usePartyStore();
     const { signIn, signUp, requestPasswordReset, resendVerification } = useAuth();
-    const { setCurrentPage } = usePartyStore();
 
     // Diagnostic: run once on mount to detect missing imports in test env without violating hooks rules
     useEffect(() => {
@@ -356,9 +355,9 @@ export const AuthScreen = ({
                     transition: { delay: 1.0 + index * 0.2 },
                     whileHover: { y: -5 }
                   })}
-                  className="modern-card p-6 text-center group"
+                  className="rounded-[3rem] border border-neutral-200 bg-white p-6 text-center group shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                 >
-                  <div className={`icon-button-3d ${feature.color} w-12 h-12 mx-auto mb-4`}>
+                  <div className={`rounded-[2.5rem] ${feature.color} w-12 h-12 mx-auto mb-4 flex items-center justify-center`}>
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{feature.title}</h3>
@@ -464,7 +463,7 @@ export const AuthScreen = ({
                 transition: { delay: 0.4, duration: 0.6 }
               })}
             >
-              <Card className="modern-card border-gray-200">
+              <Card className="rounded-[3rem] border border-neutral-200 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900">
                     {welcomeMessage.title}

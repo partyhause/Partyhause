@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { GameManager } from '@/components/games/GameManager';
 import { usePartyStore } from '@/store/usePartyStore';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,8 @@ import { ArrowLeft } from 'lucide-react';
 import { safeFormat } from '@/lib/utils';
 
 export function GamesPage() {
-  const { currentEvent, setCurrentPage, user } = usePartyStore();
+  const { currentEvent, user } = usePartyStore();
+  const navigate = useNavigate();
 
   if (!currentEvent) {
     return (
@@ -15,7 +17,7 @@ export function GamesPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">No Event Selected</h2>
           <p className="text-muted-foreground mb-6">Please select an event to access games.</p>
-          <Button onClick={() => setCurrentPage('dashboard')}>
+          <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -47,7 +49,7 @@ export function GamesPage() {
       title={currentEvent.name}
       subtitle={meta}
       maxWidth="2xl"
-      onBack={() => setCurrentPage('dashboard')}
+      onBack={() => navigate('/dashboard')}
       actions={
         isHost ? (
           <Badge className="bg-green-50 text-green-700 border-green-200" variant="secondary">
@@ -62,7 +64,7 @@ export function GamesPage() {
         participantId={user?.id || ''}
         participants={mockParticipants}
         isHost={isHost}
-        onGameEnd={() => setCurrentPage('dashboard')}
+        onGameEnd={() => navigate('/dashboard')}
       />
     </PageShell>
   );

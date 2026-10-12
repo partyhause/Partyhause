@@ -1,61 +1,63 @@
-import React, { useRef, useState } from 'react';
-import { ScrollView, SafeAreaView, StyleSheet, Dimensions, TouchableOpacity, View, Text, ImageBackground } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '@/constants/theme';
-import { NotchedCard } from '@/components/ui/NotchedCard';
-import { MetricPill } from '@/components/ui/MetricPill';
+import React, { useState } from 'react';
+import { ScrollView, SafeAreaView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
 
-
-const { height } = Dimensions.get('window');
-
+/**
+ * Multi-colour card rhythm per docs/BRAND.md 12.7: adjacent cards alternate
+ * hue instead of repeating one white card. Tinted cards use pastel washes
+ * (dark text on top); no raw hex anywhere.
+ */
 const LANDING_PRINCIPLES = [
   {
     id: 'one-place',
     title: 'Everyone in one place',
     body: 'Guest list, RSVPs, running order and the group chat that usually lives in four apps. One link, one page, one source of truth.',
-    icon: 'users',
+    tint: COLORS.pastels.peach,
   },
   {
     id: 'nothing-forgotten',
     title: 'Nothing forgotten',
     body: 'Turn a sticky note into a task, split the cost, and see what is still open. The plan updates for everyone the moment it changes.',
-    icon: 'checklist',
+    tint: COLORS.pastels.lavender,
   },
   {
     id: 'get-out-way',
     title: 'Then get out of the way',
     body: 'The work happens before the night. On the night you should be at your own party, not answering the same question eleven times.',
-    icon: 'party',
+    tint: COLORS.pastels.teal,
   },
 ];
 
+/**
+ * Saturated card fills. Every value is an AA-passing token step that carries
+ * white text at body size: coral-700 5.86:1, magenta-700 6.20:1, teal-800
+ * 4.73:1, periwinkle-500 6.68:1. The concept's teal-700 is 3.22:1 and is
+ * why the 800 step is used here.
+ */
 const LANDING_ARCHETYPES = [
   {
     id: 'intimate',
     title: 'The Intimate Host',
     description: 'Small groups, personal touches, and conversations that matter.',
-    icon: 'heart',
-    color: '#C02A16',
+    fill: COLORS.primary.main,
   },
   {
     id: 'curator',
     title: 'The Curator',
     description: 'Themes, playlists, and details that feel intentional.',
-    icon: 'lightbulb',
-    color: '#B62066',
+    fill: COLORS.magenta.main,
   },
   {
     id: 'organizer',
     title: 'The Organizer',
-    description: 'Guest lists, budgets, and timelines — all under control.',
-    icon: 'calendar',
-    color: '#389F8D',
+    description: 'Guest lists, budgets, and timelines, all under control.',
+    fill: COLORS.teal[800],
   },
   {
     id: 'social',
     title: 'The Social Connector',
     description: 'Bringing people together who should know each other.',
-    icon: 'users',
-    color: '#4133FF',
+    fill: COLORS.periwinkle[500],
   },
 ];
 
@@ -64,7 +66,6 @@ export interface LandingScreenProps {
   onSignIn: () => void;
 }
 
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=1200';
 const SECTION_HEADING = {
   how: 'Hosting is a logistics problem',
   howAccent: 'right up until it isn\'t',
@@ -73,12 +74,7 @@ const SECTION_HEADING = {
 };
 
 export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSignIn }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
   const [selectedArchetype, setSelectedArchetype] = useState(0);
-
-  const scrollTo = (offset: number) => {
-    scrollViewRef.current?.scrollTo({ y: offset, animated: true });
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,7 +84,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
         <View style={[styles.balloon, styles.balloon3]} />
         <View style={[styles.balloon, styles.balloon4]} />
       </View>
-      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.heroContainer}>
           <View style={styles.heroCurve} />
@@ -121,7 +117,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
           
           <View style={styles.principlesGrid}>
             {LANDING_PRINCIPLES.map((p) => (
-              <View key={p.id} style={styles.principleCard}>
+              <View key={p.id} style={[styles.principleCard, { backgroundColor: p.tint }]}>
                 <View style={styles.principleIcon}>
                   <Text style={styles.principleIconText}>•</Text>
                 </View>
@@ -146,12 +142,14 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
                   key={a.id}
                   style={[
                     styles.archetypeCard,
+                    { backgroundColor: a.fill },
                     isSelected && styles.archetypeCardSelected,
                   ]}
                   onPress={() => setSelectedArchetype(idx)}
+                  accessibilityState={{ selected: isSelected }}
                 >
-                  <View style={[styles.archetypeIcon, { backgroundColor: isSelected ? a.color : COLORS.pastels.lavender }]}>
-                    <Text style={{ color: isSelected ? '#FFFFFF' : COLORS.neutral[900] }}>◈</Text>
+                  <View style={styles.archetypeIcon}>
+                    <Text style={styles.archetypeIconText}>◈</Text>
                   </View>
                   <Text style={styles.archetypeTitle}>{a.title}</Text>
                   <Text style={styles.archetypeBody}>{a.description}</Text>
@@ -189,20 +187,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.cream[50],
   },
-  hero: {
-    height: height * 0.85,
-    justifyContent: 'flex-end',
+  // Decorative balloon field behind the hero. pointerEvents="none" in JSX;
+  // absolute positions drift at large scale factors like the hero art.
+  balloonBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%' as any,
+    overflow: 'hidden',
   },
-  heroOverlay: {
-    flex: 1,
+  balloon: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.35,
+  },
+  balloon1: {
+    width: 220,
+    height: 220,
+    top: -60,
+    left: -50,
+    backgroundColor: COLORS.pastels.coral,
+  },
+  balloon2: {
+    width: 140,
+    height: 140,
+    top: 40,
+    right: -30,
+    backgroundColor: COLORS.pastels.periwinkle,
+  },
+  balloon3: {
+    width: 90,
+    height: 90,
+    top: 220,
+    left: 40,
+    backgroundColor: COLORS.pastels.teal,
+  },
+  balloon4: {
+    width: 60,
+    height: 60,
+    top: 300,
+    right: 60,
+    backgroundColor: COLORS.pastels.peach,
+  },
+  // Curved hero: cream panel with a rounded bottom edge overlapping the
+  // balloon field above it.
+  heroContainer: {
     backgroundColor: COLORS.cream[50],
-    justifyContent: 'flex-end',
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xxxl,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    paddingBottom: SPACING.xxl,
+    marginBottom: SPACING.md,
   },
-  heroContent: {
+  heroCurve: {
+    height: 32,
+    alignSelf: 'stretch',
+  },
+  heroContentWrap: {
     alignItems: 'center',
     width: '100%',
+    paddingHorizontal: SPACING.xl,
   },
   heroBadge: {
     fontSize: TYPOGRAPHY.caption.fontSize,
@@ -259,6 +303,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  secondaryButtonText: {
+    color: COLORS.neutral[900],
+    fontSize: TYPOGRAPHY.body.fontSize,
+    fontWeight: '600' as any,
+  },
 
   section: {
     paddingHorizontal: SPACING.xl,
@@ -294,23 +343,20 @@ const styles = StyleSheet.create({
     gap: SPACING.lg,
   },
   principleCard: {
-    backgroundColor: COLORS.cream[100],
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xxl,
     padding: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.neutral[200],
   },
   principleIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.pastels.periwinkle,
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.neutral[0],
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
   principleIconText: {
-    fontSize: 24,
+    fontSize: 22,
     color: COLORS.neutral[900],
   },
   principleTitle: {
@@ -321,7 +367,7 @@ const styles = StyleSheet.create({
   },
   principleBody: {
     fontSize: TYPOGRAPHY.body.fontSize,
-    color: COLORS.text.secondary,
+    color: COLORS.neutral[800],
     lineHeight: 22,
   },
   archetypeGrid: {
@@ -329,45 +375,46 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   archetypeCard: {
-    backgroundColor: COLORS.cream[100],
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xxl,
     padding: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.neutral[200],
+    borderWidth: 3,
+    borderColor: 'transparent',
   },
   archetypeCardSelected: {
-    borderColor: COLORS.primary.main,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    borderColor: COLORS.neutral[0],
+    ...SHADOWS.medium,
   },
   archetypeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.neutral[0],
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
+  archetypeIconText: {
+    fontSize: 22,
+    color: COLORS.neutral[900],
+  },
   archetypeTitle: {
     fontSize: TYPOGRAPHY.h4.fontSize,
-    fontWeight: '600' as any,
-    color: COLORS.neutral[900],
+    fontWeight: '700' as any,
+    color: COLORS.neutral[0],
     marginBottom: SPACING.sm,
   },
   archetypeBody: {
-    fontSize: TYPOGRAPHY.body.fontSize,
-    color: COLORS.text.secondary,
+    fontSize: TYPOGRAPHY.small.fontSize,
+    color: COLORS.neutral[0],
     lineHeight: 20,
   },
   archetypeHighlight: {
     backgroundColor: COLORS.cream[100],
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS.xxl,
     padding: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.neutral[200],
+    borderWidth: 2,
+    borderColor: COLORS.neutral[300],
+    borderStyle: 'dashed',
     alignItems: 'center',
   },
   archetypeHighlightTitle: {
@@ -383,30 +430,33 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   ctaSection: {
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xxxl,
+    paddingVertical: SPACING.xxl,
+    borderRadius: BORDER_RADIUS.card,
     alignItems: 'center',
-    backgroundColor: COLORS.cream[50],
+    backgroundColor: COLORS.neutral[950],
   },
   ctaTitle: {
     fontSize: TYPOGRAPHY.h3.fontSize,
     fontWeight: '600' as any,
-    color: COLORS.neutral[900],
+    color: COLORS.text.onDark,
     textAlign: 'center',
     marginBottom: SPACING.xl,
   },
   ctaButton: {
     height: 56,
-    backgroundColor: COLORS.teal[700],
-    borderRadius: 28,
+    backgroundColor: COLORS.neutral[0],
+    borderRadius: BORDER_RADIUS.full,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xxxl,
+    alignSelf: 'stretch',
   },
   ctaButtonText: {
-    color: '#FFFFFF',
-    fontSize: TYPOGRAPHY.body.fontSize,
-    fontWeight: '600' as any,
+    color: COLORS.neutral[900],
+    fontSize: TYPOGRAPHY.bodyBold.fontSize,
+    fontWeight: '700' as any,
   },
   footer: {
     alignItems: 'center',

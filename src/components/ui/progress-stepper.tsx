@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PastelIcon } from '@/components/ui/PastelIcon';
 
 export interface Step {
   id: string;
@@ -43,9 +44,9 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                   {isCompleted ? (
-                    <Check className="w-5 h-5 text-white" />
+                    <PastelIcon icon={Check} tone="cream" className="w-5 h-5" />
                   ) : isCurrent ? (
-                    <Circle className="w-5 h-5 text-orange-500 fill-orange-500" />
+                    <PastelIcon icon={Circle} tone="coral" className="w-5 h-5" />
                   ) : (
                     <span className="text-gray-400 text-sm font-semibold">{index + 1}</span>
                   )}
@@ -106,9 +107,9 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                 transition={{ duration: 0.3 }}
               >
                 {isCompleted ? (
-                  <Check className="w-4 h-4 text-white" />
+                  <PastelIcon icon={Check} tone="cream" className="w-4 h-4" />
                 ) : isCurrent ? (
-                  <Circle className="w-4 h-4 text-orange-500 fill-orange-500" />
+                  <PastelIcon icon={Circle} tone="coral" className="w-4 h-4" />
                 ) : (
                   <span className="text-gray-400 text-xs font-semibold">{index + 1}</span>
                 )}

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import jsQR from 'jsqr';
@@ -181,7 +182,8 @@ const CameraQRReader = ({ onResult }: CameraQRReaderProps) => {
 };
 
 export const QRScanner = () => {
-  const { setCurrentPage, guests, updateGuest, currentEvent } = usePartyStore();
+  const { guests, updateGuest, currentEvent } = usePartyStore();
+  const navigate = useNavigate();
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [manualCode, setManualCode] = useState('');
@@ -266,7 +268,7 @@ export const QRScanner = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCurrentPage('event-management')}
+              onClick={() => navigate('/event-management')}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

@@ -1,4 +1,5 @@
 import { usePartyStore } from '@/store/usePartyStore';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Calendar, Users, BarChart2, ArrowRight, Sparkles, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { BrandLockup } from '@/components/BrandMark';
 export default function CreatorDashboard() {
   const user = usePartyStore((s) => s.user);
   const events = usePartyStore((s) => s.events);
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const setCurrentEvent = usePartyStore((s) => s.setCurrentEvent);
 
   const name = user?.name || user?.email || 'Creator';
@@ -21,7 +22,7 @@ export default function CreatorDashboard() {
 
   const handleEventClick = async (event: typeof events[0]) => {
     await setCurrentEvent(event);
-    setCurrentPage('event-management');
+    navigate('/event-management');
   };
 
   return (
@@ -37,7 +38,7 @@ export default function CreatorDashboard() {
             <h2 className="text-2xl font-bold text-foreground">Welcome back, {name.split(' ')[0]}</h2>
             <p className="text-muted-foreground text-sm mt-1">Manage your events and grow your audience</p>
           </div>
-          <Button className="gap-2 shadow-md" onClick={() => setCurrentPage('create-event')}>
+          <Button className="gap-2 shadow-md" onClick={() => navigate('/create-event')}>
             <Plus className="h-4 w-4" /> New Event
           </Button>
         </div>
@@ -67,14 +68,14 @@ export default function CreatorDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: Plus, label: 'Create Event', page: 'create-event', color: 'bg-orange-500 text-white' },
-            { icon: Sparkles, label: 'Templates', page: 'templates', color: 'bg-purple-50 text-purple-600' },
-            { icon: QrCode, label: 'QR Scanner', page: 'qr-scanner', color: 'bg-blue-50 text-blue-600' },
-            { icon: Users, label: 'Crew', page: 'feed', color: 'bg-green-50 text-green-600' },
+            { icon: Plus, label: 'Create Event', page: '/create-event', color: 'bg-orange-500 text-white' },
+            { icon: Sparkles, label: 'Templates', page: '/templates', color: 'bg-purple-50 text-purple-600' },
+            { icon: QrCode, label: 'QR Scanner', page: '/qr-scanner', color: 'bg-blue-50 text-blue-600' },
+            { icon: Users, label: 'Crew', page: '/feed', color: 'bg-green-50 text-green-600' },
           ].map(({ icon: Icon, label, page, color }) => (
             <button
               key={page}
-              onClick={() => setCurrentPage(page)}
+              onClick={() => navigate(page)}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-card hover:shadow-md transition-all"
             >
               <div className={`p-3 rounded-xl ${color}`}>
@@ -98,7 +99,7 @@ export default function CreatorDashboard() {
                 <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
                 <p className="font-medium text-foreground">No events yet</p>
                 <p className="text-sm text-muted-foreground mt-1">Create your first event to get started</p>
-                <Button className="mt-4" onClick={() => setCurrentPage('create-event')}>
+                <Button className="mt-4" onClick={() => navigate('/create-event')}>
                   <Plus className="h-4 w-4 mr-2" /> Create Event
                 </Button>
               </CardContent>

@@ -71,7 +71,6 @@ describe('Party Store', () => {
 
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.currentPage).toBe('auth');
       expect(result.current.events).toEqual([]);
       expect(result.current.currentEvent).toBeNull();
       expect(result.current.guests).toEqual([]);
@@ -95,9 +94,6 @@ describe('Party Store', () => {
       expect(result.current.user?.email).toBe(testUser.email);
       expect(result.current.user?.name).toBe(testUser.name);
       expect(result.current.isAuthenticated).toBe(true);
-      // Note: currentPage is no longer automatically set by setUser
-      // The routing logic is handled by App.tsx useEffect
-      expect(result.current.currentPage).toBe('auth'); // Default value
     });
 
     it('should handle logout correctly', () => {
@@ -119,7 +115,6 @@ describe('Party Store', () => {
 
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.currentPage).toBe('auth');
       expect(result.current.events).toEqual([]);
       expect(result.current.currentEvent).toBeNull();
       expect(result.current.guests).toEqual([]);
@@ -217,31 +212,14 @@ describe('Party Store', () => {
   });
 
   describe('Navigation', () => {
-    it('should update current page', () => {
+    it('has no page state: routing lives in the router', () => {
       const { result } = renderHook(() => usePartyStore());
-
-      act(() => {
-        result.current.setCurrentPage('dashboard');
-      });
-
-      expect(result.current.currentPage).toBe('dashboard');
-    });
-
-    it('should not update page if same value', () => {
-      const { result } = renderHook(() => usePartyStore());
-
-      act(() => {
-        result.current.setCurrentPage('auth');
-      });
-
-      const firstCallPage = result.current.currentPage;
-
-      act(() => {
-        result.current.setCurrentPage('auth');
-      });
-
-      // Should be the same value (no unnecessary updates)
-      expect(result.current.currentPage).toBe(firstCallPage);
+      // The React Router cutover moved page ownership to the URL. The store
+      // keeping a parallel `currentPage` meant two navigation mechanisms that
+      // could disagree; these assertions pin its absence so it is not
+      // reintroduced by a merge.
+      expect(result.current).not.toHaveProperty('currentPage');
+      expect(result.current).not.toHaveProperty('setCurrentPage');
     });
   });
 

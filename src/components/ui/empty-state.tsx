@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { LucideIcon } from 'lucide-react';
+import { PastelIcon } from './PastelIcon';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -36,7 +37,7 @@ export const EmptyState = ({
   >
     {Icon && (
       <div className="w-16 h-16 mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-        <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
+        <PastelIcon icon={Icon} tone="neutral" className="h-8 w-8 text-primary" aria-hidden="true" />
       </div>
     )}
     <h3 className="text-lg font-semibold text-foreground mb-1">{title}</h3>

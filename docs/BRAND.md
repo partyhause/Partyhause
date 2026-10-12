@@ -1,6 +1,6 @@
 # PartyHause Brand Visual Identity
 
-Version 1.1. Status: proposed, not yet wired into the app. Amended 2026-09-30 with section 12, the reference concept direction derived from three supplied mockups.
+Version 1.1. Status: proposed, not yet wired into the app. Amended 2026-09-30 with section 12, the reference concept direction derived from three supplied mockups. Amended 2026-10-12 with section 12.7, the component-level requirements extracted from the same reference set.
 
 This document defines the visual identity for PartyHause: the logo, the colour system, typography, iconography, motion and the raster assets that ship with them. Every colour value here was computed and every contrast ratio was measured. Nothing in the tables below is asserted from memory.
 
@@ -606,3 +606,68 @@ Plan made 2026-09-30, not yet executed. The steps, in order:
    `--background`. Note for later: `src/test/mobile-launch-assets.test.ts:168` pins the
    colour list permitted in `public/brand/*` assets. If the concept palette is ever
    applied to the app icon or social card, that list must be extended in the same change.
+
+### 12.7 Component requirements from the reference image
+
+Added 2026-10-12. A component-level pass over the same reference set as 12.1 (the
+Xiaohongshu compilation, watermark id 967145877). Sections 12.1 to 12.6 cover palette,
+grid and layout concept. This section records what the image shows that those sections do
+not, mapped onto PartyHause. Direction only: no asset from the mockups is copied, per
+12.5. Every fill below resolves to a token from section 4 or 12.1. Raw hex in a
+component is the one-off-token failure mode section 1 records.
+
+#### 12.7.1 The multi-colour card system
+
+The image's most distinctive property is that boxes are not uniform white cards. Adjacent
+cards alternate hue: coral, cream, green, orange, lavender, charcoal. Three card classes
+cover every box in the image.
+
+| Class | Fill tokens | Text on it | Use |
+|---|---|---|---|
+| Saturated | `coral-700`, `magenta-700`, `teal-800`, `periwinkle-500` | white, passes AA on all four (5.86, 6.20, 4.73, 6.68) | Featured and category cards, rank rows, hero header blocks |
+| Tinted | `pastels.*` washes, `cream-100`, `cream-200`, `magenta-100/200`, `periwinkle-100/200` | `neutral-800` or `neutral-900` | Stat boxes, info cards, chips |
+| Contrast | `neutral-950` | `text.onDark` | Feature cards, bottom nav, primary CTA surfaces |
+
+Rules the image obeys and the app must adopt:
+
+1. **No two adjacent cards share a hue.** The rhythm is the point; three cream cards in a
+   column is the pre-existing failure this replaces.
+2. **Saturated fills carry white text only at the AA steps above.** The concept's
+   `teal-700` (3.22:1) and orange (2.50:1) are decorative-only, per 12.5.
+3. **Every coloured card leads with a white icon chip**: a circular white medallion
+   holding a dark glyph, 40 to 48 px. This chip is the image's signature detail on
+   saturated and tinted cards alike.
+4. **Selection is a white ring, not a colour change.** Selected cards gain a 3 px
+   `neutral-0` ring and a soft shadow; the fill stays.
+5. **The contrast card carries the screen's one primary action.** A white pill button
+   with `neutral-900` text sits on it. Coral on `neutral-950` measures 2.34:1 and fails
+   non-text 1.4.11, so the button itself is white, not coral.
+
+Implemented 2026-10-12 in `apps/mobile/components/screens/LandingScreen.tsx`: the three
+principle cards are tinted (peach, lavender, pastel teal) with white icon chips, the four
+archetype cards are saturated in the four tokens above with white ring selection, and the
+closing CTA is a `neutral-950` contrast card with a white pill button. The remaining
+items in 12.7.2 are unscheduled.
+
+#### 12.7.2 Component inventory still missing
+
+| # | Pattern in the image | PartyHause mapping | State |
+|---|---|---|---|
+| 1 | Stat trio: tinted boxes, each with icon chip, big number, overline label | Dashboard: guests confirmed, declined, pending; polls open, closed | Missing. 12.3.4 has the dotted pill; the icon-chip trio is an additional format |
+| 2 | Oversized metric with tooltip bubble and delta chips (`78%`, `+12`, `-22`) | RSVP rate on event management; poll turnout | 12.3.3 covers the numeral. The callout bubble and +/- delta chips are missing |
+| 3 | Segmented toggle: white active pill on tinted track (Weekly/Month) | Upcoming/Past event filter; poll timeframes | Missing |
+| 4 | Rank cards with medal colours: #1 coral chip, #2 white chip, #3 orange chip, each row with a percentage pill and avatar on a teal surface | Partycrew leaderboard | 12.3.6 names rank cards; the medal mapping is new. Row surface `teal-800`, chips `coral-500`/`neutral-0`/`coral-300` |
+| 5 | Circular progress gauge with layered arcs and a centre readout | Planning completeness, countdown to event day | Missing. The deleted `ProgressArc.tsx` was the last attempt; a real gauge belongs on event management, not as unreachable code |
+| 6 | Rounded-cap bar chart, two-tone pairs of one hue, values on top, day labels | RSVPs per day, poll results | 12.3.7 has emoji-topped bars; same-hue two-tone pairs are an allowed second style |
+| 7 | Avatar cluster with `+N` pill | Guest list previews, crew cards, course-style feature cards | Missing |
+| 8 | Trailing circular arrow button on cards | Any card that navigates on tap | Missing |
+| 9 | Dark rounded bottom tab bar, active icon in a coloured circle | Mobile tab bar, dark variant | Missing. Mobile tab bar is currently light |
+| 10 | Circular bell button with unread dot | Notifications entry point on mobile headers | Missing on mobile |
+| 11 | Sticky-note tags: small rounded chips scattered on a card (`#accounting`, `#math`) | Timeline block tags, poll topics, event theme tags | Missing |
+| 12 | Dropdown chip with glyph and chevron (`All subjects`) | `All events` filter on dashboards | Missing |
+| 13 | Doodle layer: stars, squiggles, dotted arcs at low opacity behind content | Landing, onboarding, empty states only; palette colours per 12.4 | Missing. The balloon field on `LandingScreen.tsx` is the first instance |
+| 14 | Ticket-notch cards | Already shipped as `NotchedCard.tsx`, used by dashboard | Exists; listed so it is not rebuilt |
+
+Typography note: the image's chunky rounded numerals confirm Outfit (section 5) for
+display sizes; no new face is introduced. Big display numerals remain one per screen per
+12.2.

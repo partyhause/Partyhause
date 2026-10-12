@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AuthScreen } from '@/components/AuthScreen';
 import { EventCreation } from '@/components/EventCreation';
 import { GuestView } from '@/components/GuestView';
@@ -29,10 +30,8 @@ vi.mock('@/lib/events', () => ({
 describe('User Creation + Event Creation Integration Tests', () => {
   const mockStore = {
     user: null,
-    currentPage: 'auth',
     events: [],
     setUser: vi.fn(),
-    setCurrentPage: vi.fn(),
     setEvents: vi.fn(),
     logout: vi.fn(),
     isLoading: false
@@ -65,10 +64,13 @@ describe('User Creation + Event Creation Integration Tests', () => {
       usePartyStore.setState({
         ...mockStore,
         user: mockUser,
-        currentPage: 'create-event'
       });
 
-      render(<EventCreation />);
+      render(
+        <MemoryRouter>
+          <EventCreation />
+        </MemoryRouter>
+      );
 
       // Step 1 of the creation flow is the AI planner.
       expect(screen.getByRole('heading', { name: /ai event planner/i })).toBeInTheDocument();
@@ -93,10 +95,13 @@ describe('User Creation + Event Creation Integration Tests', () => {
       usePartyStore.setState({
         ...mockStore,
         user: mockUser,
-        currentPage: 'create-event'
       });
 
-      render(<EventCreation />);
+      render(
+        <MemoryRouter>
+          <EventCreation />
+        </MemoryRouter>
+      );
 
       // Navigate past the AI planner and template-selection steps to reach the form.
       fireEvent.click(screen.getByRole('button', { name: /back/i }));

@@ -17,7 +17,6 @@ import { usePartyStore } from '@/store/usePartyStore';
 
 export default function ExplorePage() {
   const navigate = useNavigate();
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
   const { users, isLoading, refetch } = useSuggestedUsers(50);
 
   if (isLoading) {
@@ -33,7 +32,7 @@ export default function ExplorePage() {
       title="Discover Creators"
       subtitle="Find amazing party hosts and creators to follow"
       maxWidth="2xl"
-      onBack={() => setCurrentPage('dashboard')}
+      onBack={() => navigate('/dashboard')}
       actions={
         <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
           Refresh

@@ -1,21 +1,22 @@
 import { useCallback, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { Redirect, useFocusEffect } from "expo-router";
 import type { OnboardingState } from "@partyhause/core";
 import { api } from "@/lib/client";
+import { fetchOnboardingGate } from "@/lib/onboarding";
 import { AuthScreen } from "@/components/screens/AuthScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { UsernamePicker } from "@/components/UsernamePicker";
 import { LandingScreen } from "@/components/screens/LandingScreen";
-import { OnboardingMarketingFlow } from "@/components/screens/OnboardingMarketingFlow";
 
-type AppMode = "landing" | "loading" | "auth" | "username_picker" | "onboarding_marketing" | "dashboard";
+type AppMode = "landing" | "loading" | "auth" | "username_picker" | "dashboard";
 
 export default function HomeScreen() {
   const [appMode, setAppMode] = useState<AppMode>("landing");
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   /**
    * Establish whether a usable session exists.
@@ -52,29 +53,30 @@ export default function HomeScreen() {
     }
 
     setOnboarding(null);
-    
-    // Check if user has completed marketing onboarding
-    // For now, assume new users need onboarding. In production, check server flag
-    // like data.profile.onboarding_completed
-    const hasCompletedOnboarding = data.profile?.onboarding_completed ?? false;
-    
-    if (!hasCompletedOnboarding) {
-      setAppMode("onboarding_marketing");
-      return;
-    }
 
+    // The database decides, not local state. GET /api/onboarding returns
+    // flow.completed derived from the stored answers and the caller's
+    // entitlement; honoring a local AsyncStorage flag here instead meant a
+    // finished user was bounced back into the flow on every login, or an
+    // unfinished one admitted to the dashboard. A failed call falls through
+    // to the dashboard rather than gating: the /onboarding layout guard
+    // re-checks on mount, so a flaky network cannot strand anyone.
+    const gate = await fetchOnboardingGate();
+    if (gate) {
+      setNeedsOnboarding(!gate.completed);
+    }
     setAppMode("dashboard");
   }, []);
 
-  // Auth check is no longer automatic on focus. The app always starts on
-  // the landing page and only transitions to auth/dashboard when the user
-  // explicitly requests it. This satisfies the requirement to always start from
-  // landing and removes the forced auth screen on launch.
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     void checkAuth();
-  //   }, [checkAuth]),
-  // );
+  // The gate below renders a redirect into /onboarding whenever the stored
+  // completion flag is missing, so checkAuth runs on every focus: it is what
+  // flips the flag state after the final onboarding step writes it and pops
+  // back here.
+  useFocusEffect(
+    useCallback(() => {
+      void checkAuth();
+    }, [checkAuth]),
+  );
 
   const handleSignOut = async () => {
     // Clears the local session even if the network call fails, so a user can
@@ -134,8 +136,12 @@ export default function HomeScreen() {
     );
   }
 
-  if (appMode === "onboarding_marketing") {
-    return <OnboardingMarketingFlow onComplete={() => { void checkAuth(); }} />;
+  // Unfinished onboarding routes into the /onboarding group, where each step
+  // is a real expo-router route with its own URL. checkAuth on focus (above)
+  // is what lands the user back on the dashboard once the final step writes
+  // the completion flag and replaces home.
+  if (needsOnboarding && appMode === "dashboard") {
+    return <Redirect href="/onboarding/welcome" />;
   }
 
   return (

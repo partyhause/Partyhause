@@ -27,7 +27,6 @@ const resetStore = () => {
     user: null,
     isAuthenticated: false,
     isLoading: false,
-    currentPage: 'auth',
     events: [],
     currentEvent: null,
     guests: [],

@@ -1,6 +1,7 @@
 import { useState, useCallback, ImgHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 import { ImageOff } from 'lucide-react';
+import { PastelIcon } from './PastelIcon';
 
 interface SafeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src?: string | null;
@@ -52,7 +53,7 @@ export const SafeImage = ({
           fallbackClassName || className,
         )}
       >
-        <ImageOff className="h-6 w-6" aria-hidden="true" />
+        <PastelIcon icon={ImageOff} tone="neutral" className="h-6 w-6" aria-hidden="true" />
       </div>
     );
   }

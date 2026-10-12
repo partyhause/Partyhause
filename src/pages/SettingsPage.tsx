@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePartyStore } from '@/store/usePartyStore';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ interface SettingsItem {
 
 export default function SettingsPage() {
   const user = usePartyStore((s) => s.user);
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const handleBack = useBackToDashboard();
   const { state: onboarding } = useOnboardingState();
@@ -30,7 +31,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await signOut();
-    setCurrentPage('auth');
+    navigate('/auth');
   };
 
   /**
@@ -45,13 +46,13 @@ export default function SettingsPage() {
    */
   const handleAccountDeleted = async () => {
     await signOut();
-    setCurrentPage('auth');
+    navigate('/auth');
   };
 
   const settingsItems: SettingsItem[] = [
-    { icon: User, label: 'Profile', page: 'profile', description: 'View and edit your profile' },
-    { icon: Bell, label: 'Notifications', page: 'notifications', description: 'Activity from your crew and events' },
-    { icon: Shield, label: 'Privacy', page: 'privacy-settings', description: 'Control what others can see' },
+    { icon: User, label: 'Profile', page: '/profile', description: 'View and edit your profile' },
+    { icon: Bell, label: 'Notifications', page: '/notifications', description: 'Activity from your crew and events' },
+    { icon: Shield, label: 'Privacy', page: '/privacy-settings', description: 'Control what others can see' },
   ];
 
   return (
@@ -123,7 +124,7 @@ export default function SettingsPage() {
             key={label}
             type="button"
             className="w-full text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setCurrentPage(page)}
+            onClick={() => navigate(page)}
           >
             <Card className="hover:shadow-md transition-all">
               <CardContent className="p-4 flex items-center gap-4">
@@ -145,7 +146,7 @@ export default function SettingsPage() {
       <button
         type="button"
         className="w-full text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={() => setCurrentPage('switch-role')}
+        onClick={() => navigate('/role-selection')}
       >
         <Card className="hover:shadow-md transition-all">
           <CardContent className="p-4 flex items-center gap-4">

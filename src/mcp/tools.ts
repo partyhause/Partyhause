@@ -95,7 +95,6 @@ function buildTools(): ModelContextToolDescriptor[] {
                 role: state.user.role ?? 'user',
               }
             : null,
-          currentPage: state.currentPage,
           urlPath: window.location.pathname,
           isLoading: state.isLoading,
           online: navigator.onLine,
@@ -297,8 +296,7 @@ function buildTools(): ModelContextToolDescriptor[] {
     {
       name: 'navigate_to_page',
       description:
-        'Navigates the PartyHause UI to an internal page (state-machine navigation, the URL ' +
-        'does not change). The only tool that mutates app state. Requires an authenticated session.',
+        'Navigates the PartyHause UI to an internal page via router navigation. Requires an authenticated session.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -325,11 +323,35 @@ function buildTools(): ModelContextToolDescriptor[] {
             message: 'Not authenticated — the app will only show the landing/auth screen.',
           };
         }
-        state.setCurrentPage(page);
+
+        const pageToPath: Record<string, string> = {
+          'dashboard': '/dashboard',
+          'user-dashboard': '/dashboard',
+          'creator-dashboard': '/dashboard',
+          'vendor-dashboard': '/dashboard',
+          'my-tickets': '/dashboard',
+          'saved-events': '/dashboard',
+          'create-event': '/create-event',
+          'event-management': '/event-management',
+          'qr-scanner': '/qr-scanner',
+          'games': '/dashboard',
+          'settings': '/settings',
+          'feed': '/feed',
+          'explore': '/explore',
+          'templates': '/templates',
+          'profile': '/profile/me',
+          'party-culture-blog': '/party-culture-blog',
+        };
+
+        const path = pageToPath[page] ?? '/dashboard';
+        if (typeof window !== 'undefined') {
+          window.location.assign(path);
+        }
+
         return {
           status: 'success',
           message: `Navigated to '${page}'.`,
-          currentPage: usePartyStore.getState().currentPage,
+          path,
         };
       },
     },

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { usePartyStore } from '@/store/usePartyStore';
 import { Briefcase, ArrowLeftRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ import { BrandLockup } from '@/components/BrandMark';
  */
 export default function VendorDashboard() {
   const user = usePartyStore((s) => s.user);
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
 
   const name = user?.name || user?.email || 'there';
 
@@ -87,7 +88,7 @@ export default function VendorDashboard() {
               <Button
                 variant="outline"
                 className="w-full gap-2"
-                onClick={() => setCurrentPage('switch-role')}
+                onClick={() => navigate('/role-selection')}
               >
                 <ArrowLeftRight className="h-4 w-4" />
                 Switch role
@@ -110,7 +111,7 @@ export default function VendorDashboard() {
               <Button
                 variant="ghost"
                 className="w-full"
-                onClick={() => setCurrentPage('settings')}
+                onClick={() => navigate('/settings')}
               >
                 Open settings
               </Button>
