@@ -5,6 +5,7 @@ import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { 
   Music, 
   Sparkles, 
@@ -456,14 +457,14 @@ export const AuthScreen = ({
             </MotionDiv>
 
             {/* Auth Card */}
-            <MotionDiv
-              {...(process.env.NODE_ENV !== 'test' && {
-                initial: { opacity: 0, y: 20 },
-                animate: { opacity: 1, y: 0 },
-                transition: { delay: 0.4, duration: 0.6 }
-              })}
-            >
-              <Card className="rounded-[3rem] border border-neutral-200 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+          <MotionDiv
+            {...(process.env.NODE_ENV !== 'test' && {
+              initial: { opacity: 0, y: 20 },
+              animate: { opacity: 1, y: 0 },
+              transition: { delay: 0.4, duration: 0.6 }
+            })}
+          >
+            <PastelCard variant="lavender" className="rounded-[3rem]">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900">
                     {welcomeMessage.title}
@@ -764,7 +765,7 @@ export const AuthScreen = ({
                     </button>
                   </div>
                 </CardContent>
-              </Card>
+              </PastelCard>
             </MotionDiv>
           </MotionDiv>
         </div>
