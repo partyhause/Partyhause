@@ -1,5 +1,6 @@
 @import './tokens/mobile-aligned.css';
 @import './styles/pastel-icons.css';
+@import './styles/pastel-system.css';
 
 @tailwind base;
 @tailwind components;
