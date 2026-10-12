@@ -391,17 +391,15 @@ export const EventCreation = () => {
   if (step === 'invite') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <Card className="max-w-lg w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Upload Your Event Invite
-            </CardTitle>
-            <CardDescription>
-              Add a custom invite image to make your event emails more personal and engaging.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <PastelCard variant="peach" className="max-w-lg w-full">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-semibold">Upload Your Event Invite</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Add a custom invite image to make your event emails more personal and engaging.
+          </p>
+          <div>
             <form onSubmit={handleInviteSubmit} className="space-y-4">
               {/* Error Display */}
               {error && (
@@ -471,8 +469,8 @@ export const EventCreation = () => {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </PastelCard>
       </div>
     );
   }
