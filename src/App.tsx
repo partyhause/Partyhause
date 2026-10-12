@@ -34,7 +34,7 @@ const Logout = lazy(() => import("@/components/Logout"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
 const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
-const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
@@ -78,7 +78,7 @@ const AuthenticatedApplication = () => {
                   <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/join/:token" element={<JoinEventPage />} />
                   <Route path="/join/*" element={<JoinEventPage />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/create-event" element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard></ProtectedRoute>} />
                   <Route path="/event-management" element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
