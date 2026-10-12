@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
 import { EventTemplateSelection } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
@@ -534,17 +535,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => setStep('invite-template')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
-                      <Send className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">Send Invitations</CardTitle>
-                    <CardDescription>
-                      Choose a template and invite your guests
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="peach" onClick={() => setStep('invite-template')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Send className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Send Invitations</h3>
+                  <p className="text-sm text-gray-600">Choose a template and invite your guests</p>
+                </PastelCard>
               </motion.div>
 
               <motion.div
@@ -552,17 +549,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => navigate('/event-management')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">Manage Event</CardTitle>
-                    <CardDescription>
-                      Add timeline, music, and guest list
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="lavender" onClick={() => navigate('/event-management')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Manage Event</h3>
+                  <p className="text-sm text-gray-600">Add timeline, music, and guest list</p>
+                </PastelCard>
               </motion.div>
 
               <motion.div
@@ -570,17 +563,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
-                <Card className="rounded-[3rem] border border-neutral-200 bg-white hover:shadow-xl transition-shadow cursor-pointer h-full shadow-[0_1px_2px_rgb(0_0_0/0.04)]" onClick={() => navigate('/dashboard')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
-                      <Check className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">View Dashboard</CardTitle>
-                    <CardDescription>
-                      See all your events and analytics
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="mint" onClick={() => navigate('/dashboard')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Check className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">View Dashboard</h3>
+                  <p className="text-sm text-gray-600">See all your events and analytics</p>
+                </PastelCard>
               </motion.div>
             </div>
 
