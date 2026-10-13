@@ -13,18 +13,21 @@ const LANDING_PRINCIPLES = [
     title: 'Everyone in one place',
     body: 'Guest list, RSVPs, running order and the group chat that usually lives in four apps. One link, one page, one source of truth.',
     tint: COLORS.pastels.peach,
+    icon: '📍',
   },
   {
     id: 'nothing-forgotten',
     title: 'Nothing forgotten',
     body: 'Turn a sticky note into a task, split the cost, and see what is still open. The plan updates for everyone the moment it changes.',
     tint: COLORS.pastels.lavender,
+    icon: '✅',
   },
   {
     id: 'get-out-way',
     title: 'Then get out of the way',
     body: 'The work happens before the night. On the night you should be at your own party, not answering the same question eleven times.',
     tint: COLORS.pastels.teal,
+    icon: '✨',
   },
 ];
 
@@ -127,7 +130,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
             {LANDING_PRINCIPLES.map((p) => (
               <View key={p.id} style={[styles.principleCard, { backgroundColor: p.tint }]}>
                 <View style={styles.principleIcon}>
-                  <Text style={styles.principleIconText}>•</Text>
+                  <Text style={styles.principleIconText}>{p.icon}</Text>
                 </View>
                 <Text style={styles.principleTitle}>{p.title}</Text>
                 <Text style={styles.principleBody}>{p.body}</Text>
