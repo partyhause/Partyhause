@@ -101,6 +101,9 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
           <View style={styles.heroCurve} />
 
           <View style={styles.heroContentWrap}>
+            <View style={styles.heroIconWrap}>
+              <Image source={require('@/assets/images/icon.png')} style={styles.heroIcon} resizeMode="contain" />
+            </View>
             <Text style={styles.heroBadge}>PLAN. PARTY. PERFECT.</Text>
             <Text style={styles.heroTitle}>
               Throw the party.
@@ -179,6 +182,9 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
 
         {/* CTA */}
         <View style={styles.ctaSection}>
+          <View style={styles.ctaIconWrap}>
+            <Text style={styles.ctaIcon}>🎉</Text>
+          </View>
           <Text style={styles.ctaTitle}>Ready to throw something unforgettable?</Text>
           <TouchableOpacity style={styles.ctaButton} onPress={onGetStarted}>
             <Text style={styles.ctaButtonText}>Start your event</Text>
@@ -258,6 +264,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: SPACING.xl,
+  },
+  heroIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.pastels.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  heroIcon: {
+    width: 40,
+    height: 40,
+    tintColor: COLORS.neutral[900],
   },
   heroBadge: {
     fontSize: TYPOGRAPHY.caption.fontSize,
@@ -453,6 +473,18 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.card,
     alignItems: 'center',
     backgroundColor: COLORS.neutral[950],
+  },
+  ctaIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.pastels.peach,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  ctaIcon: {
+    fontSize: 28,
   },
   ctaTitle: {
     fontSize: TYPOGRAPHY.h3.fontSize,
