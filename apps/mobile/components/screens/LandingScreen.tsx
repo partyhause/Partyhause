@@ -102,7 +102,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
 
           <View style={styles.heroContentWrap}>
             <View style={styles.heroIconWrap}>
-              <Image source={require('@/assets/images/icon.png')} style={styles.heroIcon} resizeMode="contain" />
+              <Image source={require('../../assets/images/icon.png')} style={styles.heroIcon} resizeMode="contain" />
             </View>
             <Text style={styles.heroBadge}>PLAN. PARTY. PERFECT.</Text>
             <Text style={styles.heroTitle}>

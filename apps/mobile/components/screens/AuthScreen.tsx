@@ -302,7 +302,7 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
 
         <View style={styles.header}>
           <View style={styles.logoIcon}>
-            <Image source={require('@/assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
+            <Image source={require('../../assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={styles.title}>
             {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
