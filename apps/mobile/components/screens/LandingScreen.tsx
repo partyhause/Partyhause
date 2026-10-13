@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, SafeAreaView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { ScrollView, SafeAreaView, StyleSheet, TouchableOpacity, View, Text, Image } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
 
 /**
@@ -130,7 +130,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
             {LANDING_PRINCIPLES.map((p) => (
               <View key={p.id} style={[styles.principleCard, { backgroundColor: p.tint }]}>
                 <View style={styles.principleIcon}>
-                  <Text style={styles.principleIconText}>{p.icon}</Text>
+                  <Image source={require('@/assets/images/icon.png')} style={styles.principleIconImg} resizeMode="contain" />
                 </View>
                 <Text style={styles.principleTitle}>{p.title}</Text>
                 <Text style={styles.principleBody}>{p.body}</Text>
@@ -365,6 +365,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
+  },
+  principleIconImg: {
+    width: 32,
+    height: 32,
+    tintColor: COLORS.neutral[900],
   },
   principleIconText: {
     fontSize: 22,
