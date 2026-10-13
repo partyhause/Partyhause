@@ -301,7 +301,9 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.logo}>🎉</Text>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoText}>PH</Text>
+          </View>
           <Text style={styles.title}>
             {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
           </Text>
@@ -562,9 +564,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
-    fontSize: 64,
+  logoIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.pastels.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: COLORS.neutral[900],
   },
   title: {
     fontSize: 28,
