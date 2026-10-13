@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking, Image } from 'react-native';
 import {
   CURRENT_PRIVACY_VERSION,
   CURRENT_TERMS_VERSION,
@@ -302,7 +302,7 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
 
         <View style={styles.header}>
           <View style={styles.logoIcon}>
-            <Text style={styles.logoText}>🎉</Text>
+            <Image source={require('@/assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={styles.title}>
             {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
@@ -572,6 +572,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
+    tintColor: COLORS.neutral[900],
   },
   logoText: {
     fontSize: 36,
