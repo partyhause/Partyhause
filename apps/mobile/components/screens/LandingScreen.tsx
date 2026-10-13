@@ -40,24 +40,28 @@ const LANDING_ARCHETYPES = [
     title: 'The Intimate Host',
     description: 'Small groups, personal touches, and conversations that matter.',
     fill: COLORS.primary.main,
+    icon: '💬',
   },
   {
     id: 'curator',
     title: 'The Curator',
     description: 'Themes, playlists, and details that feel intentional.',
     fill: COLORS.magenta.main,
+    icon: '🎨',
   },
   {
     id: 'organizer',
     title: 'The Organizer',
     description: 'Guest lists, budgets, and timelines, all under control.',
     fill: COLORS.teal[800],
+    icon: '📋',
   },
   {
     id: 'social',
     title: 'The Social Connector',
     description: 'Bringing people together who should know each other.',
     fill: COLORS.periwinkle[500],
+    icon: '🤝',
   },
 ];
 
@@ -149,7 +153,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
                   accessibilityState={{ selected: isSelected }}
                 >
                   <View style={styles.archetypeIcon}>
-                    <Text style={styles.archetypeIconText}>◈</Text>
+                    <Text style={styles.archetypeIconText}>{a.icon}</Text>
                   </View>
                   <Text style={styles.archetypeTitle}>{a.title}</Text>
                   <Text style={styles.archetypeBody}>{a.description}</Text>
