@@ -130,7 +130,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
             {LANDING_PRINCIPLES.map((p) => (
               <View key={p.id} style={[styles.principleCard, { backgroundColor: p.tint }]}>
                 <View style={styles.principleIcon}>
-                  <Image source={require('@/assets/images/icon.png')} style={styles.principleIconImg} resizeMode="contain" />
+                  <Text style={styles.principleIconText}>{p.icon}</Text>
                 </View>
                 <Text style={styles.principleTitle}>{p.title}</Text>
                 <Text style={styles.principleBody}>{p.body}</Text>
