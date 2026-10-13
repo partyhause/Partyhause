@@ -39,29 +39,33 @@ const LANDING_ARCHETYPES = [
     id: 'intimate',
     title: 'The Intimate Host',
     description: 'Small groups, personal touches, and conversations that matter.',
-    fill: COLORS.primary.main,
+    fill: COLORS.pastels.peach,
     icon: '💬',
+    textDark: true,
   },
   {
     id: 'curator',
     title: 'The Curator',
     description: 'Themes, playlists, and details that feel intentional.',
-    fill: COLORS.magenta.main,
+    fill: COLORS.pastels.lavender,
     icon: '🎨',
+    textDark: true,
   },
   {
     id: 'organizer',
     title: 'The Organizer',
     description: 'Guest lists, budgets, and timelines, all under control.',
-    fill: COLORS.teal[800],
+    fill: COLORS.pastels.teal,
     icon: '📋',
+    textDark: true,
   },
   {
     id: 'social',
     title: 'The Social Connector',
     description: 'Bringing people together who should know each other.',
-    fill: COLORS.periwinkle[500],
+    fill: COLORS.pastels.coral,
     icon: '🤝',
+    textDark: true,
   },
 ];
 
@@ -404,12 +408,12 @@ const styles = StyleSheet.create({
   archetypeTitle: {
     fontSize: TYPOGRAPHY.h4.fontSize,
     fontWeight: '700' as any,
-    color: COLORS.neutral[0],
+    color: COLORS.neutral[900],
     marginBottom: SPACING.sm,
   },
   archetypeBody: {
     fontSize: TYPOGRAPHY.small.fontSize,
-    color: COLORS.neutral[0],
+    color: COLORS.neutral[800],
     lineHeight: 20,
   },
   archetypeHighlight: {
