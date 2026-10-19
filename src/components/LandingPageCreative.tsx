@@ -34,7 +34,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/BrandMark';
-import { PastelCard } from '@/components/ui/PastelCard';
 
 import {
   ArrowRight,
@@ -254,7 +253,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
    */
   const goToAuth = (intent: LandingIntent) => {
     setMobileNavOpen(false);
-    navigate('/auth');
+    navigate(`/auth?intent=${encodeURIComponent(intent)}`);
     onStartAuth?.(intent);
   };
 
@@ -271,7 +270,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
   const activeArchetype = ARCHETYPES[selectedArchetype];
 
   return (
-    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-neutral-50">
+    <div ref={containerRef} className="relative min-h-screen overflow-x-hidden bg-cream-50">
       {/* ---------------------------------------------------------------- */}
       {/* Hero backdrop                                                     */}
       {/* ---------------------------------------------------------------- */}
@@ -324,7 +323,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* Navigation                                                        */}
       {/* ---------------------------------------------------------------- */}
       <motion.header
-        className="fixed top-0 z-50 w-full border-b border-white/10 bg-neutral-950/40 backdrop-blur-lg"
+        className="fixed top-0 z-50 w-full border-b border-cream-200 bg-cream-50/80 backdrop-blur-lg"
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -336,10 +335,10 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })}
-            className="flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+            className="flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
-            <BrandMark tone="onDark" size={32} />
-            <span className="text-xl font-bold tracking-tight text-white">PartyHause</span>
+            <BrandMark tone="onLight" size={32} />
+            <span className="text-xl font-bold tracking-tight text-neutral-900">PartyHause</span>
           </button>
 
           {/* Desktop */}
@@ -349,14 +348,14 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                 key={link.label}
                 type="button"
                 onClick={() => scrollToSection(link.id)}
-                className="rounded-md px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                className="rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-cream-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 {link.label}
               </button>
             ))}
             <Button
               size="sm"
-              className="ml-3 bg-white text-coral-700 hover:bg-white/90"
+              className="ml-3 bg-coral-700 text-white hover:bg-coral-800"
               onClick={() => goToAuth('explore_features')}
             >
               Sign in
@@ -368,7 +367,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
               wordmark and every destination was unreachable. */}
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-neutral-900 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 md:hidden"
             aria-expanded={mobileNavOpen}
             aria-controls="landing-mobile-nav"
             aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
@@ -384,7 +383,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-white/10 bg-neutral-950/90 backdrop-blur-lg md:hidden"
+            className="overflow-hidden border-t border-cream-200 bg-cream-50/95 backdrop-blur-lg md:hidden"
           >
             <div className="container mx-auto flex flex-col gap-1 px-6 py-4">
               {NAV_LINKS.map((link) => (
@@ -392,13 +391,13 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                   key={link.label}
                   type="button"
                   onClick={() => scrollToSection(link.id)}
-                  className="rounded-md px-3 py-3 text-left text-base font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500"
+                  className="rounded-md px-3 py-3 text-left text-base font-medium text-neutral-800 transition-colors hover:bg-cream-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500"
                 >
                   {link.label}
                 </button>
               ))}
               <Button
-                className="mt-2 w-full bg-white text-coral-700 hover:bg-white/90"
+                className="mt-2 w-full bg-coral-700 text-white hover:bg-coral-800"
                 onClick={() => goToAuth('explore_features')}
               >
                 Sign in
@@ -411,13 +410,15 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                              */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative z-10 flex min-h-screen items-center justify-center px-6 pt-24">
-        <div className="container mx-auto max-w-3xl text-center">
+      <section className="relative z-10 px-6 pt-24">
+        <div className="bg-coral-700 min-h-[38vh] -mx-6 mb-0"></div>
+        <div className="relative -mt-10 mx-auto max-w-5xl bg-cream-50 rounded-3xl px-6 pt-20 pb-24 shadow-lg">
+          <div className="text-center">
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70"
+            className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-600"
           >
             Plan. Party. Perfect.
           </motion.p>
@@ -437,10 +438,10 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.25 }}
-            className="mt-5 text-5xl font-bold leading-[1.05] tracking-tight text-white md:text-6xl lg:text-7xl"
+            className="mt-5 text-5xl font-bold leading-[1.05] tracking-tight text-neutral-900 md:text-6xl lg:text-7xl"
           >
             Throw the party.
-            <span className="block bg-gradient-to-r from-coral-400 to-magenta-400 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-coral-600 to-magenta-600 bg-clip-text text-transparent">
               Skip the admin.
             </span>
           </motion.h1>
@@ -449,7 +450,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.35 }}
-            className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/85 md:text-xl"
+            className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-neutral-700 md:text-xl"
           >
             Guest list, invites, RSVPs, running order and who owes what. PartyHause
             keeps all of it in one place so the night belongs to you too.
@@ -476,13 +477,19 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             <Button
               size="lg"
               variant="outline"
-              className="h-12 border-white/40 bg-white/5 px-8 text-base text-white hover:bg-white/15 hover:text-white"
+              className="h-12 border-neutral-300 bg-white px-8 text-base text-neutral-900 hover:bg-cream-100"
               onClick={() => goToAuth('join_event')}
             >
               <Ticket className="mr-2 h-5 w-5" />
               I have an invite
             </Button>
           </motion.div>
+
+          <div className="mt-12 flex justify-center">
+            <div className="h-32 w-48 rounded-3xl bg-cream-200 border border-dashed border-neutral-300 flex items-center justify-center text-neutral-500 text-sm">
+              Spot illustration
+            </div>
+          </div>
         </div>
 
         <motion.div
@@ -497,11 +504,12 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
             onClick={() => scrollToSection(SECTION_HOW)}
             animate={prefersReducedMotion ? undefined : { y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="rounded-full p-2 text-white/60 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            className="rounded-full p-2 text-neutral-600 transition-colors hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
             <ChevronDown className="h-6 w-6" />
           </motion.button>
         </motion.div>
+        </div>
       </section>
 
       {/* ---------------------------------------------------------------- */}
@@ -510,7 +518,7 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* ---------------------------------------------------------------- */}
       <div className="relative z-10 bg-neutral-50">
         {/* How it works */}
-        <section id={SECTION_HOW} className="scroll-mt-20 border-b border-neutral-200 bg-cream-50 py-20 md:py-24">
+        <section id={SECTION_HOW} className="scroll-mt-20 border-b border-cream-200 bg-cream-50 py-20 md:py-24">
           <div className="container mx-auto px-6">
             <SectionHeading
               lead="Hosting is a logistics problem"
@@ -520,8 +528,8 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
 
             <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
               {PRINCIPLES.map((principle, index) => {
-                const variants: Array<'lavender' | 'pink' | 'peach' | 'mint' | 'teal' | 'butter'> = ['lavender','pink','peach'];
-                const variant = variants[index % variants.length];
+                const colors = ['bg-coral-700','bg-magenta-700','bg-teal-800','bg-periwinkle-500'];
+                const color = colors[index % colors.length];
                 return (
                 <motion.div
                   key={principle.title}
@@ -531,13 +539,13 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                   transition={{ duration: 0.45, delay: index * 0.1 }}
                   viewport={{ once: true, amount: 0.3 }}
                 >
-                  <PastelCard variant={variant}>
-                    <div className="mb-5 pastel-icon-wrap">
+                  <div className={`rounded-3xl p-7 ${color} text-white shadow-sm`}>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
                       <principle.icon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-xl font-semibold text-neutral-900">{principle.title}</h3>
-                    <p className="mt-3 leading-relaxed text-neutral-600">{principle.body}</p>
-                  </PastelCard>
+                    <h3 className="text-xl font-semibold">{principle.title}</h3>
+                    <p className="mt-3 leading-relaxed text-white/90">{principle.body}</p>
+                  </div>
                 </motion.div>
               )})}
             </div>
@@ -557,8 +565,8 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
               <div className="grid gap-4 sm:grid-cols-2">
                 {ARCHETYPES.map((archetype, index) => {
                   const isSelected = selectedArchetype === index;
-                  const variants: Array<'lavender' | 'pink' | 'peach' | 'mint' | 'teal' | 'butter'> = ['lavender','pink','mint','teal'];
-                  const variant = variants[index % variants.length];
+                  const colors = ['bg-coral-700','bg-magenta-700','bg-teal-800','bg-periwinkle-500'];
+                  const color = colors[index % colors.length];
                   return (
                     <motion.div
                       key={archetype.id}
@@ -572,15 +580,15 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                         type="button"
                         aria-pressed={isSelected}
                         onClick={() => setSelectedArchetype(index)}
-                        className="text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pastel-lavender)] focus-visible:ring-offset-2"
+                        className={`text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-500 focus-visible:ring-offset-2 ${isSelected ? 'ring-2 ring-coral-500 rounded-3xl' : ''}`}
                       >
-                        <PastelCard variant={variant} className={isSelected ? 'ring-2 ring-[var(--pastel-lavender)]' : ''}>
-                          <div className="mb-5 pastel-icon-wrap">
+                        <div className={`rounded-3xl p-7 ${color} text-white shadow-sm`}>
+                          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
                             <archetype.icon className="h-6 w-6" strokeWidth={2} />
                           </div>
-                          <h3 className="text-xl font-semibold text-neutral-900">{archetype.title}</h3>
-                          <p className="mt-3 leading-relaxed text-neutral-600">{archetype.description}</p>
-                        </PastelCard>
+                          <h3 className="text-xl font-semibold">{archetype.title}</h3>
+                          <p className="mt-3 leading-relaxed text-white/90">{archetype.description}</p>
+                        </div>
                       </button>
                     </motion.div>
                   );
@@ -601,8 +609,8 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                 transition={{ duration: 0.3 }}
                 aria-live="polite"
               >
-                <PastelCard variant="lavender" className="mt-6 text-center">
-                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--pastel-dark-charcoal)]">
+                <div className="mt-6 text-center rounded-3xl bg-cream-100 p-8">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-neutral-700">
                     {activeArchetype.title}
                   </p>
                   <p className="mx-auto mt-3 max-w-xl text-lg leading-relaxed text-neutral-700">
@@ -610,13 +618,13 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
                   </p>
                   <Button
                     size="lg"
-                    className="mt-7 h-12 pastel-pill"
+                    className="mt-7 h-12 bg-coral-700 text-white hover:bg-coral-800"
                     onClick={() => goToAuth('create_event')}
                   >
                     Start with this setup
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </PastelCard>
+                </div>
               </motion.div>
             </div>
           </div>

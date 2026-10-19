@@ -59,9 +59,12 @@ export function PageShell({
   children,
 }: PageShellProps) {
   const width = MAX_WIDTH_CLASS[maxWidth];
+  const user = usePartyStore((s) => s.user);
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
+      <header className="border-b bg-cream-50 sticky top-0 z-10">
         <div className={`${width} mx-auto px-4 py-3`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0">
@@ -73,9 +76,15 @@ export function PageShell({
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-foreground truncate">{title}</h1>
                 {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+                {user && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">Hi, {user.name || user.email?.split('@')[0] || 'Guest'} · {dateLabel}</p>
+                )}
               </div>
             </div>
-            {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="hidden sm:inline text-xs text-muted-foreground">{dateLabel}</span>
+              {actions && <div className="flex items-center gap-2">{actions}</div>}
+            </div>
           </div>
           {headerBottom && <div className="mt-3">{headerBottom}</div>}
         </div>
