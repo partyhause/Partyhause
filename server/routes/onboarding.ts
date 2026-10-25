@@ -32,6 +32,8 @@ const ANSWER_SELECT = {
   autonomy_level: true,
   agentic_wants: true,
   biggest_pain: true,
+  event_interests: true,
+  marketing_opt_in: true,
   completed_at: true,
 } as const;
 
@@ -51,6 +53,8 @@ function serialiseAnswers(row: AnswerRow | null) {
     autonomy_level: facts.autonomy_level,
     agentic_wants: facts.agentic_wants,
     biggest_pain: facts.biggest_pain,
+    event_interests: facts.event_interests,
+    marketing_opt_in: facts.marketing_opt_in,
     completed_at: facts.completed_at ? facts.completed_at.toISOString() : null,
   };
 }

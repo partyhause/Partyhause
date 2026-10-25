@@ -58,6 +58,16 @@ const MIGRATIONS = [
     checksum: '1b718def5af89c98bff19240eaa0079b9231276e2ba86cadad45704b0d5455d4',
     file: path.join(REPOSITORY_ROOT, 'prisma/migrations/20260922000000_subscription_plan_values/migration.sql'),
   },
+  {
+    name: '20261014000000_rls_user_scoping',
+    checksum: '2c3e5edb151f28f83ee57a139a9bead111895f77773e8f3dcfc451c79212d717',
+    file: path.join(REPOSITORY_ROOT, 'prisma/migrations/20261014000000_rls_user_scoping/migration.sql'),
+  },
+  {
+    name: '20261022000000_onboarding_interests',
+    checksum: 'c6eab7e0ffe139a15a76b37c21eabb318eb8808984e350fa8af7f295e059add4',
+    file: path.join(REPOSITORY_ROOT, 'prisma/migrations/20261022000000_onboarding_interests/migration.sql'),
+  },
 ];
 
 // The checksums above are a guard, not bookkeeping: executableSql refuses to

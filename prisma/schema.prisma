@@ -163,14 +163,14 @@ model GameSession {
 // CORE EVENT MANAGEMENT
 // ============================================================================
 
-// Events table — built up across many migrations. Contains columns from the
+// Events table - built up across many migrations. Contains columns from the
 // initial schema (20250908), multi-day support (20250916), description
 // (20250917), template system (20251022), and template data (20251109).
 model Event {
   id                   String    @id @default(dbgenerated("gen_random_uuid()"))
   host_id              String // references auth.users(id) ON DELETE CASCADE
   name                 String
-  event_date           DateTime? // Legacy field — use start_date for new events
+  event_date           DateTime? // Legacy field - use start_date for new events
   location             String
   spotify_playlist_url String?
   active_game_id       String?
@@ -192,7 +192,7 @@ model Event {
   description String?
 
   // Template system columns (20251022, 20251108, 20251109)
-  template_type        String? // VARCHAR(100) — event template identifier
+  template_type        String? // VARCHAR(100) - event template identifier
   title                String? // VARCHAR(255)
   timezone             String?               @default("UTC") // VARCHAR(50)
   location_name        String? // VARCHAR(255)
@@ -262,7 +262,7 @@ model EventCoHost {
   @@map("event_co_hosts")
 }
 
-// Guests table — built up across initial schema, email tracking, template
+// Guests table - built up across initial schema, email tracking, template
 // phase 1, and guest/crew features migrations.
 model Guest {
   id                String    @id @default(dbgenerated("gen_random_uuid()"))
@@ -362,7 +362,7 @@ model TimelineBlock {
   label         String // VARCHAR(255) NOT NULL
   description   String?
   start_time    DateTime
-  duration      Int // minutes — NOT NULL
+  duration      Int // minutes - NOT NULL
   type          String // CHECK: IN ('activity', 'meal', 'speech', 'performance', 'break', 'custom')
   host_notes    String?
   guest_visible Boolean  @default(true)
@@ -493,7 +493,7 @@ model VendorTask {
   due_date     DateTime?
   completed    Boolean   @default(false)
   completed_at DateTime?
-  assigned_to  String? // references auth.users(id) — no ON DELETE clause
+  assigned_to  String? // references auth.users(id) - no ON DELETE clause
   created_at   DateTime  @default(now())
   updated_at   DateTime  @default(now()) @updatedAt
 
@@ -717,7 +717,7 @@ model UserProfile {
   // CHECK: username_normalized ~ '^[a-z0-9_]+$'
   // CHECK: username_normalized = lower(username)
 
-  // Relations — connections (follower/following)
+  // Relations - connections (follower/following)
   connections_following        Connection[]         @relation("ConnectionFollower")
   connections_followed         Connection[]         @relation("ConnectionFollowing")
   connection_requests_sent     ConnectionRequest[]  @relation("Requester")
@@ -1037,7 +1037,7 @@ model ContentInteraction {
 // POLLS & VOTING (20251107)
 // ============================================================================
 
-// Polls — the 20251107 migration drops and recreates polls/poll_options/
+// Polls - the 20251107 migration drops and recreates polls/poll_options/
 // poll_votes, replacing the earlier poll_votes table from the PartyCrew
 // social network migration.
 model Poll {
@@ -1082,7 +1082,7 @@ model PollOption {
   @@map("poll_options")
 }
 
-// Poll votes (20251107) — replaces the earlier PartyCrew poll_votes table
+// Poll votes (20251107) - replaces the earlier PartyCrew poll_votes table
 model PollVote {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   poll_id   String
@@ -1438,7 +1438,7 @@ model AccountDeletionRequest {
 }
 
 // ============================================================================
-// DATABASE RPC FUNCTIONS (documented — not managed by Prisma)
+// DATABASE RPC FUNCTIONS (documented - not managed by Prisma)
 // ============================================================================
 //
 // The following PostgreSQL functions are called as RPCs from the application
@@ -1499,10 +1499,10 @@ model AccountDeletionRequest {
 //     Source: 20260623_auto_create_user_profiles.sql
 //
 // ============================================================================
-// VIEWS (documented — not managed by Prisma)
+// VIEWS (documented - not managed by Prisma)
 // ============================================================================
 //
-// email_analytics — aggregated email delivery metrics per event.
+// email_analytics - aggregated email delivery metrics per event.
 //   Columns: event_id, event_name, total_emails_sent, delivered_count,
 //   opened_count, clicked_count, bounced_count, failed_count, delivery_rate,
 //   open_rate, click_rate.
@@ -1708,6 +1708,16 @@ model OnboardingResponse {
   /// Specific agentic capabilities requested.
   agentic_wants String[] @default([])
 
+  /// Event-type chips picked on the onboarding interests screen (Birthday,
+  /// Wedding, Corporate, ...). Free strings: the chip vocabulary is a product
+  /// decision that changes without a migration. Max 20 x 64 chars is enforced
+  /// by the zod contract, not the database.
+  event_interests String[] @default([])
+
+  /// The "Get tips and event inspiration" switch from the onboarding profile
+  /// screen. False is both the default and the absence of consent.
+  marketing_opt_in Boolean @default(false)
+
   /// One free-text answer. Kept short deliberately; this is a survey, not a
   /// support ticket.
   biggest_pain String?
@@ -1722,5 +1732,6 @@ model OnboardingResponse {
 
   @@index([completed_at])
   @@index([organizer_type])
+  @@index([event_interests], type: Gin)
   @@map("onboarding_responses")
 }
