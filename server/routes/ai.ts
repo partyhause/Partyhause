@@ -17,7 +17,7 @@ import { claimAiTurn, settleAiTurn } from '../lib/ai-quota';
 
 const router = Router();
 
-// Every request here can cost LLM tokens. Auth alone does not bound spend —
+// Every request here can cost LLM tokens. Auth alone does not bound spend -
 // one signed-in user in a loop would. 30 requests / 5 min per user keeps
 // interactive planning fluid (~1 turn / 10s) while capping worst-case burn.
 // Mounted AFTER requireAuth on each route so req.user is populated; keyed
@@ -39,7 +39,7 @@ const aiLimiter = rateLimit({
 const MAX_INPUT_CHARS = 8000;
 
 // ---------------------------------------------------------------------------
-// POST /api/ai/chat — multi-turn conversational event planner.
+// POST /api/ai/chat - multi-turn conversational event planner.
 // Body: { messages: Array<{ role: 'user' | 'assistant'; content: string }> }
 // (full history, last message from the user). Stateless per request.
 // Returns { reply, extracted, complete, source }.
@@ -49,7 +49,7 @@ router.post('/chat', requireAuth, aiLimiter, async (req: AuthenticatedRequest, r
     const messages = sanitizeMessages((req.body as { messages?: unknown })?.messages);
     if (!messages) {
       return res.status(400).json({
-        error: `Provide { messages: [{role, content}...] } — 1..${MAX_MESSAGES} entries, last one from the user`,
+        error: `Provide { messages: [{role, content}...] } - 1..${MAX_MESSAGES} entries, last one from the user`,
       });
     }
 

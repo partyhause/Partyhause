@@ -94,7 +94,14 @@ async function call(method, path, who, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   let json = null;
-  try { json = await res.json(); } catch { /* no body */ }
+  try {
+    json = await res.json();
+  } catch (error) {
+    // A non-JSON body (502 HTML, empty 204) is not a transport failure; the
+    // status code below is the actual assertion input. Log so a genuinely
+    // broken response cannot vanish silently.
+    console.warn(`[e2e] ${method} ${path} returned a non-JSON body: ${error.message}`);
+  }
   return { status: res.status, body: json };
 }
 

@@ -430,57 +430,59 @@ export default function AIEventAssistant({
 
       {/* Messages */}
       <PastelCard variant="lavender" className="flex-1 mb-4 overflow-hidden">
-        <div className="h-full p-4 overflow-auto" ref={scrollRef}>
-          <div className="space-y-4">
-            <AnimatePresence>
-              {messages.map((message) => (
+        <ScrollArea className="h-full">
+          <div className="p-4">
+            <div className="space-y-4">
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      message.role === 'assistant'
+                        ? 'bg-gradient-to-br from-orange-500 to-pink-500'
+                        : 'bg-gray-200'
+                    }`}>
+                      {message.role === 'assistant' ? (
+                        <Bot className="w-4 h-4 text-white" />
+                      ) : (
+                        <User className="w-4 h-4 text-gray-600" />
+                      )}
+                    </div>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-3 whitespace-pre-line ${
+                      message.role === 'assistant'
+                        ? 'bg-gray-100 text-gray-800 rounded-tl-none'
+                        : 'bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-tr-none'
+                    }`}>
+                      {message.content}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {isProcessing && (
                 <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex gap-3"
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.role === 'assistant' 
-                      ? 'bg-gradient-to-br from-orange-500 to-pink-500' 
-                      : 'bg-gray-200'
-                  }`}>
-                    {message.role === 'assistant' ? (
-                      <Bot className="w-4 h-4 text-white" />
-                    ) : (
-                      <User className="w-4 h-4 text-gray-600" />
-                    )}
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 whitespace-pre-line ${
-                    message.role === 'assistant'
-                      ? 'bg-gray-100 text-gray-800 rounded-tl-none'
-                      : 'bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-tr-none'
-                  }`}>
-                    {message.content}
+                  <div className="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-600">Thinking...</span>
                   </div>
                 </motion.div>
-              ))}
-            </AnimatePresence>
-            
-            {isProcessing && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex gap-3"
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm text-gray-600">Thinking...</span>
-                </div>
-              </motion.div>
-            )}
+              )}
+            </div>
           </div>
         </ScrollArea>
-      </Card>
+      </PastelCard>
 
       {/* A failed turn has to be visible. Without this the spinner simply stops
           and the user retypes the same message into the same failure. */}

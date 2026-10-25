@@ -43,7 +43,7 @@ router.get('/:id?', async (req: AuthenticatedRequest, res) => {
       }
 
       // RLS parity: an event is readable by public/host/co-host/invited
-      // guest. Anyone else gets 404 (indistinguishable from nonexistent —
+      // guest. Anyone else gets 404 (indistinguishable from nonexistent -
       // matches row-level invisibility).
       const access = await getEventAccess(id, userId, req.user?.email);
       if (!canReadEvent(access)) {
@@ -66,7 +66,7 @@ router.get('/:id?', async (req: AuthenticatedRequest, res) => {
 
       const stats = {
         total_guests: guests.length,
-        // 'confirmed' is legacy vocabulary for 'accepted' — count both.
+        // 'confirmed' is legacy vocabulary for 'accepted' - count both.
         guests_accepted: guests.filter(
           (g) => g.rsvp_status === 'accepted' || g.rsvp_status === 'confirmed',
         ).length,
@@ -188,7 +188,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
     } = req.body;
 
     // `title` is the template-era field; the classic creation form sends
-    // `name`. Accept either — they are the same business concept and both
+    // `name`. Accept either - they are the same business concept and both
     // columns are kept in sync.
     const eventName = title || name;
 
@@ -267,7 +267,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
 
     if (locationName) eventData.location_name = locationName;
     if (locationAddress) eventData.location_address = locationAddress;
-    // location_coordinates is a POINT column (Unsupported type) — skip coordinates
+    // location_coordinates is a POINT column (Unsupported type) - skip coordinates
     // as Prisma cannot write to Unsupported("point") fields directly.
 
     // Optional legacy/core columns the classic creation form sends.
@@ -349,7 +349,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
     const updateData: Record<string, unknown> = {};
 
     // `title` and `name` are the same business concept (template-era vs
-    // classic column) — keep both columns in sync whichever key arrives.
+    // classic column) - keep both columns in sync whichever key arrives.
     const newName = title !== undefined ? title : name;
     if (newName !== undefined) {
       updateData.title = newName;
@@ -432,7 +432,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
         if (location.name !== undefined) updateData.location_name = location.name;
         if (location.address !== undefined) updateData.location_address = location.address;
         updateData.location = location.address || location.name || '';
-        // location_coordinates is a POINT column (Unsupported type) — skip coordinates
+        // location_coordinates is a POINT column (Unsupported type) - skip coordinates
       }
     }
 

@@ -419,7 +419,12 @@ describe.skipIf(!built)('legal document cache boundary', () => {
 describe('browser RSVP route boundary', () => {
   it('ships only the token route and removes raw event and guest identifiers', () => {
     const app = fs.readFileSync(WEB_APP, 'utf8');
-    expect(app).toContain('<Route path="/join/:token"');
+    // The token route is a child of the `/join/*` parent route, so it must
+    // stay RELATIVE: inside a descendant <Routes> an absolute child path
+    // never matches (React Router matches the remaining pathname), and the
+    // shell silently rendered nothing. The invariant is "only the token
+    // shape reaches JoinEventPage" — not the spelling of the path.
+    expect(app).toContain('<Route path=":token" element={<JoinEventPage />} />');
     expect(app).not.toContain('/event/:eventId/guest/:guestId');
   });
 

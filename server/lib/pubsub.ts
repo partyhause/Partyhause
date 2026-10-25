@@ -1,4 +1,4 @@
-// server/lib/pubsub.ts — Azure Web PubSub broadcast helper.
+// server/lib/pubsub.ts - Azure Web PubSub broadcast helper.
 //
 // Provides `broadcastEvent(hubName, event, data)` which sends a message to all
 // connected clients on the given hub. Used by the API routes to notify the
@@ -8,7 +8,7 @@
 // `{ event, data }` over the NATIVE Web PubSub data plane. The frontend
 // (src/hooks/use-realtime.ts) connects with a plain WebSocket using the
 // `json.webpubsub.azure.v1` subprotocol and dispatches on `envelope.event`.
-// Do NOT pair this with socket.io-client — socket.io framing is a different
+// Do NOT pair this with socket.io-client - socket.io framing is a different
 // wire protocol and native sendToAll payloads never reach socket.io handlers.
 //
 // The connection string is read from the WEBPUBSUB_CONNECTION_STRING env var.
@@ -17,7 +17,7 @@
 
 import { WebPubSubServiceClient } from '@azure/web-pubsub';
 
-// Single source of truth for the hub name — negotiate and every broadcast
+// Single source of truth for the hub name - negotiate and every broadcast
 // must agree or clients listen on a hub nothing publishes to.
 export const HUB_NAME = process.env.WEBPUBSUB_HUB || 'partyhause';
 
@@ -32,7 +32,7 @@ function getClient(hubName: string): WebPubSubServiceClient | null {
     if (!warnedUnconfigured) {
       warnedUnconfigured = true;
       console.warn(
-        '[pubsub] WEBPUBSUB_CONNECTION_STRING not set — realtime broadcasts are disabled (clients fall back to polling).',
+        '[pubsub] WEBPUBSUB_CONNECTION_STRING not set - realtime broadcasts are disabled (clients fall back to polling).',
       );
     }
     return null;

@@ -1,4 +1,4 @@
-// server/routes/email-logs.ts — Email log CRUD for the frontend email tracking module.
+// server/routes/email-logs.ts - Email log CRUD for the frontend email tracking module.
 // Supports creating, updating, and querying email_logs via Prisma.
 
 import { Router } from 'express';
@@ -8,7 +8,7 @@ import { requireAuth, optionalAuth, type AuthenticatedRequest } from '../middlew
 const router = Router();
 
 /**
- * Email logs contain recipient PII — reads/writes scoped to an event must be
+ * Email logs contain recipient PII - reads/writes scoped to an event must be
  * performed by that event's host.
  */
 async function isEventHost(eventId: string, userId: string): Promise<boolean> {
@@ -19,7 +19,7 @@ async function isEventHost(eventId: string, userId: string): Promise<boolean> {
   return event?.host_id === userId;
 }
 
-// POST /api/email-logs — create an email log entry
+// POST /api/email-logs - create an email log entry
 router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const {
@@ -61,7 +61,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// PUT /api/email-logs/:id — update an email log (status, timestamps, resend_email_id)
+// PUT /api/email-logs/:id - update an email log (status, timestamps, resend_email_id)
 router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +101,7 @@ router.put('/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// GET /api/email-logs — list email logs (filter by eventId or guestId)
+// GET /api/email-logs - list email logs (filter by eventId or guestId)
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { eventId, guestId, limit } = req.query;
@@ -189,7 +189,7 @@ router.get('/analytics/event', requireAuth, async (req: AuthenticatedRequest, re
   }
 });
 
-// GET /api/email-logs/:id — get a single email log
+// GET /api/email-logs/:id - get a single email log
 router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;

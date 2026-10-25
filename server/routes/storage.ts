@@ -180,13 +180,13 @@ router.post(
 );
 
 /**
- * DELETE /api/storage/:blobName — deletes a blob.
+ * DELETE /api/storage/:blobName - deletes a blob.
  * The blobName may contain slashes (folder prefixes). It is URL-decoded by
  * Express automatically.
  */
 router.delete('/:blobName', async (req: AuthenticatedRequest, res) => {
   try {
-    // Express has already URL-decoded the param once — decoding again would
+    // Express has already URL-decoded the param once - decoding again would
     // corrupt names containing literal % sequences.
     const blobName = req.params.blobName;
     if (!blobName) {
@@ -194,7 +194,7 @@ router.delete('/:blobName', async (req: AuthenticatedRequest, res) => {
     }
 
     // Only the owner (user-namespace or legacy event-host convention) may
-    // delete a blob — previously ANY authenticated user could delete ANY
+    // delete a blob - previously ANY authenticated user could delete ANY
     // blob in the container.
     if (!(await callerOwnsBlob(blobName, req.user!.id))) {
       return res.status(403).json({ success: false, error: 'Not authorized to delete this blob' });
@@ -225,7 +225,7 @@ router.delete('/:blobName', async (req: AuthenticatedRequest, res) => {
 });
 
 /**
- * GET /api/storage/url/:blobName — returns a temporary (1 hour) SAS URL for a
+ * GET /api/storage/url/:blobName - returns a temporary (1 hour) SAS URL for a
  * blob. Useful for private containers; for the public `event-invites`
  * container the public URL is sufficient, but this endpoint is provided for
  * future private containers.

@@ -85,6 +85,10 @@ describe('journeyRoutes: the routes are named for what the screen does', () => {
 
   it('keeps /onboarding itself outside the step routes', () => {
     // The entry resolves; the steps render. If /onboarding ever became a
+    // step route too, the shell's guard would redirect to itself.
+    expect(Object.values(STEP_ROUTES)).not.toContain(ONBOARDING_ROUTE.home);
+  });
+});
 
 describe('journeyRoutes: the resume tables the entry resolver walks', () => {
   it('gives every server step an entry screen', () => {
@@ -126,9 +130,5 @@ describe('journeyRoutes: the resume tables the entry resolver walks', () => {
     // role screen and stopped before scale must be sent back to role —
     // the first of the segment — never straight to organizer-profile.
     expect(STEP_ENTRY_SCREENS.who_you_are).toBe(ONBOARDING_ROUTE.role);
-  });
-});
-    // step route too, the shell's guard would redirect to itself.
-    expect(Object.values(STEP_ROUTES)).not.toContain(ONBOARDING_ROUTE.home);
   });
 });

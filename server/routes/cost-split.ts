@@ -219,7 +219,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       },
     });
 
-    // Update guests table (scoped to this event — guest ids were validated
+    // Update guests table (scoped to this event - guest ids were validated
     // against the event's guest list above, updateMany keeps it defensive).
     await Promise.all(
       splits.map((split) =>

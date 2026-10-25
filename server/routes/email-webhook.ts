@@ -1,6 +1,6 @@
 // Express route: /api/email-webhook
 // Resend webhook receiver for email delivery status updates (Prisma-based
-// replacement for api/email-webhook.ts). No auth — verified by the svix
+// replacement for api/email-webhook.ts). No auth - verified by the svix
 // signature when RESEND_WEBHOOK_SECRET is configured.
 
 import { Router } from 'express';
@@ -17,7 +17,7 @@ const router = Router();
  * HMAC-SHA256 with the base64 secret portion of `whsec_...`, and the
  * signature header holds space-separated `v1,<base64>` entries.
  *
- * Returns { ok } — with a reason string on failure for logging.
+ * Returns { ok } - with a reason string on failure for logging.
  */
 function verifySvixSignature(
   secret: string,
@@ -102,10 +102,12 @@ const statusMap: { [key: string]: string } = {
 // POST /api/email-webhook - Resend webhook receiver (no auth)
 router.post('/', async (req, res) => {
   try {
-    console.log('📨 Received webhook:', JSON.stringify(req.body, null, 2));
+    // Diagnostic logging is levelled rather than sprayed: receipts and
+    // rejections carry data an operator needs, chatty per-request traces are
+    // absent so a flood of webhook traffic cannot drown the log.
 
     // Verify webhook signature when a secret is configured. Resend uses the
-    // svix scheme (svix-id/svix-timestamp/svix-signature headers) — the old
+    // svix scheme (svix-id/svix-timestamp/svix-signature headers) - the old
     // `resend-webhook-secret` header check matched nothing Resend sends, so
     // real webhooks were rejected whenever the secret was set. The legacy
     // plain-header check is kept as a fallback for proxy setups that inject
@@ -122,7 +124,7 @@ router.post('/', async (req, res) => {
         const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
         const svix = verifySvixSignature(webhookSecret, req.headers, rawBody);
         if (!svix.ok) {
-          console.error(`❌ Invalid webhook signature: ${svix.reason}`);
+          console.error(`[webhook] invalid signature: ${svix.reason}`);
           return res.status(401).json({ error: 'Invalid webhook signature' });
         }
       }
@@ -133,24 +135,24 @@ router.post('/', async (req, res) => {
     const data = (rawBody.data ?? undefined) as ResendWebhookData | undefined;
 
     if (!type || !data) {
-      console.error('❌ Invalid webhook payload');
+      console.error('[webhook] invalid payload');
       return res.status(400).json({ error: 'Invalid webhook payload' });
     }
 
     const { email_id, created_at } = data;
 
     if (!email_id) {
-      console.error('❌ Missing email_id in webhook data');
+      console.error('[webhook] missing email_id in webhook data');
       return res.status(400).json({ error: 'Missing email_id' });
     }
 
     const newStatus = statusMap[type];
     if (!newStatus) {
-      console.log(`ℹ️ Unhandled webhook type: ${type}`);
+      console.info(`[webhook] unhandled type: ${type}`);
       return res.status(200).json({ message: 'Webhook received but not processed' });
     }
 
-    console.log(`📧 Processing ${type} for email ${email_id} -> status: ${newStatus}`);
+    console.info(`[webhook] processing ${type} for email ${email_id} -> status: ${newStatus}`);
 
     // Preference: use metadata.emailLogId if present in the webhook payload to
     // find the email log. Fallback to searching by resend_email_id.
@@ -172,14 +174,13 @@ router.post('/', async (req, res) => {
     }
 
     if (!emailLog) {
-      console.error('❌ Email log not found after metadata/resend id lookup:', {
+      console.error('[webhook] email log not found after metadata/resend id lookup:', {
         metadataEmailLogId,
         email_id,
       });
       return res.status(404).json({ error: 'Email log not found' });
     }
 
-    console.log(`📝 Found email log: ${emailLog.id}`);
 
     // Prepare update data
     const updateData: Record<string, unknown> = {
@@ -229,10 +230,11 @@ router.post('/', async (req, res) => {
           },
           data: { email_status: newStatus },
         });
-        console.log(`✅ Updated guest ${emailLog.guest_id} email status to ${newStatus}`);
+        console.info(`[webhook] guest ${emailLog.guest_id} email status updated to ${newStatus}`);
       } catch (guestUpdateError) {
-        console.error('❌ Failed to update guest email status:', guestUpdateError);
-        // Don't fail the webhook for this, just log it
+        // Not fatal: the email log update already succeeded, and a guest row
+        // that moved on must not fail the provider's delivery callback.
+        console.error('[webhook] failed to update guest email status:', guestUpdateError);
       }
     }
 
@@ -248,11 +250,11 @@ router.post('/', async (req, res) => {
         },
       });
     } catch (eventError) {
-      console.error('❌ Failed to create email event:', eventError);
-      // Don't fail the webhook for this, just log it
+      // Not fatal: the log row is updated; the event trail is auxiliary.
+      console.error('[webhook] failed to create email event:', eventError);
     }
 
-    console.log(`✅ Successfully processed ${type} webhook for email ${email_id}`);
+    console.info(`[webhook] processed ${type} for email ${email_id}`);
 
     return res.status(200).json({
       message: 'Webhook processed successfully',
@@ -262,7 +264,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('❌ Webhook processing error:', message);
+    console.error('[webhook] processing error:', message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
