@@ -10,6 +10,7 @@ import { getJwtSecret } from '../lib/jwt-secret';
 import { hashInvitationToken } from '../lib/invitation-token';
 import { sendEmail } from '../lib/email';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../lib/legal';
+import { isUniqueViolationOn } from '../lib/db-errors';
 
 const router = Router();
 
@@ -152,19 +153,15 @@ export async function createSignupAccount(
   });
 }
 
-/** True when Prisma reports a unique conflict on the email field. */
-export function isDuplicateEmailError(error: unknown): boolean {
-  if (!error || typeof error !== 'object' || (error as { code?: unknown }).code !== 'P2002') {
-    return false;
-  }
-
-  const target = (error as { meta?: { target?: unknown } }).meta?.target;
-  if (target === undefined || target === null) {
-    return true;
-  }
-  const fields = Array.isArray(target) ? target : [target];
-  return fields.some((field) => String(field).toLowerCase().includes('email'));
-}
+/**
+ * True when Prisma reports a unique conflict on the email field.
+ *
+ * Re-exported from the shared helper so existing imports keep resolving;
+ * the target-less case counts, because signup touches a table whose only
+ * unique constraint an unattributed conflict can be on is the email.
+ */
+export const isDuplicateEmailError = (error: unknown): boolean =>
+  isUniqueViolationOn(error, 'email', true);
 
 /**
  * Mint a session token.
@@ -214,7 +211,7 @@ async function sendAuthEmail(to: string, subject: string, html: string): Promise
 
 /**
  * Development aid: print an auth link to the server log so flows work with
- * no email provider. NEVER runs in production — raw tokens in production
+ * no email provider. NEVER runs in production - raw tokens in production
  * logs would let anyone with log access take over the flow.
  */
 function logAuthLinkInDev(label: string, link: string): void {
@@ -460,7 +457,7 @@ router.post('/signup', credentialLimiter, async (req, res) => {
   }
 });
 
-// POST /api/auth/verify-email — completes the email-verification loop.
+// POST /api/auth/verify-email - completes the email-verification loop.
 // Unauthenticated by necessity (the user clicks a link from their inbox),
 // so every failure mode returns ONE uniform response: distinct unknown-email /
 // already-verified / expired / mismatch answers let anyone probe which
@@ -650,7 +647,7 @@ router.post('/forgot-password', credentialLimiter, async (req, res) => {
       return res.status(400).json({ error: 'A valid email is required' });
     }
 
-    // Uniform response whether or not the account exists — a distinct
+    // Uniform response whether or not the account exists - a distinct
     // "no account" answer lets anyone enumerate registered addresses.
     const uniformResponse = {
       success: true,
@@ -704,7 +701,7 @@ router.post('/reset-password', credentialLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Password must be between 8 and 128 characters' });
     }
 
-    // Uniform failure response — see /verify-email for the enumeration rationale.
+    // Uniform failure response - see /verify-email for the enumeration rationale.
     const RESET_FAILURE = { error: 'Invalid or expired reset link. Request a new one.' };
 
     const user = await findUserByEmail(normalizedEmail);

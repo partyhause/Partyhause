@@ -4,10 +4,10 @@
 
 import { Router } from 'express';
 import type { Response } from 'express';
-import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
+import { isUniqueViolation } from '../lib/db-errors';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =>
   try {
     const userId = req.user!.id;
     const type = (req.query.type as string) || 'following';
-    // Bounded pagination — these lists were previously unpaginated
+    // Bounded pagination - these lists were previously unpaginated
     // (a 50k-follower account returned 50k joined rows per call).
     const parsedLimit = parseInt((req.query.limit as string) || '100', 10);
     const limit = Math.min(Math.max(Number.isNaN(parsedLimit) ? 100 : parsedLimit, 1), 100);
@@ -135,7 +135,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
         return res.status(400).json({ error: 'Cannot follow yourself' });
       }
 
-      // Block check (either direction) — parity with the partycrew toggle.
+      // Block check (either direction) - parity with the partycrew toggle.
       const blockCheck = await prisma.userBlock.findFirst({
         where: {
           OR: [
@@ -210,7 +210,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
         });
         return res.status(201).json({ connection, message: 'Now following' });
       } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        if (isUniqueViolation(error)) {
           return res.status(400).json({ error: 'Already following' });
         }
         throw error;
@@ -236,7 +236,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       }
 
       // Create connection. A P2002 duplicate means the requester already
-      // follows (e.g. followed while the account was public) — treat as an
+      // follows (e.g. followed while the account was public) - treat as an
       // acceptance so the request cannot get stuck pending forever.
       let connection = null;
       try {
@@ -247,7 +247,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
           },
         });
       } catch (error) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')) {
+        if (!isUniqueViolation(error)) {
           throw error;
         }
         connection = await prisma.connection.findFirst({
@@ -272,7 +272,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
         return res.status(400).json({ error: 'connection_request_id required' });
       }
 
-      // Only pending requests can be declined — declining an accepted one
+      // Only pending requests can be declined - declining an accepted one
       // would flip its status while the connection row persisted.
       const declined = await prisma.connectionRequest.updateMany({
         where: {

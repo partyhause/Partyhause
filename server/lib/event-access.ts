@@ -1,4 +1,4 @@
-// server/lib/event-access.ts — event-scoped authorization helper.
+// server/lib/event-access.ts - event-scoped authorization helper.
 //
 // This module is the ground truth for event-scoped authorization. The rules
 // below were originally enforced by database row-level-security policies; they
@@ -123,7 +123,7 @@ export async function getEventAccess(
   };
 }
 
-/** RLS: SELECT on events — public, host, co-host, or invited guest. */
+/** RLS: SELECT on events - public, host, co-host, or invited guest. */
 export function canReadEvent(a: EventAccess): boolean {
   return a.exists && (a.isPublic || a.isHost || a.isCoHost || a.isGuest);
 }
@@ -154,38 +154,38 @@ function hasCoHostPermission(a: EventAccess, key: string): boolean {
   return false;
 }
 
-/** RLS: UPDATE on events — host, or co-host with can_edit. */
+/** RLS: UPDATE on events - host, or co-host with can_edit. */
 export function canEditEvent(a: EventAccess): boolean {
   if (!a.exists) return false;
   if (a.isHost) return true;
   return a.isCoHost && hasCoHostPermission(a, 'can_edit');
 }
 
-/** RLS: DELETE on events — host only. */
+/** RLS: DELETE on events - host only. */
 export function canDeleteEvent(a: EventAccess): boolean {
   return a.exists && a.isHost;
 }
 
-/** RLS: guests SELECT/UPDATE/DELETE — host or co-host. */
+/** RLS: guests SELECT/UPDATE/DELETE - host or co-host. */
 export function canManageGuests(a: EventAccess): boolean {
   return a.exists && (a.isHost || a.isCoHost);
 }
 
-/** RLS: guests INSERT — host, or co-host with can_invite. */
+/** RLS: guests INSERT - host, or co-host with can_invite. */
 export function canInviteGuests(a: EventAccess): boolean {
   if (!a.exists) return false;
   if (a.isHost) return true;
   return a.isCoHost && hasCoHostPermission(a, 'can_invite');
 }
 
-/** RLS: moderation — host, or co-host with can_moderate. */
+/** RLS: moderation - host, or co-host with can_moderate. */
 export function canModerate(a: EventAccess): boolean {
   if (!a.exists) return false;
   if (a.isHost) return true;
   return a.isCoHost && hasCoHostPermission(a, 'can_moderate');
 }
 
-/** RLS: timeline WRITE — host or co-host. */
+/** RLS: timeline WRITE - host or co-host. */
 export function canEditTimeline(a: EventAccess): boolean {
   return a.exists && (a.isHost || a.isCoHost);
 }
@@ -200,7 +200,7 @@ export function canEditTimeline(a: EventAccess): boolean {
 const ATTENDING_RSVP = new Set(['accepted', 'confirmed']);
 
 /**
- * RLS: polls READ/CREATE/VOTE — host, co-host, or a guest who accepted.
+ * RLS: polls READ/CREATE/VOTE - host, co-host, or a guest who accepted.
  *
  * This previously returned true for `isGuest` alone, so anyone on the guest
  * list counted as a participant regardless of their RSVP. Someone who had

@@ -7,6 +7,7 @@ import type { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
+import { isUniqueViolation } from '../lib/db-errors';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get('/members', requireAuth, async (req: AuthenticatedRequest, res: Respo
     // accounts' member lists whenever show_partycrew_list kept its default
     // `true`, and gave public accounts with the list hidden zero protection).
     if (targetUserId !== userId) {
-      // Gate 1: hidden member list — owner only, regardless of privacy.
+      // Gate 1: hidden member list - owner only, regardless of privacy.
       if (!targetProfile.show_partycrew_list) {
         return res.status(403).json({
           error: 'This member list is hidden',
@@ -48,7 +49,7 @@ router.get('/members', requireAuth, async (req: AuthenticatedRequest, res: Respo
         });
       }
 
-      // Gate 2: private account — followers only.
+      // Gate 2: private account - followers only.
       if (targetProfile.is_private) {
         const isFollowing = await prisma.connection.findFirst({
           where: { follower_id: userId, following_id: targetUserId },
@@ -130,7 +131,7 @@ router.get('/members', requireAuth, async (req: AuthenticatedRequest, res: Respo
     // Optionally get mutual crew count for each member.
     // Computed in two queries (viewer's following set + one grouped count)
     // instead of the previous per-member `get_mutual_crew_count(::uuid)` RPC
-    // loop — which was an N+1 AND type-incompatible with the prisma-pushed
+    // loop - which was an N+1 AND type-incompatible with the prisma-pushed
     // TEXT id columns. Semantics match the SQL INTERSECT definition:
     // |following(viewer) ∩ following(member)|.
     if (req.query.include_mutual_count === 'true' && members.length > 0) {
@@ -453,7 +454,7 @@ router.post('/toggle', requireAuth, async (req: AuthenticatedRequest, res: Respo
     }
 
     // Check for an existing request row of ANY status. Rejected/cancelled
-    // rows persist under the (requester_id, target_id) unique key — a bare
+    // rows persist under the (requester_id, target_id) unique key - a bare
     // create after one rejection used to throw P2002 → 500 forever.
     const existingRequest = await prisma.connectionRequest.findFirst({
       where: { requester_id: userId, target_id: creatorId },
@@ -513,12 +514,7 @@ router.post('/toggle', requireAuth, async (req: AuthenticatedRequest, res: Respo
         },
       });
     } catch (createError: unknown) {
-      if (
-        createError &&
-        typeof createError === 'object' &&
-        'code' in createError &&
-        (createError as { code: string }).code === 'P2002'
-      ) {
+      if (isUniqueViolation(createError)) {
         alreadyJoined = true;
       } else {
         throw createError;
@@ -539,7 +535,7 @@ router.post('/toggle', requireAuth, async (req: AuthenticatedRequest, res: Respo
         data: {
           user_id: creatorId,
           type: 'new_partycrew_member',
-          title: 'New PartyCrew Member! 🎉',
+          title: 'New PartyCrew Member',
           body: 'joined your PartyCrew',
           actor_id: userId,
         },
@@ -680,7 +676,7 @@ router.post('/requests', requireAuth, async (req: AuthenticatedRequest, res: Res
     }
 
     // Create the connection. P2002 means the connection already exists
-    // (e.g. requester followed while the account was public) — that is an
+    // (e.g. requester followed while the account was public) - that is an
     // acceptance, not an error: the request must still be marked accepted,
     // otherwise it stays pending in the inbox forever and every re-accept
     // fails the same way.
@@ -692,12 +688,7 @@ router.post('/requests', requireAuth, async (req: AuthenticatedRequest, res: Res
         },
       });
     } catch (error) {
-      const isDuplicate =
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        (error as { code: string }).code === 'P2002';
-      if (!isDuplicate) {
+      if (!isUniqueViolation(error)) {
         console.error('[Create Connection Error]:', error);
         return res.status(500).json({ error: 'Failed to create connection' });
       }
@@ -714,7 +705,7 @@ router.post('/requests', requireAuth, async (req: AuthenticatedRequest, res: Res
       data: {
         user_id: request.requester_id,
         type: 'connection_request',
-        title: 'Request Accepted! 🎉',
+        title: 'Request Accepted',
         body: 'accepted your PartyCrew request',
         actor_id: userId,
         action_data: { request_id: requestId },
@@ -768,7 +759,7 @@ router.delete('/requests', requireAuth, async (req: AuthenticatedRequest, res: R
     });
 
     // Optionally create notification if rejected (not cancelled).
-    // NOTE: `reason` is the rejecter's private note — it is deliberately NOT
+    // NOTE: `reason` is the rejecter's private note - it is deliberately NOT
     // copied into the requester-visible notification payload.
     if (isRejection && reason) {
       await prisma.notification.create({

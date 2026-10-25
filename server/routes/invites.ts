@@ -8,6 +8,7 @@ import type { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
+import { isUniqueViolation } from '../lib/db-errors';
 
 const router = Router();
 
@@ -125,7 +126,7 @@ router.post('/join', requireAuth, async (req: AuthenticatedRequest, res: Respons
     const event_id = tokenData.event_id;
     const token_type = tokenData.token_type;
 
-    // Check if user is already a guest — must happen BEFORE the usage
+    // Check if user is already a guest - must happen BEFORE the usage
     // increment so repeat scans are idempotent and free.
     const existingGuest = await prisma.guest.findFirst({
       where: {
@@ -274,7 +275,7 @@ router.post('/join', requireAuth, async (req: AuthenticatedRequest, res: Respons
     // and guests_event_id_user_id_key is what stops the loser writing a second
     // seat. That is the constraint doing its job, not a server fault, so the
     // loser is told what is true: they are already on the list.
-    if ((error as { code?: unknown })?.code === 'P2002') {
+    if (isUniqueViolation(error)) {
       return res.status(200).json({ message: 'Already joined this event' });
     }
     console.error('Join event error:', error);

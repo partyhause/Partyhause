@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@prisma/client';
 
 import { hashMvpRequest, mapMvpDatabaseError } from './mvp-command';
+import { isUniqueViolation } from './db-errors';
 import { MvpError, parseIdempotencyKey, type MvpHttpResponse, type MvpRsvpStatus } from './mvp-contract';
 import { AcsInvitationProvider, type InvitationProvider, type InvitationProviderResult } from './invitation-provider';
 import {
@@ -427,14 +428,8 @@ function resolveCommand(row: CommandRow, requestHash: string): CommandPreparatio
   return { kind: 'pending', commandId: row.id, payload: pendingPayload(row.request_payload) };
 }
 
-function errorCode(error: unknown): string {
-  if (!error || typeof error !== 'object') return '';
-  return String((error as { code?: unknown }).code ?? '');
-}
-
 function uniqueConflict(error: unknown): boolean {
-  const code = errorCode(error);
-  return code === 'P2002' || code === '23505';
+  return isUniqueViolation(error);
 }
 
 function safeMessageId(value: string | undefined): string | null {
