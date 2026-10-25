@@ -23,12 +23,19 @@ interface AuthScreenProps {
    * flow rather than failing the signup.
    */
   inviteToken?: string;
+  /**
+   * Why the caller is here: chosen on the landing screen and forwarded by
+   * the (auth)/auth route. Same vocabulary as the web client's userIntent
+   * (src/components/AuthScreen.tsx); only the copy differs, so the two
+   * clients agree on what each intent means.
+   */
+  intent?: 'create_event' | 'join_event' | 'explore_features';
 }
 
 /** Matches the server's rule (server/routes/auth.ts). */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: AuthScreenProps) => {
+export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken, intent = 'explore_features' }: AuthScreenProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -290,6 +297,33 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
     }
   };
 
+  /**
+   * Header copy per intent, mirroring the web client's getWelcomeMessage
+   * (src/components/AuthScreen.tsx). Wording is mobile-native but the
+   * meaning of each intent is identical, so a guest arriving from an
+   * invite link and a host arriving to create see the same promise on
+   * both clients.
+   */
+  const getWelcomeMessage = () => {
+    switch (intent) {
+      case 'create_event':
+        return {
+          title: isLogin ? 'Ready to plan your event?' : 'Start planning',
+          subtitle: isLogin ? 'Sign in to pick up where you left off' : 'Create your account and get your event moving',
+        };
+      case 'join_event':
+        return {
+          title: isLogin ? 'Welcome back!' : "You're invited!",
+          subtitle: isLogin ? 'Sign in to RSVP and see the details' : 'Create your account to RSVP and connect',
+        };
+      default:
+        return {
+          title: isLogin ? 'Welcome Back!' : 'Join PartyHause',
+          subtitle: isLogin ? 'Sign in to continue' : 'Create your account to get started',
+        };
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -304,12 +338,8 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
           <View style={styles.logoIcon}>
             <Image source={require('../../assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
-          <Text style={styles.title}>
-            {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isLogin ? 'Sign in to continue' : 'Create your account to get started'}
-          </Text>
+          <Text style={styles.title}>{getWelcomeMessage().title}</Text>
+          <Text style={styles.subtitle}>{getWelcomeMessage().subtitle}</Text>
         </View>
 
         <View style={styles.form}>

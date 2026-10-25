@@ -72,9 +72,18 @@ const LANDING_ARCHETYPES = [
   },
 ];
 
+/**
+ * Why the caller is here, shared with the web landing and AuthScreen. The
+ * auth screen renders intent-specific copy, and the landing is where the
+ * intent is chosen: "Create your event" is a create intent, "I have an
+ * invite" is a join intent. Same vocabulary as
+ * src/components/LandingPageCreative.tsx so the two clients cannot drift.
+ */
+export type LandingIntent = 'create_event' | 'join_event' | 'explore_features';
+
 export interface LandingScreenProps {
-  onGetStarted: () => void;
-  onSignIn: () => void;
+  onGetStarted: (intent: LandingIntent) => void;
+  onSignIn: (intent: LandingIntent) => void;
 }
 
 const SECTION_HEADING = {
@@ -113,10 +122,10 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
               Guest list, invites, RSVPs, running order and who owes what. PartyHause keeps all of it in one place so the night belongs to you too.
             </Text>
             <View style={styles.heroActions}>
-              <TouchableOpacity style={styles.primaryButton} onPress={onGetStarted}>
+              <TouchableOpacity style={styles.primaryButton} onPress={() => onGetStarted('create_event')}>
                 <Text style={styles.primaryButtonText}>Create your event</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton} onPress={onSignIn}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => onSignIn('join_event')}>
                 <Text style={styles.secondaryButtonText}>I have an invite</Text>
               </TouchableOpacity>
             </View>
@@ -185,8 +194,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
           <View style={styles.ctaIconWrap}>
             <Text style={styles.ctaIcon}>🎉</Text>
           </View>
-          <Text style={styles.ctaTitle}>Ready to throw something unforgettable?</Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={onGetStarted}>
+          <TouchableOpacity style={styles.ctaButton} onPress={() => onGetStarted('create_event')}>
             <Text style={styles.ctaButtonText}>Start your event</Text>
           </TouchableOpacity>
         </View>
