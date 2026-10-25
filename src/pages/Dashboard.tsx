@@ -1,12 +1,13 @@
 import { usePartyStore } from '@/store/usePartyStore';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Users, BarChart2, Sparkles, QrCode, Search, Ticket, Star, MapPin, ArrowRight } from 'lucide-react';
+import { Plus, Calendar, Users, BarChart2, Sparkles, QrCode, Search, Ticket, Star, ArrowRight } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageShell, UserMenu } from '@/components/layout/PageShell';
 import { PastelCard } from '@/components/ui/PastelCard';
 import { BrandLockup } from '@/components/BrandMark';
-import { format } from 'date-fns';
+import { JourneySetupCard } from '@/features/onboarding/JourneySetupCard';
 
 export default function Dashboard() {
   const user = usePartyStore((s) => s.user);
@@ -46,6 +47,10 @@ export default function Dashboard() {
           </Button>
         )}
       </div>
+
+      {/* The journey is offered, never forced — see JourneySetupCard for why
+          the web does not hard-gate the way the mobile client does. */}
+      <JourneySetupCard />
 
       {isCreator ? (
         <>

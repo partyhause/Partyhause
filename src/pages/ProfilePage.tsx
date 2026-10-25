@@ -30,6 +30,8 @@ import {
 import { getStoredUser } from '@/lib/auth-storage';
 import { usePartyStore } from '@/store/usePartyStore';
 import { useAuth } from '@/hooks/use-auth';
+import { useOnboardingState } from '@/hooks/use-onboarding';
+import { Badge } from '@/components/ui/badge';
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -47,6 +49,16 @@ export default function ProfilePage() {
   // navigation.
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // The username picker's state, for the own-profile view only. This is the
+  // same server answer the onboarding gate and Settings render from, so the
+  // three surfaces cannot disagree about whether a handle was chosen. For
+  // another viewer's profile it stays unrendered: `username_is_generated`
+  // is the owner's business, shown to the owner.
+  const { state: onboardingState } = useOnboardingState();
+
+  // Hydrate the owner id once on mount. `isOwnProfile` derives from it, and
+  // it must not recompute on every parent re-render for a value that cannot
+  // change without a navigation.
   useEffect(() => {
     setCurrentUserId(getStoredUser()?.id ?? null);
   }, []);
@@ -162,8 +174,34 @@ export default function ProfilePage() {
         <div className="space-y-3 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-foreground">{profile.display_name}</h2>
-            <p className="text-muted-foreground">@{profile.username}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-muted-foreground">@{profile.username}</p>
+              {isOwnProfile && onboardingState?.username_is_generated ? (
+                <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
+                  assigned automatically
+                </Badge>
+              ) : null}
+            </div>
           </div>
+
+          {isOwnProfile && onboardingState?.username_is_generated ? (
+            <Card className="border-orange-200 bg-orange-50/50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    This handle was assigned to you, not chosen
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Claim a name your guests will recognise. People find and tag you by it.
+                  </p>
+                </div>
+                <Button onClick={handleEditProfile} size="sm" className="flex-shrink-0">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Claim username
+                </Button>
+              </div>
+            </Card>
+          ) : null}
 
           {profile.bio && (
             <p className="text-foreground whitespace-pre-wrap">{profile.bio}</p>
