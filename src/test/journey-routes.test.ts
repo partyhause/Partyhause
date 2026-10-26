@@ -23,6 +23,7 @@ import {
   INTERSTITIALS_BEFORE_STEP,
   JOURNEY_SEQUENCE,
   ONBOARDING_ROUTE,
+  STEP_CLOSING_SCREENS,
   STEP_ENTRY_SCREENS,
   STEP_LABELS,
   STEP_ROUTES,
@@ -112,8 +113,9 @@ describe('journeyRoutes: the resume tables the entry resolver walks', () => {
     for (const step of SERVER_STEPS) {
       const interstitials = INTERSTITIALS_BEFORE_STEP[step];
       if (interstitials.length === 0) continue;
-      // The step's own screen closes the segment: [interstitials..., step].
-      const segment = [...interstitials, STEP_ROUTES[step]];
+      // The step's segment is [interstitials..., closing screen]: the
+      // closer collects the answers, the interstitials introduce them.
+      const segment = [...interstitials, STEP_CLOSING_SCREENS[step]];
       const positions = segment.map((route) => JOURNEY_SEQUENCE.indexOf(route));
       for (let i = 1; i < positions.length; i++) {
         expect(

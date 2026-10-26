@@ -118,6 +118,25 @@ export const INTERSTITIALS_BEFORE_STEP: Record<FunnelStepId, readonly string[]> 
 };
 
 /**
+ * The screen that completes each server step's segment — the step's own
+ * screen when its answers begin there, the LAST introducing screen when they
+ * do not. who_you_are is the only split segment today: role and interests
+ * introduce it, organizer-profile collects its answers, so the segment is
+ * [role, interests, organizerProfile] and the closer is organizerProfile.
+ *
+ * Where a step's segment ENDS matters to the progress rail and to the
+ * journey-order invariant; where it BEGINS is STEP_ENTRY_SCREENS. Both are
+ * resume questions and both tables change with INTERSTITIALS_BEFORE_STEP.
+ */
+export const STEP_CLOSING_SCREENS: Record<FunnelStepId, string> = {
+  chat: ONBOARDING_ROUTE.plannerChat,
+  who_you_are: ONBOARDING_ROUTE.organizerProfile,
+  ai_lifecycle: ONBOARDING_ROUTE.aiWorkflow,
+  paywall: ONBOARDING_ROUTE.plan,
+  autonomy: ONBOARDING_ROUTE.assistantAutonomy,
+};
+
+/**
  * The label each step carries on the progress rail and the dashboard card.
  * Same vocabulary the screens use in their headings, so the rail never
  * introduces a second name for the same thing.
