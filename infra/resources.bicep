@@ -313,32 +313,38 @@ resource openaiDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024
 // static bundle during `npm run build:web`. They are passed as --build-arg
 // to `az acr build` (scripts/deploy-full.sh), NOT as runtime env vars here.
 // VITE_API_URL is passed EMPTY so the bundle calls /api/* same-origin.
-module app 'modules/container-app.bicep' = {
-  name: 'app'
+
+// Web Container App (frontend only) — serves Vite PWA on port 80
+module webApp 'modules/container-app.bicep' = {
+  name: 'webApp'
   params: {
-    // Literal name, not suffixed: the cutover scripts (deploy-full.sh,
-    // bind-azure-custom-domains.sh) and the runbooks address this app by this
-    // exact name. A suffixed name here is what made Bicep and the scripts
-    // disagree about which app to deploy to.
-    appName: 'ca-app-partyhause-combined'
+    appName: 'ca-web-partyhause-k2xoe7s452aja'
     location: location
     environmentId: cae.id
     acrLoginServer: acr.properties.loginServer
     acrId: acr.id
-    image: '${acr.properties.loginServer}/partyhause-combined:latest'
+    image: '${acr.properties.loginServer}/partyhause-frontend:latest'
     targetPort: 80
+    envVars: []
+    secrets: []
+  }
+}
+
+// API Container App (backend only) — Express on port 3001
+module apiApp 'modules/container-app.bicep' = {
+  name: 'apiApp'
+  params: {
+    appName: 'ca-api-partyhause-k2xoe7s452aja'
+    location: location
+    environmentId: cae.id
+    acrLoginServer: acr.properties.loginServer
+    acrId: acr.id
+    image: '${acr.properties.loginServer}/partyhause-api:latest'
+    targetPort: 3001
     envVars: [
       { name: 'NODE_ENV', value: 'production' }
       { name: 'PORT', value: '3001' }
-      // Both custom hostnames plus the app FQDN. Same-origin /api calls carry
-      // no CORS preflight, but the value is kept so a browser pointing at the
-      // raw FQDN is not refused; dropping it would make the app unusable from
-      // the only URL that is guaranteed to exist. The FQDN is built from the
-      // environment's default domain, not from the region: the Container Apps
-      // FQDN suffix (orangecliff-6cf481f7) is per-environment, and
-      // interpolating the region here produced a hostname that never existed.
-      // Comma-separated: server/index.ts splits on comma.
-      { name: 'CORS_ALLOWED_ORIGINS', value: 'https://${publicDomain},https://www.${publicDomain},https://ca-app-partyhause-combined.${cae.properties.defaultDomain}' }
+      { name: 'CORS_ALLOWED_ORIGINS', value: 'https://${publicDomain},https://www.${publicDomain},https://${webApp.outputs.fqdn}' }
       { name: 'POSTGRES_HOST', value: postgres.outputs.serverFqdn }
       { name: 'POSTGRES_PORT', value: '5432' }
       { name: 'POSTGRES_DB', value: postgresDbName }
@@ -353,79 +359,41 @@ module app 'modules/container-app.bicep' = {
       { name: 'WEBPUBSUB_CONNECTION_STRING', secretRef: 'webpubsub-connection-string' }
       { name: 'JWT_SECRET', secretRef: 'jwt-secret' }
       { name: 'INVITATION_TOKEN_SECRET', secretRef: 'invitation-token-secret' }
-      { name: 'ENTRA_TENANT_ID', value: entraTenantId }
-      { name: 'ENTRA_API_CLIENT_ID', value: entraApiClientId }
-      // Conditional twin of the secrets-array entry above: an env var may not
-      // reference a secret that was not declared.
-      ...(empty(entraApiClientSecret) ? [] : [{ name: 'ENTRA_API_CLIENT_SECRET', secretRef: 'entra-api-client-secret' }])
+      { name: 'ENTRA_API_CLIENT_SECRET', secretRef: 'entra-api-client-secret' }
       { name: 'ENTRA_POLICY', value: entraSignUpSignInPolicy }
-      // Azure Communication Services is the active email transport.
       { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-string' }
-      // Sender address. Until partyhause.uk is DNS-verified this resolves to
-      // the Azure-managed domain, which sends immediately with no DNS setup.
-      { name: 'ACS_SENDER_ADDRESS', value: linkCustomEmailDomain
-          ? 'noreply@${emailCustomDomain}'
-          : 'DoNotReply@${azureManagedDomain.properties.mailFromSenderDomain}' }
+      { name: 'ACS_SENDER_ADDRESS', value: linkCustomEmailDomain ? 'noreply@${emailCustomDomain}' : 'DoNotReply@${azureManagedDomain.properties.mailFromSenderDomain}' }
       { name: 'ACS_SENDER_DISPLAY_NAME', value: 'PartyHause' }
-      // Resend retained as an explicit fallback while the ACS custom domain is
-      // pending verification. The code prefers ACS when both are present.
       { name: 'RESEND_API_KEY', secretRef: 'resend-api-key' }
       { name: 'RESEND_FROM_EMAIL', value: RESEND_FROM_EMAIL }
       { name: 'RESEND_FROM_NAME', value: 'PartyHause' }
       { name: 'AZURE_OPENAI_ENDPOINT', value: openai.properties.endpoint }
       { name: 'AZURE_OPENAI_DEPLOYMENT', value: openaiDeployment.name }
       { name: 'AZURE_OPENAI_API_KEY', secretRef: 'azure-openai-api-key' }
-      // Must support the gpt-5 family + max_completion_tokens; without it the
-      // code's fallback default applies, but pinning here keeps infra explicit.
-      // Newest GA version — previews get retired on short notice.
       { name: 'AZURE_OPENAI_API_VERSION', value: '2024-10-21' }
-      // Base URL for links embedded in verification / password-reset emails.
-      // Without it the API defaults to http://localhost:5173.
-      // Canonical public domain, not the container FQDN: this string is what
-      // recipients see in invitation, verification and password-reset links.
       { name: 'VITE_APP_URL', value: 'https://${publicDomain}' }
-      // Stripe billing. Empty until billing is enabled (see the param block);
-      // the server fails closed and explicit when they are unset.
       { name: 'STRIPE_SECRET_KEY', value: stripeSecretKey }
       { name: 'STRIPE_WEBHOOK_SECRET', value: stripeWebhookSecret }
       { name: 'STRIPE_PRICE_CREATOR', value: stripePriceCreator }
       { name: 'STRIPE_PRICE_VENDOR', value: stripePriceVendor }
     ]
     secrets: [
-      // Every secret is a Key Vault reference resolved at run time by the
-      // Container Apps service through the app's system-assigned identity.
-      // The vault URI is built from the suffix parameter rather than
-      // keyVault.outputs so this module does not depend on the vault: the
-      // vault cannot also depend on the app (the app identity's access
-      // policy would need the app's principalId, which is a cycle). The
-      // identity's policy is granted out-of-band, like AcrPull:
-      //   az keyvault set-policy -n kvph<suffix> \
-      //     --object-id <api-app-principalId> --secret-permissions get list
-      // A fresh environment will not be able to resolve secrets until that
-      // runs, the same shape as the AcrPull gap.
-      { name: 'postgres-password', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/postgres-password', identity: 'system' }
-      { name: 'database-url', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/database-url', identity: 'system' }
-      { name: 'storage-conn-str', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/storage-conn-str', identity: 'system' }
-      { name: 'webpubsub-connection-string', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/webpubsub-connection-string', identity: 'system' }
-      { name: 'acs-connection-string', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/acs-connection-string', identity: 'system' }
-      { name: 'jwt-secret', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/jwt-secret', identity: 'system' }
-      { name: 'invitation-token-secret', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/invitation-token-secret', identity: 'system' }
-      { name: 'resend-api-key', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/resend-api-key', identity: 'system' }
-      { name: 'azure-openai-api-key', keyVaultUrl: 'https://kvph${suffix}.vault.azure.net/secrets/azure-openai-api-key', identity: 'system' }
-      // Entra is bundled but inert (no JWKS validation, no call sites), so
-      // this stays a parameter passthrough rather than a vault reference:
-      // the vault holds no entra secret and a reference to one that does not
-      // exist would fail every revision deploy. An EMPTY value also fails
-      // preflight ("value or keyVaultUrl and identity should be provided"),
-      // so the secret is declared only when a real value was supplied.
-      ...(empty(entraApiClientSecret) ? [] : [{ name: 'entra-api-client-secret', value: entraApiClientSecret }])
+      { name: 'postgres-password', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/postgres-password' }
+      { name: 'database-url', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/database-url' }
+      { name: 'storage-conn-str', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/storage-connection-string' }
+      { name: 'webpubsub-connection-string', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/webpubsub-connection-string' }
+      { name: 'jwt-secret', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/jwt-secret' }
+      { name: 'invitation-token-secret', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/invitation-token-secret' }
+      { name: 'entra-api-client-secret', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/entra-api-client-secret' }
+      { name: 'acs-connection-string', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/acs-connection-string' }
+      { name: 'resend-api-key', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/resend-api-key' }
+      { name: 'azure-openai-api-key', keyVaultUrl: 'https://${keyVault.outputs.name}.vault.azure.net/secrets/azure-openai-api-key' }
     ]
   }
 }
-
 // ===== Outputs =====
-output webUrl string = 'https://ca-app-partyhause-combined.${cae.properties.defaultDomain}'
-output apiUrl string = 'https://ca-app-partyhause-combined.${cae.properties.defaultDomain}'
+output webUrl string = 'https://${webApp.outputs.fqdn}'
+output apiUrl string = 'https://${apiApp.outputs.fqdn}'
 output acrLoginServer string = acr.properties.loginServer
 output acrName string = acr.name
 output postgresFqdn string = postgres.outputs.serverFqdn

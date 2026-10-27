@@ -21,18 +21,20 @@ env:
   AZURE_RESOURCE_GROUP: rg-partyhause-prod
   ACR_NAME: acrpartyhausek2xoe7s452aja
   ACR_LOGIN_SERVER: acrpartyhausek2xoe7s452aja.azurecr.io
-  # Single combined app: nginx serves the PWA and proxies /api/* to the
-  # Express sidecar on localhost:3001 (Dockerfile.combined). One revision
-  # update moves both tiers; VITE_API_URL is baked EMPTY for same-origin.
-  APP_NAME: ca-app-partyhause-combined
-  APP_FQDN: ca-app-partyhause-combined.orangecliff-6cf481f7.eastus2.azurecontainerapps.io
+  # Two apps: web (frontend) and api (backend). Frontend builds against the
+  # backend public FQDN, backend CORS allows the frontend origin.
+  WEB_APP_NAME: ca-web-partyhause-k2xoe7s452aja
+  API_APP_NAME: ca-api-partyhause-k2xoe7s452aja
+  WEB_APP_FQDN: ca-web-partyhause-k2xoe7s452aja.orangecliff-6cf481f7.eastus2.azurecontainerapps.io
+  API_APP_FQDN: ca-api-partyhause-k2xoe7s452aja.orangecliff-6cf481f7.eastus2.azurecontainerapps.io
   # The app is reached at the custom domain now that partyhause.uk is bound
   # with a managed certificate. This value is baked into the bundle as
   # VITE_APP_URL, so it is the origin the app reports for itself and the one
   # used to build absolute links; the container FQDN would leak into shared
   # URLs.
-  WEB_PUBLIC_URL: https://partyhause.uk
-  NODE_VERSION: '22.22.0'
+  # The web bundle is built with VITE_API_URL pointing at the API FQDN so
+  # the browser makes cross-origin requests. CORS_ALLOWED_ORIGINS on the API
+  # is set via Bicep to allow the web app and partyhause.uk.
   # Short SHA used to tag images for traceability (also tagged :latest).
   IMAGE_TAG: ${{ github.sha }}
 
@@ -224,44 +226,50 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build & Push Combined Image to ACR (web + API, one origin)
-        # Vite inlines VITE_* vars at build time, so they MUST be passed as
-        # build args here. VITE_API_URL is EMPTY: nginx proxies /api/* to the
-        # Express sidecar, and the browser sends same-origin relative requests
-        # (src/lib/apiBase.ts). Omit the VITE_ENTRA_* args: Entra is bundled
-        # but inert, and setting them before JWKS validation exists breaks auth.
-        # We tag with both :latest and :<sha> for traceability.
-        # Using `az acr build` directly for reliable --build-arg support.
+      - name: Build & Push Frontend Image to ACR
         run: |
           az acr build \
             --registry ${{ env.ACR_NAME }} \
-            --image partyhause-combined:latest \
-            --image partyhause-combined:${{ env.IMAGE_TAG }} \
-            --file Dockerfile.combined \
-            --build-arg VITE_API_URL="" \
+            --image partyhause-frontend:latest \
+            --image partyhause-frontend:${{ env.IMAGE_TAG }} \
+            --file Dockerfile.frontend \
+            --build-arg VITE_API_URL="https://${{ env.API_APP_FQDN }}" \
             --build-arg VITE_APP_NAME="PartyHause" \
             --build-arg VITE_APP_URL="${{ env.WEB_PUBLIC_URL }}" \
             .
 
-      - name: Update Combined Container App
-        # Deploys the SHA-tagged image. One revision update moves both tiers:
-        # nginx serves the static bundle on port 80 and proxies /api/* to the
-        # sidecar. Secrets and env vars come from Bicep provisioning, the
-        # single source of truth — nothing inline here.
+      - name: Build & Push API Image to ACR
+        run: |
+          az acr build \
+            --registry ${{ env.ACR_NAME }} \
+            --image partyhause-api:latest \
+            --image partyhause-api:${{ env.IMAGE_TAG }} \
+            --file Dockerfile.backend \
+            .
+
+      - name: Update Frontend Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ env.APP_NAME }}
-          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/partyhause-combined:${{ env.IMAGE_TAG }}
+          containerAppName: ${{ env.WEB_APP_NAME }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/partyhause-frontend:${{ env.IMAGE_TAG }}
           targetPort: 80
           ingress: external
 
+      - name: Update API Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ env.API_APP_NAME }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/partyhause-api:${{ env.IMAGE_TAG }}
+          targetPort: 3001
+          ingress: external
       - name: Health check (API)
         # Poll the API through the combined app's /api proxy and fail the
         # workflow if it does not return 200 within ~2 minutes.
         run: |
           set -euo pipefail
-          URL="https://${{ env.APP_FQDN }}/api/health"
+          URL="https://${{ env.API_APP_FQDN }}/api/health"
           echo "Polling $URL ..."
           for i in $(seq 1 24); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")
@@ -285,7 +293,7 @@ jobs:
           # revision we just deployed is serving. Going through the custom
           # domain would also exercise DNS and the managed certificate, so a
           # failure there would be ambiguous about what actually broke.
-          URL="https://${{ env.APP_FQDN }}/"
+          URL="https://${{ env.WEB_APP_FQDN }}/"
           echo "Polling $URL ..."
           for i in $(seq 1 24); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL" || echo "000")
@@ -306,6 +314,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Image tag**: \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **App (combined)**: https://${{ env.APP_FQDN }}/" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web app**: https://${{ env.WEB_APP_FQDN }}/" >> $GITHUB_STEP_SUMMARY
+          echo "- **API app**: https://${{ env.API_APP_FQDN }}/" >> $GITHUB_STEP_SUMMARY
           echo "- **Web PWA**: ${{ env.WEB_PUBLIC_URL }}/" >> $GITHUB_STEP_SUMMARY
-          echo "- **API health**: \`https://${{ env.APP_FQDN }}/api/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API health**: \`https://${{ env.API_APP_FQDN }}/api/health\`" >> $GITHUB_STEP_SUMMARY
