@@ -1,17 +1,33 @@
 # PartyHause local dev stack: Postgres + Mailpit + API + web.
 #
-#   docker compose up --build
+#   docker compose up --build                 (dev stack: Vite web on 5173)
+#   npm run web:container                     (web served by nginx, port 8080)
 #
-#   web      http://localhost:5173   (proxies /api to the api service)
-#   api      http://localhost:3001/api/health
-#   mail UI  http://localhost:8025   (Mailpit; every dev email lands here)
-#   db       localhost:5433          (host 5433, so it cannot clash with a local
-#                                    Postgres already on 5432)
+#   web (dev)      http://localhost:5173   (Vite dev server, proxies /api)
+#   web (container) http://localhost:8080  (nginx serving the built bundle;
+#                                            /api proxied to the API through
+#                                            the shared network namespace)
+#   api            http://localhost:3001/api/health
+#   mail UI        http://localhost:8025   (Mailpit; every dev email lands here)
+#   db             localhost:5433          (host 5433, so it cannot clash with a local
+#                                           Postgres already on 5432)
 #
 # The API runs prisma generate + migrate deploy before starting, so a fresh db
 # is migrated on first boot. JWT_SECRET, INVITATION_TOKEN_SECRET and AUTH_BYPASS
 # are dev-defaulted by server/dev-api.ts, which is what `npm run dev:api` runs.
-
+#
+# WEB-CONTAINER PROFILE
+#   The `web` service here is the Vite dev server. The containerized frontend
+#   (`web-container`) is behind a compose profile so `docker compose up` keeps
+#   its meaning for everyday development; `npm run web:container` opts in and
+#   serves the same production bundle shape the deployed image serves.
+#
+#   web-container shares the api service's network namespace
+#   (network_mode: "service:api"), which is the compose spelling of the
+#   combined image's sidecar: nginx.conf's pinned proxy_pass
+#   http://localhost:3001 reaches the dev API unmodified. Ports are declared
+#   on the netns owner, so the 8080:80 mapping lives on `api` — comment it
+#   out to keep the dev stack's published ports exactly as before.
 services:
   db:
     image: postgres:15-alpine

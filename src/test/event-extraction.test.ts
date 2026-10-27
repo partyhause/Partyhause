@@ -137,6 +137,39 @@ describe('LLM layer', () => {
     );
   });
 
+  it('resolveLlmConfig builds the NVIDIA NIM URL with bearer auth and model', () => {
+    const config = resolveLlmConfig({
+      NVIDIA_API_KEY: 'nvapi-test-key',
+    } as NodeJS.ProcessEnv);
+    expect(config?.url).toBe('https://integrate.api.nvidia.com/v1/chat/completions');
+    expect(config?.headers.Authorization).toBe('Bearer nvapi-test-key');
+    expect(config?.model).toBe('meta/llama-3.3-70b-instruct');
+  });
+
+  it('NVIDIA wins over Azure and OpenAI when its key is set', () => {
+    // Setting NVIDIA_API_KEY is a deliberate operator opt-in; the other two
+    // providers are what Bicep provisions, so the only deployment where all
+    // three coexist is one whose operator wants NVIDIA to answer.
+    const config = resolveLlmConfig({
+      NVIDIA_API_KEY: 'nvapi-test-key',
+      AZURE_OPENAI_ENDPOINT: 'https://example.openai.azure.com/',
+      AZURE_OPENAI_API_KEY: 'azure-key',
+      AZURE_OPENAI_DEPLOYMENT: 'gpt-4o-mini',
+      OPENAI_API_KEY: 'openai-key',
+    } as NodeJS.ProcessEnv);
+    expect(config?.url).toContain('integrate.api.nvidia.com');
+  });
+
+  it('honours NVIDIA_BASE_URL and NVIDIA_MODEL for a self-hosted NIM endpoint', () => {
+    const config = resolveLlmConfig({
+      NVIDIA_API_KEY: 'nvapi-test-key',
+      NVIDIA_BASE_URL: 'http://localhost:8000/v1/',
+      NVIDIA_MODEL: 'nvidia/nemotron-4-340b',
+    } as NodeJS.ProcessEnv);
+    expect(config?.url).toBe('http://localhost:8000/v1/chat/completions');
+    expect(config?.model).toBe('nvidia/nemotron-4-340b');
+  });
+
   // reasoning_effort is model-specific vocabulary, and a wrong value is not an
   // error any caller sees: the retry below swallows it into a second round
   // trip. gpt-5-mini accepts 'minimal'; gpt-5.6-sol rejects it with
@@ -167,6 +200,21 @@ describe('LLM layer', () => {
       ).toBeNull();
       expect(
         resolveReasoningEffort({ AZURE_OPENAI_REASONING_EFFORT: 'OFF' } as NodeJS.ProcessEnv),
+      ).toBeNull();
+    });
+
+    it('reads LLM_REASONING_EFFORT as the provider-neutral name', () => {
+      // Moving a deployment from Azure OpenAI to NVIDIA NIM must be an env
+      // change, not a code change; the neutral name is how, and it wins over
+      // the Azure-scoped legacy alias when both are set.
+      expect(
+        resolveReasoningEffort({ LLM_REASONING_EFFORT: 'low' } as NodeJS.ProcessEnv),
+      ).toBe('low');
+      expect(
+        resolveReasoningEffort({
+          LLM_REASONING_EFFORT: 'off',
+          AZURE_OPENAI_REASONING_EFFORT: 'minimal',
+        } as NodeJS.ProcessEnv),
       ).toBeNull();
     });
   });

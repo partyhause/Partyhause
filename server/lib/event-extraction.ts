@@ -6,7 +6,11 @@
 // locations ("at 3pm" -> location "3pm").
 //
 // Pipeline (first success wins):
-//   1. LLM extraction — used only when configured via environment:
+//   1. LLM extraction - used only when configured via environment:
+//        NVIDIA NIM:   NVIDIA_API_KEY (+ NVIDIA_MODEL, default
+//                      meta/llama-3.3-70b-instruct; NVIDIA_BASE_URL for a
+//                      self-hosted NIM endpoint). Checked FIRST: setting the
+//                      key is a deliberate operator opt-in.
 //        Azure OpenAI: AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY +
 //                      AZURE_OPENAI_DEPLOYMENT (+ AZURE_OPENAI_API_VERSION)
 //        OpenAI:       OPENAI_API_KEY (+ OPENAI_MODEL, default gpt-4o-mini)
@@ -557,8 +561,32 @@ interface LlmConfig {
   model?: string;
 }
 
-/** Resolve LLM configuration from the environment; null when unconfigured. */
+/**
+ * Resolve LLM configuration from the environment; null when unconfigured.
+ *
+ * Precedence is NVIDIA first: NVIDIA_API_KEY is only set by an operator who
+ * has read this comment and wants NIM to answer, while AZURE_OPENAI_* is
+ * provisioned by Bicep into production where no NVIDIA key exists. An
+ * operator who sets both is opting into NVIDIA deliberately; the Azure
+ * branch keeps production unchanged and remains the fallback the day the
+ * NVIDIA key is removed.
+ */
 export function resolveLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig | null {
+  // NVIDIA NIM (https://build.nvidia.com). OpenAI-compatible chat
+  // completions on integrate.api.nvidia.com; the key is the `nvapi-...`
+  // token from the NIM console. The base URL is overridable for
+  // self-hosted NIM containers (local `docker run nvcr.io/...` endpoints)
+  // without touching this file.
+  const nvidiaKey = env.NVIDIA_API_KEY;
+  if (nvidiaKey) {
+    const base = (env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1').replace(/\/+$/, '');
+    return {
+      url: `${base}/chat/completions`,
+      headers: { Authorization: `Bearer ${nvidiaKey}`, 'Content-Type': 'application/json' },
+      model: env.NVIDIA_MODEL || 'meta/llama-3.3-70b-instruct',
+    };
+  }
+
   const azureEndpoint = env.AZURE_OPENAI_ENDPOINT;
   const azureKey = env.AZURE_OPENAI_API_KEY;
   const azureDeployment = env.AZURE_OPENAI_DEPLOYMENT;
@@ -612,7 +640,15 @@ const LLM_TIMEOUT_MS = 20000;
  * @returns The configured effort, or null to omit the parameter entirely.
  */
 export function resolveReasoningEffort(env: NodeJS.ProcessEnv = process.env): string | null {
-  const configured = env.AZURE_OPENAI_REASONING_EFFORT?.trim();
+  // LLM_REASONING_EFFORT is the provider-neutral name; the Azure-scoped
+  // variable remains as a legacy alias so existing deployments keep their
+  // value without an ops change. The neutral name wins when both are set,
+  // which is how an operator moving a deployment from Azure OpenAI to
+  // NVIDIA NIM or a self-hosted NIM container points the setting at the
+  // new provider without editing code: non-reasoning models (llama-3.3)
+  // reject the parameter outright, and the default 'minimal' would then
+  // cost one wasted 400 round trip per call before the retry path saved it.
+  const configured = env.LLM_REASONING_EFFORT?.trim() ?? env.AZURE_OPENAI_REASONING_EFFORT?.trim();
   if (configured === undefined || configured === '') return 'minimal';
   // An explicit 'off' is how an operator disables the parameter without
   // editing code, for a model that supports no reasoning vocabulary at all.
