@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useUserProfile } from '@/features/partycrew/hooks';
 import { JoinCrewButton } from '@/features/partycrew/components';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const storeUser = usePartyStore((s) => s.user);
   const { signOut } = useAuth();
   const handleBack = useBackToDashboard();
@@ -53,7 +53,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await signOut();
-    setCurrentPage('auth');
+    navigate('/auth');
   };
 
   if (isLoading) {
@@ -91,7 +91,7 @@ export default function ProfilePage() {
   };
 
   const handleEditProfile = () => {
-    setCurrentPage('settings');
+    navigate('/settings');
   };
 
   return (

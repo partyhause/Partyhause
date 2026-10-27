@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/use-window-size';
+import { PastelIcon } from './PastelIcon';
 
 interface SuccessCelebrationProps {
   title: string;
@@ -67,7 +68,7 @@ export function SuccessCelebration({
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full blur-xl opacity-50 animate-pulse" />
                 <div className="relative w-24 h-24 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <PartyPopper className="w-12 h-12 text-white" />
+                  <PastelIcon icon={PartyPopper} tone="coral" className="w-12 h-12 text-white" />
                 </div>
               </div>
             </motion.div>
@@ -132,7 +133,7 @@ export function SuccessCelebration({
                 className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {continueLabel}
-                <Sparkles className="ml-2 w-5 h-5" />
+                <PastelIcon icon={Sparkles} tone="periwinkle" className="ml-2 w-5 h-5" />
               </Button>
             </motion.div>
           </CardContent>
@@ -177,7 +178,7 @@ export function SuccessToast({ message, icon }: { message: string; icon?: React.
       className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center space-x-3"
     >
       <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full">
-        {icon || <Check className="w-5 h-5" />}
+        {icon || <PastelIcon icon={Check} tone="cream" className="w-5 h-5" />}
       </div>
       <p className="font-semibold">{message}</p>
     </motion.div>

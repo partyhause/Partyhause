@@ -41,7 +41,7 @@ const BRAND = {
   coralButton: '#C02A16',
   coralText: '#972317',
   ink: '#26201D',
-  paper: '#FBFAF9',
+  paper: COLORS.cream[50],
   muted: '#6A5E58',
   hairline: '#EBE7E5',
   success: '#0B835B',

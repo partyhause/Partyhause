@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from './button';
+import { PastelIcon } from './PastelIcon';
 
 interface FlowTip {
   step: string;
@@ -84,7 +85,7 @@ export function FlowTip({ currentStep, onDismiss }: FlowTipProps) {
           <div className="flex items-start space-x-3 flex-1">
             <div className="flex-shrink-0 mt-0.5">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <Lightbulb className="w-5 h-5 text-white" />
+                <PastelIcon icon={Lightbulb} tone="periwinkle" className="w-5 h-5 text-white" />
               </div>
             </div>
             
@@ -100,7 +101,7 @@ export function FlowTip({ currentStep, onDismiss }: FlowTipProps) {
               </p>
               {tip.action && (
                 <div className="flex items-center text-sm text-blue-600 font-medium">
-                  <ArrowRight className="w-4 h-4 mr-1" />
+                  <PastelIcon icon={ArrowRight} tone="neutral" className="w-4 h-4 mr-1" />
                   {tip.action}
                 </div>
               )}
@@ -112,7 +113,7 @@ export function FlowTip({ currentStep, onDismiss }: FlowTipProps) {
             className="flex-shrink-0 ml-4 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Dismiss tip"
           >
-            <X className="w-5 h-5" />
+            <PastelIcon icon={X} tone="neutral" className="w-5 h-5" />
           </button>
         </div>
       </motion.div>
@@ -124,7 +125,7 @@ export function FlowTip({ currentStep, onDismiss }: FlowTipProps) {
 export function QuickTip({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`flex items-start space-x-2 text-sm text-gray-600 ${className}`}>
-      <Lightbulb className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+      <PastelIcon icon={Lightbulb} tone="periwinkle" className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
       <span>{children}</span>
     </div>
   );

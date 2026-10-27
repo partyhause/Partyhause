@@ -24,6 +24,25 @@ vi.mock('@/lib/events', () => ({
   }
 }));
 
+// The username gate fetches /api/users/me/onboarding through the shared
+// transport, whose 15s timeout (plus react-query's retry) is longer than the
+// whole suite. jsdom has no API to answer it, so the request would hang and
+// the gate would spin forever on isLoading. Rejecting immediately is also the
+// honest simulation: the gate is specified to fail open on an unreachable
+// status endpoint.
+vi.mock('@/lib/api-client', async (importOriginal) => {
+  const mod = await importOriginal<Record<string, unknown>>();
+  return {
+    ...mod,
+    apiGet: vi.fn(async (path: string) => {
+      if (path.includes('/onboarding')) {
+        return { data: null, error: { message: 'unreachable', status: 0, code: 'NETWORK' } };
+      }
+      return { data: null, error: { message: 'unreachable', status: 0, code: 'NETWORK' } };
+    }),
+  };
+});
+
 // Mock auth initialization
 vi.mock('@/lib/auth', () => ({
   initializeAuthStateListener: vi.fn(),
@@ -34,12 +53,19 @@ vi.mock('@/lib/auth', () => ({
   }
 }));
 
-// Mock framer-motion to avoid animation issues in tests
+// Mock framer-motion to avoid animation issues in tests. LandingPageCreative
+// (the signed-out surface App renders at '/') calls useScroll/useTransform/
+// useReducedMotion; the mock must export them or the whole tree lands in the
+// error boundary.
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
+  useScroll: () => ({ scrollY: { get: () => 0 }, scrollYProgress: { get: () => 0 } }),
+  useTransform: () => ({ get: () => 0 }),
+  useReducedMotion: () => false,
+  useInView: () => true,
 }));
 
 const queryClient = new QueryClient({
@@ -89,7 +115,6 @@ describe('Logout Userflow Integration Test', () => {
     usePartyStore.setState({
       user: null,
       isAuthenticated: false,
-      currentPage: 'auth',
       events: [],
       currentEvent: null,
       guests: [],
@@ -109,7 +134,6 @@ describe('Logout Userflow Integration Test', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent],
       currentEvent: mockEvent,
       guests: [],
@@ -135,15 +159,21 @@ describe('Logout Userflow Integration Test', () => {
 
     // Wait for logout to complete and auth state to change
     await waitFor(() => {
-      // After logout, should show AuthScreen instead of blank page
-      expect(screen.getByText(/welcome/i)).toBeInTheDocument();
+      // After logout, must show a real signed-out surface instead of a blank
+      // page — the regression this suite exists for. Under the React Router
+      // cutover the URL decides: at '/' that is the landing page; a Logout
+      // component that calls navigate('/auth') shows the auth welcome. Both
+      // are valid; a blank screen is not.
+      const onLanding = screen.queryAllByText(/plan\. party\. perfect\./i).length > 0;
+      const onAuth = screen.queryAllByText(/welcome/i).length > 0;
+      const signedOut = screen.queryAllByRole('button', { name: /sign in|get started|create/i }).length > 0;
+      expect(onLanding || onAuth || signedOut).toBe(true);
     }, { timeout: 2000 });
 
     // Verify store state is cleared
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
-    expect(state.currentPage).toBe('auth');
     expect(state.events).toEqual([]);
     expect(state.currentEvent).toBeNull();
 
@@ -158,7 +188,6 @@ describe('Logout Userflow Integration Test', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent], // Include the event in the array to avoid loading screen
       currentEvent: mockEvent, // But currentEvent is persisted
       guests: [],
@@ -184,14 +213,17 @@ describe('Logout Userflow Integration Test', () => {
 
     // Wait for logout to complete
     await waitFor(() => {
-      // Should show AuthScreen, not a blank loading screen
-      expect(screen.getByText(/welcome/i) || screen.getByRole('button', { name: /sign in/i })).toBeTruthy();
+      // Must show a real signed-out surface, not a blank loading screen.
+      // URL decides which one (landing at '/', auth after navigate('/auth')).
+      const onLanding = screen.queryAllByText(/plan\. party\. perfect\./i).length > 0;
+      const onAuth = screen.queryAllByText(/welcome/i).length > 0;
+      const signedOut = screen.queryAllByRole('button', { name: /sign in|get started|create/i }).length > 0;
+      expect(onLanding || onAuth || signedOut).toBe(true);
     }, { timeout: 2000 });
 
     // Verify store state is properly cleared
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
-    expect(state.currentPage).toBe('auth');
     expect(state.events).toEqual([]);
     expect(state.currentEvent).toBeNull();
   });
@@ -201,7 +233,6 @@ describe('Logout Userflow Integration Test', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent],
       currentEvent: mockEvent,
       guests: [],
@@ -227,13 +258,15 @@ describe('Logout Userflow Integration Test', () => {
 
     // Wait for logout to complete despite signOut error
     await waitFor(() => {
-      // Should still show AuthScreen
-      expect(screen.getByText(/welcome/i) || screen.getByRole('button', { name: /sign in/i })).toBeTruthy();
+      // Must still show a real signed-out surface despite the failure
+      const onLanding = screen.queryAllByText(/plan\. party\. perfect\./i).length > 0;
+      const onAuth = screen.queryAllByText(/welcome/i).length > 0;
+      const signedOut = screen.queryAllByRole('button', { name: /sign in|get started|create/i }).length > 0;
+      expect(onLanding || onAuth || signedOut).toBe(true);
     }, { timeout: 2000 });
 
     // Verify store state is cleared even with signOut error
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
-    expect(state.currentPage).toBe('auth');
   });
 });

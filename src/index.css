@@ -1,332 +1,65 @@
+@import './tokens/mobile-aligned.css';
+@import './styles/pastel-icons.css';
+@import './styles/pastel-system.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* PartyHause Premium Design System - Professional Event Management Platform */
+/* PartyHause Premium Design System - Mobile aligned tokens */
 
 @layer base {
   :root {
-    /* ============================================ */
-    /* PARTYHAUSE BRAND PALETTE (docs/BRAND.md s4) */
-    /* ============================================ */
-    /*
-      The authoritative palette. Every value is taken from docs/BRAND.md, which
-      solved each step for a contrast target rather than picking it by eye.
-
-      The rule that matters: #FF5233 is the BRAND colour, not a button colour.
-      White on it measures 3.23:1 and WCAG AA needs 4.5:1, so the anchor is
-      split by role. Use --brand for logo, decorative fill and large display
-      type. Use --primary (coral-700) wherever white text sits on top.
-
-      Hue drifts 10 -> 6 as lightness falls, deliberately. Dark oranges read as
-      muddy brown unless they shift toward red.
-    */
-    --coral-50: 10 100% 97%;
-    --coral-100: 10 100% 94%;
-    --coral-200: 10 100% 88%;
-    --coral-300: 10 100% 79%;
-    --coral-400: 9 100% 70%;
-    --coral-500: 9 100% 60%;   /* #FF5233 brand anchor, 3.23:1 on white */
-    --coral-600: 8 83% 51%;    /* #EA361A focus ring, passes 1.4.11 everywhere */
-    --coral-700: 7 79% 42%;    /* #C02A16 solid button + white label, 5.86:1 AA */
-    --coral-800: 6 74% 34%;    /* #972317 link/body text, 8.18:1 AAA */
-    --coral-900: 6 68% 28%;
-    --coral-950: 6 72% 16%;
-
-    /* Secondary. Exists because from-orange-500 to-pink-500 was already the one
-       consistent visual signal in the codebase, used 23 times in src/. */
-    --magenta-50: 330 100% 97%;
-    --magenta-100: 330 100% 94%;
-    --magenta-200: 330 96% 88%;
-    --magenta-300: 330 92% 80%;
-    --magenta-400: 330 86% 70%;
-    --magenta-500: 330 81% 60%;  /* #EC4699, 3.56:1 on white. Same rule as coral. */
-    --magenta-600: 331 74% 51%;
-    --magenta-700: 332 70% 42%;  /* use this when text sits on it */
-    --magenta-800: 333 66% 34%;
-    --magenta-900: 333 62% 28%;
-    --magenta-950: 333 66% 16%;
-
-    /* ============================================ */
-    /* CONCEPT PALETTE (docs/BRAND.md s12.1)       */
-    /* ============================================ */
-    /*
-      Three scales generated 2026-09-30 from the reference mockups at the repo
-      root, adapted to the event-planning domain. Same lightness ramp as coral
-      and magenta above (97 down to 16). Roles: cream is the surface family
-      (page background, warm cards). teal is the cool accent, a category and
-      surface colour, never a status colour (success above stays the only
-      semantic green). periwinkle is the evening accent and adopts the logo
-      house colour at periwinkle-400; text-bearing surfaces use 500 or darker.
-    */
-    --cream-50: 38 35% 97%;
-    --cream-100: 38 35% 94%;
-    --cream-200: 38 35% 88%;
-    --cream-300: 38 35% 79%;
-    --cream-400: 38 35% 70%;
-    --cream-500: 38 35% 60%;
-    --cream-600: 38 35% 51%;
-    --cream-700: 38 35% 42%;
-    --cream-800: 38 35% 34%;
-    --cream-900: 38 35% 28%;
-    --cream-950: 38 35% 16%;
-
-    --teal-50: 170 48% 97%;
-    --teal-100: 170 48% 94%;
-    --teal-200: 170 48% 88%;
-    --teal-300: 170 48% 79%;
-    --teal-400: 170 48% 70%;
-    --teal-500: 170 48% 60%;
-    --teal-600: 170 48% 51%;
-    --teal-700: 170 48% 42%;   /* 3.22:1 with white. Decorative fills, large text */
-    --teal-800: 170 48% 34%;   /* #2D8072, 4.73:1 with white, AA. Text-bearing surface */
-    --teal-900: 170 48% 28%;
-    --teal-950: 170 48% 16%;
-
-    --periwinkle-50: 244 100% 97%;
-    --periwinkle-100: 244 100% 94%;
-    --periwinkle-200: 244 100% 88%;
-    --periwinkle-300: 244 100% 79%;
-    --periwinkle-400: 244 100% 70%;  /* #7066FF, the logo step. 4.17:1 on white */
-    --periwinkle-500: 244 100% 60%;  /* #4133FF, 6.68:1 with white */
-    --periwinkle-600: 244 100% 51%;
-    --periwinkle-700: 244 100% 42%;  /* #0E00D6, 10.55:1 with white */
-    --periwinkle-800: 244 100% 34%;
-    --periwinkle-900: 244 100% 28%;
-    --periwinkle-950: 244 100% 16%;
-
-    /* Warm-tinted at hue 20 so neutrals sit with coral instead of fighting it.
-       A pure grey next to #FF5233 reads blue. */
-    --neutral-0: 0 0% 100%;
-    --neutral-50: 20 20% 98%;
-    --neutral-100: 20 16% 96%;
-    --neutral-200: 20 13% 91%;
-    --neutral-300: 20 11% 83%;
-    --neutral-400: 20 9% 64%;    /* 2.55:1. Disabled controls only, never readable text. */
-    --neutral-500: 20 8% 48%;
-    --neutral-600: 20 9% 38%;    /* secondary text, 6.26:1 */
-    --neutral-700: 20 10% 29%;   /* body text, 9.0:1 */
-    --neutral-800: 20 12% 20%;
-    --neutral-900: 20 14% 13%;   /* primary text, 16.07:1. Logo body. */
-    --neutral-950: 20 18% 8%;
-
-    /* Each solved to the lightest tone that still passes 4.5:1 with white, so
-       every one works as both a fill and a text colour. danger sits at hue 358,
-       clearly separated from coral at hue 9. */
-    --success: 160 84% 28%;      /* #0B835B, 4.76:1 */
-    --warning: 38 92% 33%;       /* #A26907, 4.61:1 */
-    --danger: 358 75% 53%;       /* #E12D33, 4.54:1 */
-    --info: 213 80% 49%;         /* #1973E1, 4.58:1 */
-    --success-surface: 165 71% 96%;
-    --warning-surface: 36 83% 96%;
-    --danger-surface: 356 71% 96%;
-    --info-surface: 213 71% 96%;
-
-    /* Both endpoints sit at exactly L=60%, so the gradient is iso-lightness and
-       holds constant perceived weight without banding or a dark middle.
-       Icon, social card, hero surfaces, celebration moments. Never body text,
-       never buttons: a varying background makes label contrast unverifiable. */
-    --gradient-brand: linear-gradient(135deg, hsl(var(--coral-500)) 0%, hsl(var(--magenta-500)) 100%);
-
-    /* ============================================ */
-    /* LIQUID METAL DESIGN SYSTEM - PHASE 1       */
-    /* ============================================ */
-    
-    /* Foundation Colors - Clean & Sophisticated */
-    --bg-primary: 0 0% 100%; /* Pure white */
-    --bg-secondary: 0 0% 98%; /* Off-white */
-    --bg-tertiary: 0 0% 97%; /* Very light gray */
-    --bg-soft: 220 14% 96%; /* Soft background */
-    --text-primary: 34 6% 13%; /* Soft black (#222222) */
-    --text-secondary: 0 0% 46%; /* Medium gray (#767676) */
-    --text-muted: 0 0% 62%; /* Light gray */
-
-    /* Metallic Color Palette - Liquid Metal Core */
-    --metal-chrome-light: 0 0% 95%; /* #f2f2f2 */
-    --metal-chrome: 0 0% 91%; /* #e8eaed */
-    --metal-chrome-dark: 0 0% 77%; /* #c5cad1 */
-    --metal-silver-light: 0 0% 98%; /* #fafafa */
-    --metal-silver: 0 0% 86%; /* #dadce0 */
-    --metal-platinum: 0 0% 97%; /* #f8f9fa */
-    --metal-titanium: 220 9% 46%; /* #6b7280 */
-    --metal-steel: 220 13% 69%; /* #9ca3af */
-    
-    /* Iridescent Accent Colors - Holographic Effects */
-    --iridescent-blue-start: 233 81% 71%; /* #667eea */
-    --iridescent-blue-end: 271 48% 57%; /* #764ba2 */
-    --iridescent-purple-start: 218 100% 84%; /* #a8c0ff */
-    --iridescent-purple-end: 257 60% 41%; /* #3f2b96 */
-    --iridescent-pink-start: 316 91% 77%; /* #f093fb */
-    --iridescent-pink-end: 352 90% 61%; /* #f5576c */
-    --iridescent-gold-start: 32 100% 91%; /* #ffecd2 */
-    --iridescent-gold-end: 14 91% 79%; /* #fcb69f */
-
-    /* Brand Colors - Maintaining Orange Compatibility */
-    --orange-50: 24 100% 98%;
-    --orange-100: 24 100% 96%;
-    --orange-200: 24 100% 91%;
-    --orange-300: 24 100% 84%;
-    --orange-400: 24 100% 75%;
-    --orange-500: 9 100% 60%; /* Primary coral-orange (#FF385C) */
-    --orange-600: 349 88% 56%; /* Darker coral (#E51E40) */
-    --orange-700: 17 96% 58%; /* Accent orange (#FC642D) */
-    --orange-800: 17 85% 40%;
-    --orange-900: 15 79% 35%;
-
-    /* Status & Utility Colors */
-    --success-green: 173 64% 42%; /* #00A699 */
-    --warning-amber: 43 96% 56%; /* #FFB400 */
-    --error-red: 9 100% 60%; /* Error red */
-    --info-blue: 213 94% 68%; /* Soft blue */
-
-    /* Legacy Variables for Compatibility - Soft Modern Theme */
+    /* Semantic aliases referencing mobile tokens */
     --background: var(--cream-50);
-    --foreground: var(--text-primary);
-    --card: var(--bg-primary);
-    --card-foreground: var(--text-primary);
-    --popover: var(--bg-primary);
-    --popover-foreground: var(--text-primary);
-    /* coral-700, not coral-500. --primary always carries a white label, and
-       white on #FF5233 is 3.23:1 against an AA requirement of 4.5:1. That was a
-       live defect on every button in the app, not a theoretical one.
-       coral-700 #C02A16 measures 5.86:1. Use --brand for the anchor colour. */
+    --foreground: var(--neutral-900);
+    --card: var(--neutral-0);
+    --card-foreground: var(--neutral-900);
+    --popover: var(--neutral-0);
+    --popover-foreground: var(--neutral-900);
     --primary: var(--coral-700);
     --primary-foreground: 0 0% 100%;
-    --primary-glow: var(--coral-200);
-    /* The anchor. Logo, decorative fill, large display type. Never behind
-       body-size white text. */
-    --brand: var(--coral-500);
-    --secondary: var(--bg-tertiary);
-    --secondary-foreground: var(--text-primary);
-    --muted: var(--bg-tertiary);
-    --muted-foreground: var(--text-muted);
-    --accent: var(--orange-400);
+    --secondary: var(--cream-100);
+    --secondary-foreground: var(--neutral-900);
+    --muted: var(--neutral-100);
+    --muted-foreground: var(--neutral-600);
+    --accent: var(--magenta-600);
     --accent-foreground: 0 0% 100%;
-    --accent-glow: var(--orange-100);
-    /* Was var(--error-red), which is 9 100% 60%: byte-identical to --orange-500.
-       The same colour signalled "primary action" and "destructive". --danger is
-       hue 358, visibly separated from coral at hue 9, and passes 4.5:1 white. */
     --destructive: var(--danger);
     --destructive-foreground: 0 0% 100%;
     --border: var(--neutral-200);
-    --input: var(--bg-primary);
-    /* coral-600, not coral-500. A coral-500 ring measures 2.94:1 on neutral-100
-       and 2.63:1 on neutral-200, both failing 1.4.11. coral-600 passes on every
-       surface the app defines. */
+    --input: var(--neutral-200);
     --ring: var(--coral-600);
-    --radius: 0.75rem; /* Softer radius */
+    --brand: var(--coral-500);
+    --success: 160 84% 28%;
+    --warning: 38 92% 33%;
+    --danger: 358 75% 53%;
+    --info: 213 80% 49%;
+    --radius: var(--radius-lg);
+  }
 
-    /* Gradient tokens consumed by tailwind.config.ts backgroundImage
-       (bg-gradient-primary / bg-gradient-hero / bg-gradient-card).
-       These were referenced by the config but never defined, which made
-       bg-clip-text headings render invisible. */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--orange-500)), hsl(var(--orange-700)));
-    --gradient-hero: linear-gradient(160deg, hsl(var(--orange-50)), hsl(var(--bg-soft)) 55%, hsl(var(--orange-100)));
-    --gradient-card: linear-gradient(180deg, hsl(var(--bg-primary)), hsl(var(--bg-secondary)));
-
-    /* ============================================ */
-    /* PARTYHAUSE SOLID COLOR SYSTEM              */
-    /* ============================================ */
-    
-    /* Burnt Orange Primary */
-    --burnt-orange: 28 92% 43%; /* #D97706 */
-    --burnt-orange-dark: 24 91% 36%; /* #B45309 */
-    --burnt-orange-light: 24 95% 53%; /* #F97316 */
-    
-    /* Background Solid Colors - Dark Theme */
-    --bg-dark-base: 222 47% 11%; /* #0F172A Deep Slate */
-    --bg-dark-elevated: 215 25% 17%; /* #1E293B Charcoal */
-    --bg-dark-panel: 215 20% 27%; /* #334155 Slate Gray */
-    
-    /* Text Colors - High Contrast (dark theme named vars, do not override --text-primary) */
-    --text-dark-primary: 0 0% 100%; /* #FFFFFF Pure White */
-    --text-dark-secondary: 215 20% 82%; /* #CBD5E1 Light Gray */
-    --text-white: 0 0% 100%; /* #FFFFFF Pure White */
-    
-    /* Accent Colors - Party Vibes */
-    --accent-pink: 330 81% 60%; /* #EC4899 Sunset Pink */
-    --accent-purple: 271 91% 65%; /* #A855F7 Party Purple */
-    --accent-amber: 43 96% 56%; /* #FBBF24 Golden Amber */
-    --accent-coral: 17 96% 58%; /* #FC642D Bright Coral */
-    
-    /* ============================================ */
-    /* LIQUID METAL SHADOW SYSTEM                  */
-    /* ============================================ */
-    
-    /* Base Shadows - Soft & Refined */
-    --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.04);
-    --shadow-card: 0 6px 16px rgba(0, 0, 0, 0.12);
-    --shadow-elevated: 0 12px 24px rgba(0, 0, 0, 0.16);
-    
-    /* Liquid Metal Shadows - Multi-layered 3D */
-    --shadow-liquid-sm: 
-      0 2px 8px rgba(0, 0, 0, 0.08),
-      0 1px 4px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    
-    --shadow-liquid-md: 
-      0 8px 24px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.05);
-    
-    --shadow-liquid-lg: 
-      0 16px 48px rgba(0, 0, 0, 0.16),
-      0 4px 16px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.08);
-    
-    --shadow-liquid-xl: 
-      0 24px 64px rgba(0, 0, 0, 0.2),
-      0 8px 24px rgba(0, 0, 0, 0.12),
-      inset 0 2px 0 rgba(255, 255, 255, 0.8),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.1);
-    
-    /* Iridescent Glow Shadows */
-    --shadow-glow-blue: 
-      0 0 20px hsla(var(--iridescent-blue-start), 0.3),
-      0 0 40px hsla(var(--iridescent-blue-start), 0.15);
-    
-    --shadow-glow-purple: 
-      0 0 20px hsla(var(--iridescent-purple-end), 0.3),
-      0 0 40px hsla(var(--iridescent-purple-end), 0.15);
-    
-    --shadow-glow-pink: 
-      0 0 20px hsla(var(--iridescent-pink-end), 0.3),
-      0 0 40px hsla(var(--iridescent-pink-end), 0.15);
-    
-    /* Brand Shadows - Orange */
-    --shadow-floating: 0 4px 12px rgba(255, 56, 92, 0.3);
-    --shadow-floating-hover: 0 8px 20px rgba(255, 56, 92, 0.4);
-
-    /* Legacy Shadows */
-    --shadow-glow: var(--shadow-liquid-md);
-    --shadow-accent-glow: var(--shadow-glow-blue);
-
-    /* ============================================ */
-    /* LIQUID METAL ANIMATION SYSTEM               */
-    /* ============================================ */
-    
-    /* Easing Functions - Liquid Motion */
-    --ease-liquid: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy elastic */
-    --ease-fluid: cubic-bezier(0.4, 0, 0.2, 1); /* Smooth flow */
-    --ease-organic: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Elastic */
-    --ease-metallic: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Refined */
-    
-    /* Transition Presets */
-    --transition-smooth: all 0.3s var(--ease-fluid);
-    --transition-bounce: all 0.3s var(--ease-organic);
-    --transition-elastic: all 0.5s var(--ease-liquid);
-    --transition-metallic: all 0.4s var(--ease-metallic);
-    
-    /* Animation Durations */
-    --duration-fast: 150ms;
-    --duration-normal: 300ms;
-    --duration-slow: 500ms;
-    --duration-slower: 800ms;
+  .dark {
+    --background: var(--neutral-900);
+    --foreground: var(--neutral-50);
+    --card: var(--neutral-800);
+    --card-foreground: var(--neutral-50);
+    --popover: var(--neutral-800);
+    --popover-foreground: var(--neutral-50);
+    --primary: var(--coral-500);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--neutral-800);
+    --secondary-foreground: var(--neutral-50);
+    --muted: var(--neutral-800);
+    --muted-foreground: var(--neutral-400);
+    --accent: var(--magenta-500);
+    --accent-foreground: 0 0% 100%;
+    --destructive: var(--danger);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--neutral-700);
+    --input: var(--neutral-700);
+    --ring: var(--coral-500);
   }
 }
-
 @layer base {
   * {
     border-color: hsl(var(--border));

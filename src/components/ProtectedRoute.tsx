@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { useRequireAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
 import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
@@ -18,15 +19,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!isAuthorized) {
-    // Don't return null - let App.tsx handle routing to AuthScreen
-    // This prevents the blank page issue
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Redirecting to login...</p>
-        </div>
-      </div>
-    );
+    // The React Router cutover routes by URL; a stale authenticated URL with a
+    // cleared session must navigate to auth rather than render a static
+    // "redirecting" note that goes nowhere.
+    return <Navigate to="/auth" replace />;
   }
 
   // Every authenticated surface passes through here, which is why the username

@@ -180,6 +180,11 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
     const userId = req.user!.id;
     const body = (req.body ?? {}) as Record<string, unknown>;
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
     const data: Record<string, unknown> = {};
 
     // Privacy flags: strict booleans only.
@@ -273,6 +278,9 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
       update: data,
       create: {
         id: userId,
+        username: `u_${userId.slice(0, 8)}`,
+        username_normalized: `u_${userId.slice(0, 8)}`,
+        display_name: (user?.name && user.name.trim().length > 0) ? user.name : (user?.email ? user.email.split('@')[0] : 'User'),
         ...data,
       },
       select: OWN_PROFILE_SELECT,
@@ -286,37 +294,10 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
 });
 
 // ---------------------------------------------------------------------------
-// PUT /api/users/me/role - record which personality the caller registered as.
-//
-// Separate from PUT /me/profile on purpose: profile is free-text identity,
-// role is a closed enum the journey gates on, and a bulk patch that accepted
-// both would let a profile edit silently change the gate. The CHECK
-// constraint users_account_role_check is the authority; this membership test
-// only turns a 500 into a 400 with a sentence.
+// PUT /api/users/me/role removed: account_role column does not exist in schema
+// and no call sites use this endpoint. Mobile onboarding uses organizer_type
+// via api.onboarding.save, not account_role.
 // ---------------------------------------------------------------------------
-const ACCOUNT_ROLES = ['creator', 'vendor', 'attendee'] as const;
-
-router.put('/me/role', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const role = (req.body as Record<string, unknown> | null)?.account_role;
-
-    if (typeof role !== 'string' || !(ACCOUNT_ROLES as readonly string[]).includes(role)) {
-      return res.status(400).json({ error: 'account_role must be one of creator, vendor, attendee' });
-    }
-
-    const row = await prisma.user.update({
-      where: { id: userId },
-      data: { account_role: role },
-      select: { account_role: true },
-    });
-
-    res.json({ account_role: row.account_role });
-  } catch (err) {
-    console.error('[Users] update me/role error:', err);
-    res.status(500).json({ error: 'Failed to save your role' });
-  }
-});
 
 // ---------------------------------------------------------------------------
 // GET /api/users/username-available?username=<candidate>

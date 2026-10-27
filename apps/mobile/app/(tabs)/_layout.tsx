@@ -3,8 +3,7 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { COLORS } from '@/constants/theme';
 
 /**
  * Home and PartyCrew.
@@ -20,12 +19,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
  * register sequences this first, as Gate 1: remove misleading surface area.
  */
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarStyle: { backgroundColor: COLORS.cream[100] },
+        tabBarActiveTintColor: COLORS.teal[700],
+        tabBarInactiveTintColor: COLORS.neutral[500],
         headerShown: false,
         tabBarButton: HapticTab,
       }}>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { setStoredUser } from '@/lib/auth-storage';
 import { usePartyStore, type UserRole } from '@/store/usePartyStore';
 import { Ticket, Sparkles, Briefcase, CheckCircle2, Loader2 } from 'lucide-react';
@@ -52,7 +53,7 @@ const ROLES: RoleOption[] = [
 
 export const RoleSelection = () => {
   const user = usePartyStore((s) => s.user);
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<UserRole | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -76,10 +77,9 @@ export const RoleSelection = () => {
         role: selected,
       });
 
-      const page = selected === 'creator' ? 'creator-dashboard'
-                 : selected === 'vendor'  ? 'vendor-dashboard'
-                 : 'user-dashboard';
-      setCurrentPage(page);
+      // All roles share /dashboard in the router; the dashboard page itself
+      // renders role-aware content.
+      navigate('/dashboard');
     } finally {
       setSaving(false);
     }

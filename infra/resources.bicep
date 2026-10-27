@@ -355,7 +355,9 @@ module app 'modules/container-app.bicep' = {
       { name: 'INVITATION_TOKEN_SECRET', secretRef: 'invitation-token-secret' }
       { name: 'ENTRA_TENANT_ID', value: entraTenantId }
       { name: 'ENTRA_API_CLIENT_ID', value: entraApiClientId }
-      { name: 'ENTRA_API_CLIENT_SECRET', secretRef: 'entra-api-client-secret' }
+      // Conditional twin of the secrets-array entry above: an env var may not
+      // reference a secret that was not declared.
+      ...(empty(entraApiClientSecret) ? [] : [{ name: 'ENTRA_API_CLIENT_SECRET', secretRef: 'entra-api-client-secret' }])
       { name: 'ENTRA_POLICY', value: entraSignUpSignInPolicy }
       // Azure Communication Services is the active email transport.
       { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-string' }
@@ -413,8 +415,10 @@ module app 'modules/container-app.bicep' = {
       // Entra is bundled but inert (no JWKS validation, no call sites), so
       // this stays a parameter passthrough rather than a vault reference:
       // the vault holds no entra secret and a reference to one that does not
-      // exist would fail every revision deploy.
-      { name: 'entra-api-client-secret', value: entraApiClientSecret }
+      // exist would fail every revision deploy. An EMPTY value also fails
+      // preflight ("value or keyVaultUrl and identity should be provided"),
+      // so the secret is declared only when a real value was supplied.
+      ...(empty(entraApiClientSecret) ? [] : [{ name: 'entra-api-client-secret', value: entraApiClientSecret }])
     ]
   }
 }

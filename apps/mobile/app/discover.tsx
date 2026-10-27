@@ -42,12 +42,13 @@ import { Ionicons } from '@expo/vector-icons';
 import type { SuggestedUser } from '@partyhause/core';
 import { JoinCrewButton } from '@/components/partycrew/JoinCrewButton';
 import { api } from '@/lib/client';
+import { COLORS } from '@/constants/theme';
 
 /** docs/BRAND.md section 4. */
 const BRAND = {
   coral: '#FF5233',
   ink: '#26201D',
-  paper: '#FBFAF9',
+  paper: COLORS.cream[50],
   muted: '#6A5E58',
   hairline: '#EBE7E5',
 };

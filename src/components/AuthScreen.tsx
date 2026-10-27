@@ -5,6 +5,7 @@ import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { 
   Music, 
   Sparkles, 
@@ -73,7 +74,6 @@ export const AuthScreen = ({
 
     const { setUser, setLoading, isLoading } = usePartyStore();
     const { signIn, signUp, requestPasswordReset, resendVerification } = useAuth();
-    const { setCurrentPage } = usePartyStore();
 
     // Diagnostic: run once on mount to detect missing imports in test env without violating hooks rules
     useEffect(() => {
@@ -344,9 +344,9 @@ export const AuthScreen = ({
               className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12"
             >
               {[
-                { icon: Calendar, title: "Smart Planning", desc: "AI-powered event management", color: "bg-orange-500" },
-                { icon: Gamepad2, title: "Interactive Games", desc: "30+ engaging experiences", color: "bg-blue-500" },
-                { icon: Camera, title: "Memory Creation", desc: "Automatic photo & video compilation", color: "bg-green-500" }
+                { icon: Calendar, title: "Smart Planning", desc: "AI-powered event management", variant: 'lavender' as const },
+                { icon: Gamepad2, title: "Interactive Games", desc: "30+ engaging experiences", variant: 'peach' as const },
+                { icon: Camera, title: "Memory Creation", desc: "Automatic photo & video compilation", variant: 'mint' as const }
               ].map((feature, index) => (
                 <MotionDiv
                   key={feature.title}
@@ -356,13 +356,14 @@ export const AuthScreen = ({
                     transition: { delay: 1.0 + index * 0.2 },
                     whileHover: { y: -5 }
                   })}
-                  className="modern-card p-6 text-center group"
                 >
-                  <div className={`icon-button-3d ${feature.color} w-12 h-12 mx-auto mb-4`}>
-                    <feature.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm">{feature.desc}</p>
+                  <PastelCard variant={feature.variant} className="text-center">
+                    <div className="pastel-icon-wrap mx-auto mb-4">
+                      <feature.icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                    <p className="text-gray-600 text-sm">{feature.desc}</p>
+                  </PastelCard>
                 </MotionDiv>
               ))}
             </MotionDiv>
@@ -457,14 +458,14 @@ export const AuthScreen = ({
             </MotionDiv>
 
             {/* Auth Card */}
-            <MotionDiv
-              {...(process.env.NODE_ENV !== 'test' && {
-                initial: { opacity: 0, y: 20 },
-                animate: { opacity: 1, y: 0 },
-                transition: { delay: 0.4, duration: 0.6 }
-              })}
-            >
-              <Card className="modern-card border-gray-200">
+          <MotionDiv
+            {...(process.env.NODE_ENV !== 'test' && {
+              initial: { opacity: 0, y: 20 },
+              animate: { opacity: 1, y: 0 },
+              transition: { delay: 0.4, duration: 0.6 }
+            })}
+          >
+            <PastelCard variant="lavender" className="rounded-[3rem]">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-2xl md:text-3xl font-bold text-gray-900">
                     {welcomeMessage.title}
@@ -765,7 +766,7 @@ export const AuthScreen = ({
                     </button>
                   </div>
                 </CardContent>
-              </Card>
+              </PastelCard>
             </MotionDiv>
           </MotionDiv>
         </div>

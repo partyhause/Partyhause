@@ -216,10 +216,10 @@ export function PartyCrewFeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background.secondary,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background.secondary,
+    },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,

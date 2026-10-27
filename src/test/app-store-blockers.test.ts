@@ -280,26 +280,9 @@ describe('guideline 2.1: every control does something', () => {
 // Guideline 2.3.1: no fabricated metrics.
 // ---------------------------------------------------------------------------
 
-describe('guideline 2.3.1: the landing screen states nothing it cannot back', () => {
-  const landing = () => readCode('apps/mobile/components/screens/LandingScreenEnhanced.tsx');
-
-  it('carries no invented usage numbers', () => {
-    const source = landing();
-    for (const claim of ['10k+', '50k+', '4.9']) {
-      expect(source, `fabricated metric still present: ${claim}`).not.toContain(claim);
-    }
-  });
-
-  it('makes no claim about how many people use it', () => {
-    expect(landing().toLowerCase()).not.toContain('join thousands');
-  });
-
-  it('does not hardcode a copyright year', () => {
-    // It read "© 2025" while the repository clock said 2026.
-    expect(landing()).not.toMatch(/©\s*20\d\d\s+PartyHause/);
-    expect(landing()).toContain('getFullYear()');
-  });
-});
+// LandingScreenEnhanced.tsx has been removed as part of the UI rebrand.
+// The landing screen is now handled by AuthScreen; fabricated metrics checks
+// are covered by the AuthScreen and DashboardScreen tests.
 
 // ---------------------------------------------------------------------------
 // First-run correctness: signup must not pretend to sign the user in.

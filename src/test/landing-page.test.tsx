@@ -22,6 +22,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
+import { useEffect, useRef } from 'react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import LandingPageCreative from '@/components/LandingPageCreative';
 import { usePartyStore } from '@/store/usePartyStore';
 
@@ -36,7 +38,6 @@ const resetStore = () => {
   usePartyStore.setState({
     user: null,
     isAuthenticated: false,
-    currentPage: 'landing',
     events: [],
     currentEvent: null,
     guests: [],
@@ -48,6 +49,24 @@ const resetStore = () => {
 
 /** Every element that a visitor can click to move somewhere. */
 const allButtons = () => screen.getAllByRole('button');
+
+/**
+ * Records every router location change beneath it. `useNavigate` inside
+ * MemoryRouter performs a real history transition; observing `useLocation`
+ * from a child is how the inertness sweep counts a navigation as "the button
+ * went somewhere".
+ */
+function NavigationRecorder({ children, onNavigate }: { children: React.ReactNode; onNavigate: (path: string) => void }) {
+  const location = useLocation();
+  const lastKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastKey.current !== null && location.key !== lastKey.current) {
+      onNavigate(location.pathname);
+    }
+    lastKey.current = location.key;
+  }, [location, onNavigate]);
+  return <>{children}</>;
+}
 
 describe('LandingPageCreative', () => {
   beforeEach(() => {
@@ -66,17 +85,18 @@ describe('LandingPageCreative', () => {
   describe('calls to action reach a destination', () => {
     it('routes the primary hero CTA to auth with the create_event intent', () => {
       const onStartAuth = vi.fn();
-      render(<LandingPageCreative onStartAuth={onStartAuth} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={onStartAuth} /></MemoryRouter>);
 
       fireEvent.click(screen.getAllByRole('button', { name: /create your event/i })[0]);
 
       expect(onStartAuth).toHaveBeenCalledWith('create_event');
-      expect(usePartyStore.getState().currentPage).toBe('auth');
     });
 
     it('routes the invite CTA with the join_event intent', () => {
       const onStartAuth = vi.fn();
-      render(<LandingPageCreative onStartAuth={onStartAuth} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={onStartAuth} /></MemoryRouter>);
 
       fireEvent.click(screen.getByRole('button', { name: /i have an invite/i }));
 
@@ -85,7 +105,8 @@ describe('LandingPageCreative', () => {
 
     it('routes the browse CTA with the explore_features intent', () => {
       const onStartAuth = vi.fn();
-      render(<LandingPageCreative onStartAuth={onStartAuth} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={onStartAuth} /></MemoryRouter>);
 
       fireEvent.click(screen.getByRole('button', { name: /look around first/i }));
 
@@ -94,7 +115,8 @@ describe('LandingPageCreative', () => {
 
     it('produces all three intents, so no AuthScreen copy branch is unreachable', () => {
       const onStartAuth = vi.fn();
-      render(<LandingPageCreative onStartAuth={onStartAuth} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={onStartAuth} /></MemoryRouter>);
 
       fireEvent.click(screen.getAllByRole('button', { name: /create your event/i })[0]);
       fireEvent.click(screen.getByRole('button', { name: /i have an invite/i }));
@@ -107,18 +129,24 @@ describe('LandingPageCreative', () => {
     it('never leaves a signed-out visitor on currentPage "dashboard"', () => {
       // The precise regression. `setCurrentPage('dashboard')` with no user
       // falls through every branch of App.tsx's effect, so appMode stays
-      // 'landing' and the click appears to do nothing.
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      // 'landing' and the click appears to do nothing. The cutover removed
+      // page state from the store entirely, so the assertion now pins the
+      // mechanism's absence rather than the symptom.
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
-      for (const button of allButtons()) {
-        fireEvent.click(button);
-        expect(usePartyStore.getState().currentPage).not.toBe('dashboard');
-      }
+      expect(usePartyStore.getState()).not.toHaveProperty('currentPage');
     });
 
     it('leaves no button without a reachable destination', () => {
       const onStartAuth = vi.fn();
-      render(<LandingPageCreative onStartAuth={onStartAuth} />);
+      const navigations: string[] = [];
+      render(
+      <MemoryRouter>
+        <NavigationRecorder onNavigate={navigations.push.bind(navigations)}>
+          <LandingPageCreative onStartAuth={onStartAuth} />
+        </NavigationRecorder>
+      </MemoryRouter>);
 
       const scrollIntoView = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
       const scrollTo = window.scrollTo as unknown as ReturnType<typeof vi.fn>;
@@ -134,6 +162,7 @@ describe('LandingPageCreative', () => {
         const button = allButtons()[index];
         const label = button.textContent || button.getAttribute('aria-label') || `#${index}`;
 
+        const navigatedBefore = navigations.length;
         const before =
           onStartAuth.mock.calls.length +
           scrollIntoView.mock.calls.length +
@@ -146,22 +175,20 @@ describe('LandingPageCreative', () => {
           scrollIntoView.mock.calls.length +
           scrollTo.mock.calls.length;
 
-        const changedPage = usePartyStore.getState().currentPage !== 'landing';
         const isArchetypeSelector = button.hasAttribute('aria-pressed');
         const isMenuToggle = button.hasAttribute('aria-expanded');
         const didSomething =
-          after > before || changedPage || isArchetypeSelector || isMenuToggle;
+          after > before || navigations.length > navigatedBefore || isArchetypeSelector || isMenuToggle;
 
         expect(didSomething, `"${label}" is inert`).toBe(true);
-
-        usePartyStore.setState({ currentPage: 'landing' });
       }
     });
   });
 
   describe('navigation below the md breakpoint', () => {
     it('exposes a menu toggle', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       const toggle = screen.getByRole('button', { name: /open menu/i });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -169,7 +196,8 @@ describe('LandingPageCreative', () => {
     });
 
     it('reveals the destinations when opened', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       fireEvent.click(screen.getByRole('button', { name: /open menu/i }));
 
@@ -182,7 +210,8 @@ describe('LandingPageCreative', () => {
     });
 
     it('closes on Escape rather than trapping the visitor', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       fireEvent.click(screen.getByRole('button', { name: /open menu/i }));
       expect(document.getElementById('landing-mobile-nav')).not.toBeNull();
@@ -192,7 +221,8 @@ describe('LandingPageCreative', () => {
     });
 
     it('closes after a destination is chosen', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       fireEvent.click(screen.getByRole('button', { name: /open menu/i }));
       const panel = document.getElementById('landing-mobile-nav') as HTMLElement;
@@ -208,7 +238,8 @@ describe('LandingPageCreative', () => {
       ['Find your style', 'find-your-style'],
       ['Party culture', 'party-culture'],
     ])('%s scrolls to a section that is actually on the page', (label, id) => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       const section = document.getElementById(id);
       expect(section).not.toBeNull();
@@ -223,7 +254,8 @@ describe('LandingPageCreative', () => {
 
   describe('archetype selection', () => {
     it('marks exactly one option as pressed at a time', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       const options = allButtons().filter((b) => b.hasAttribute('aria-pressed'));
       expect(options).toHaveLength(4);
@@ -237,7 +269,8 @@ describe('LandingPageCreative', () => {
     });
 
     it('changes the detail panel when the selection changes', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       const live = document.querySelector('[aria-live="polite"]') as HTMLElement;
       const first = live.textContent;
@@ -256,13 +289,15 @@ describe('LandingPageCreative', () => {
       ['Terms', '/terms.html'],
       ['Support', '/support.html'],
     ])('links %s to the served page at %s', (label, href) => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href);
     });
 
     it('states a copyright year', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       expect(
         screen.getByText(new RegExp(`${new Date().getFullYear()}\\s+PartyHause`)),
@@ -274,20 +309,23 @@ describe('LandingPageCreative', () => {
     it('carries no undefined utility classes', () => {
       // `.hover-lift` was applied in three places and defined nowhere in the
       // repository, so it silently did nothing.
-      const { container } = render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      const { container } = render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       expect(container.querySelectorAll('.hover-lift')).toHaveLength(0);
     });
 
     it('renders the committed mark rather than a decorative icon lockup', () => {
       // BRAND.md retires Sparkles icons as logo flanks.
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       expect(screen.getAllByRole('img', { name: 'PartyHause' }).length).toBeGreaterThan(0);
     });
 
     it('shows the tagline', () => {
-      render(<LandingPageCreative onStartAuth={vi.fn()} />);
+      render(
+      <MemoryRouter><LandingPageCreative onStartAuth={vi.fn()} /></MemoryRouter>);
 
       expect(screen.getByText('Plan. Party. Perfect.')).toBeInTheDocument();
     });

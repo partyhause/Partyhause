@@ -2,6 +2,7 @@ import { paywallCopy, type PaywallReason } from '@partyhause/core';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -279,7 +280,7 @@ export default function AIEventAssistant({
   if (showPreview && extractedData) {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
-        <Card className="border-2 border-orange-200">
+        <PastelCard variant="peach">
           <CardHeader className="bg-gradient-to-r from-orange-50 to-pink-50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -398,7 +399,7 @@ export default function AIEventAssistant({
               </>
             )}
           </CardContent>
-        </Card>
+        </PastelCard>
 
         <Button variant="ghost" onClick={onBack} className="w-full">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -428,8 +429,8 @@ export default function AIEventAssistant({
       </div>
 
       {/* Messages */}
-      <Card className="flex-1 mb-4 overflow-hidden">
-        <ScrollArea className="h-full p-4" ref={scrollRef}>
+      <PastelCard variant="lavender" className="flex-1 mb-4 overflow-hidden">
+        <div className="h-full p-4 overflow-auto" ref={scrollRef}>
           <div className="space-y-4">
             <AnimatePresence>
               {messages.map((message) => (

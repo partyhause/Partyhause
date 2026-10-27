@@ -148,9 +148,8 @@ export class ErrorHandler {
       console.error('Application Error:', errorInfo);
     }
 
-    // In production, send to error reporting service
+    // In production, log to console until an error reporting service is configured
     if (import.meta.env.PROD) {
-      // TODO: Send to error reporting service (e.g., Sentry)
       console.error('Production Error:', errorInfo);
     }
   }

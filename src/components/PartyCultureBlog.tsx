@@ -244,7 +244,7 @@ export const PartyCultureBlog = () => {
 
             {/* Hero Featured Article */}
             <motion.article 
-              className="modern-card overflow-hidden mb-8 hover-lift"
+              className="rounded-[3rem] border border-neutral-200 bg-white overflow-hidden mb-8 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
               whileHover={{ y: -4 }}
             >
               <div className="grid md:grid-cols-2 gap-0">
@@ -296,7 +296,7 @@ export const PartyCultureBlog = () => {
               {featuredArticles.slice(1).map((article, index) => (
                 <motion.article
                   key={article.id}
-                  className="modern-card overflow-hidden hover-lift"
+                  className="rounded-[3rem] border border-neutral-200 bg-white overflow-hidden shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -362,7 +362,7 @@ export const PartyCultureBlog = () => {
               {regularArticles.map((article, index) => (
                 <motion.article
                   key={article.id}
-                  className="modern-card overflow-hidden hover-lift bg-white"
+                  className="rounded-[3rem] border border-neutral-200 bg-white overflow-hidden shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-[0_6px_16px_rgb(0_0_0/0.08)]"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}

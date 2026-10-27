@@ -317,23 +317,13 @@ vi.mock('@/lib/events', () => ({
   }
 }))
 
-// Mock useAuth hook to prevent Dashboard component crashes
-vi.mock('@/hooks/use-auth', () => ({
-  useAuth: vi.fn(() => ({
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
-    isLoading: false,
-  })),
-  useUser: vi.fn(() => ({
-    user: null,
-    isLoading: false,
-  })),
-  useRequireAuth: vi.fn(() => ({
-    isAuthorized: true,
-    isLoading: false,
-  })),
-}))
+// The global '@/hooks/use-auth' mock is gone deliberately. A mocked hook
+// returns a frozen snapshot: useUser always answered `user: null` and
+// useRequireAuth always answered `isAuthorized: true`, so logout never
+// re-rendered anything that consumed the hook, and every suite that set up a
+// session in the real store was asserting against a fiction. Suites that need
+// isolated auth behaviour mock this module locally (logout.test.tsx,
+// integration.test.tsx).
 
 // Also mock the aggregate '@/lib' index import so modules that import from '@/lib' resolve
 vi.mock('@/lib', () => ({

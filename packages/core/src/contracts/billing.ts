@@ -120,6 +120,10 @@ export const onboardingAnswers = z.object({
   autonomy_level: autonomyLevel.optional(),
   agentic_wants: z.array(z.string().max(64)).max(20).optional(),
   biggest_pain: z.string().max(500).optional(),
+  /** Event-type chips from the onboarding interests screen. */
+  event_interests: z.array(z.string().max(64)).max(20).optional(),
+  /** The "Get tips and event inspiration" switch. */
+  marketing_opt_in: z.boolean().optional(),
   /** Set by the final screen. Absent means "saving progress". */
   completed: z.boolean().optional(),
 });
@@ -136,6 +140,8 @@ export const onboardingResponse = z.object({
   autonomy_level: autonomyLevel.nullable(),
   agentic_wants: z.array(z.string()),
   biggest_pain: z.string().nullable(),
+  event_interests: z.array(z.string()),
+  marketing_opt_in: z.boolean(),
   completed_at: isoDateTime.nullable(),
 });
 

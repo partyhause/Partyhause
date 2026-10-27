@@ -102,6 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-router",
+      "expo-asset",
       [
         "expo-splash-screen",
         {
@@ -110,11 +111,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           resizeMode: "contain",
           backgroundColor: "#ffffff",
           dark: {
-            // A separate asset, not just a separate background. The standard
-            // mark's body is neutral-900 #26201D, which is invisible against
-            // #000000; the dark variant uses the inverse mark so the house
-            // still reads. Sharing one image would have shipped a floating
-            // roof with no house under it.
             image: "./assets/images/splash-icon-dark.png",
             backgroundColor: "#000000"
           }

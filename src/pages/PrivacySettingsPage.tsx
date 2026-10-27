@@ -4,6 +4,7 @@
 // show_activity_status) via GET/PUT /api/users/me/profile.
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, Shield } from 'lucide-react';
 import { PageShell } from '@/components/layout/PageShell';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,7 +47,7 @@ const FLAGS: Array<{ key: PrivacyFlag; label: string; description: string }> = [
 ];
 
 export default function PrivacySettingsPage() {
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<PrivacyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -93,7 +94,7 @@ export default function PrivacySettingsPage() {
       title="Privacy"
       subtitle="Control what others can see"
       maxWidth="sm"
-      onBack={() => setCurrentPage('settings')}
+      onBack={() => navigate('/settings')}
     >
       {loading && (
         <div className="flex justify-center py-12" role="status" aria-label="Loading privacy settings">

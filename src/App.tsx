@@ -9,300 +9,122 @@ import LandingPageCreative from "@/components/LandingPageCreative";
 import { useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
-import { motion, AnimatePresence } from "framer-motion";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { HardenedErrorBoundary } from '@/components/HardenedErrorBoundary';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import { initializeAuthStateListener } from '@/lib/auth';
 import { RoleGuard } from "@/components/RoleGuard";
+import { ROUTES } from '@/routes';
 
-// ---------------------------------------------------------------------------
-// Route-level code splitting.
-//
-// Every page behind the auth wall is lazy-loaded so the entry bundle carries
-// only the shell + landing/auth funnel. Named exports are adapted to the
-// default shape React.lazy expects.
-// ---------------------------------------------------------------------------
 const PartyCultureBlog = lazy(() => import("@/components/PartyCultureBlog"));
-const EventCreation = lazy(() =>
-  import("@/components/EventCreation").then((m) => ({ default: m.EventCreation })),
-);
-const EventManagement = lazy(() =>
-  import("@/components/EventManagement").then((m) => ({ default: m.EventManagement })),
-);
-const QRScanner = lazy(() =>
-  import("@/components/QRScanner").then((m) => ({ default: m.QRScanner })),
-);
-const GuestView = lazy(() =>
-  import("@/components/GuestView").then((m) => ({ default: m.GuestView })),
-);
-const GamesPage = lazy(() =>
-  import("@/components/GamesPage").then((m) => ({ default: m.GamesPage })),
-);
+const EventCreation = lazy(() => import("@/components/EventCreation").then(m => ({ default: m.EventCreation })));
+const EventManagement = lazy(() => import("@/components/EventManagement").then(m => ({ default: m.EventManagement })));
+const QRScanner = lazy(() => import("@/components/QRScanner").then(m => ({ default: m.QRScanner })));
+const GuestView = lazy(() => import("@/components/GuestView").then(m => ({ default: m.GuestView })));
+
+const GuestViewRoute = () => {
+  const { guestId } = useParams<{ guestId: string }>();
+  return <GuestView guestId={guestId ?? ''} />;
+};
+
 const TemplateManager = lazy(() => import("@/components/TemplateManager"));
-const JoinEventPage = lazy(() =>
-  import("@/components/JoinEventPage").then((m) => ({ default: m.JoinEventPage })),
-);
-const RoleSelection = lazy(() =>
-  import("@/components/RoleSelection").then((m) => ({ default: m.RoleSelection })),
-);
+const JoinEventPage = lazy(() => import("@/components/JoinEventPage").then(m => ({ default: m.JoinEventPage })));
+const RoleSelection = lazy(() => import("@/components/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const Logout = lazy(() => import("@/components/Logout"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
 const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
-const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
-const CreatorDashboard = lazy(() => import("@/pages/CreatorDashboard"));
-const VendorDashboard = lazy(() => import("@/pages/VendorDashboard"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
 const VerifyEmailPage = lazy(() => import("@/pages/VerifyEmailPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 
-// One QueryClient for the app: bounded retries, no aggressive refetching.
+const QUERY_STALE_MS = 30_000;
+
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-      refetchOnWindowFocus: false,
-    },
+    queries: { retry: 1, staleTime: QUERY_STALE_MS, refetchOnWindowFocus: false },
     mutations: { retry: 0 },
   },
 });
 
-/** Full-screen branded fallback while a lazy page chunk loads. */
 const PageFallback = () => <Loading fullScreen size="lg" />;
 
-const AuthenticatedApplication = () => {
-  // Always read currentPage and user from the store (not cached)
-  const currentPage = usePartyStore((s) => s.currentPage);
-  const user = usePartyStore((s) => s.user);
-  // show a quick loading fallback when we have a persisted currentEvent but no events loaded yet
-  const persistedCurrentEvent = usePartyStore((s) => s.currentEvent);
-  const events = usePartyStore((s) => s.events);
+const AuthenticatedShell = () => {
+  const user = usePartyStore(s => s.user);
+  const persistedCurrentEvent = usePartyStore(s => s.currentEvent);
+  const events = usePartyStore(s => s.events);
   const { isLoading } = useAuth();
-
-  // New state for landing/auth flow
-  const [appMode, setAppMode] = useState<'landing' | 'auth' | 'app'>('landing');
   const [userIntent, setUserIntent] = useState<'create_event' | 'join_event' | 'explore_features'>('explore_features');
 
-  useEffect(() => {
-    // Initialize auth state listener once for session management
-    initializeAuthStateListener();
-  }, []);
+  useEffect(() => { initializeAuthStateListener(); }, []);
 
-  useEffect(() => {
-    if (user) {
-      setAppMode('app');
-      if (currentPage === 'auth' || currentPage === 'landing') {
-        usePartyStore.getState().setCurrentPage('dashboard');
-      }
-    } else {
-      // If no user, check currentPage to determine mode
-      if (currentPage === 'auth') {
-        setAppMode('auth');
-      } else if (currentPage === 'landing') {
-        setAppMode('landing');
-      } else if (appMode === 'app') {
-        setAppMode('auth');
-      }
-      // Don't auto-redirect to auth from landing - let user choose
-    }
-  }, [user, currentPage, appMode]);
-
-  const handleBackToLanding = () => {
-    setAppMode('landing');
-    // Also reset the currentPage to ensure consistency
-    usePartyStore.getState().setCurrentPage('landing');
-  };
-
-  if (isLoading) {
-    return <Loading fullScreen size="lg" />;
-  }
-
-  // If rehydration left us with a currentEvent id/object but no events array populated,
-  // show a loading screen while the rehydrate healing logic runs in the store.
-  if (persistedCurrentEvent && (!events || events.length === 0) && user) {
-    return <Loading fullScreen size="lg" />;
-  }
-
-  const renderPage = () => {
-    // Landing and Auth Flow
-    if (!user) {
-      if (appMode === 'landing') {
-        return (
-          <LandingPageCreative 
-            onStartAuth={(intent) => {
-              setUserIntent(intent);
-              setAppMode('auth');
-            }}
-          />
-        );
-      } else {
-        return (
-          <AuthScreen 
-            initialMode="auth"
-            userIntent={userIntent}
-            onBackToLanding={handleBackToLanding}
-          />
-        );
-      }
-    }
-
-    // Handle special pages for all users
-    if (currentPage === 'logout') {
-      return <Logout />;
-    }
-
-    if (currentPage === 'party-culture-blog') {
-      return <PartyCultureBlog />;
-    }
-
-    if (currentPage === 'templates') {
-      return <ProtectedRoute>
-        <TemplateManager />
-      </ProtectedRoute>;
-    }
-
-    // Handle guest view with dynamic ID
-    if (currentPage.startsWith('guest-view-')) {
-      const guestId = currentPage.replace('guest-view-', '');
-      return <GuestView guestId={guestId} />;
-    }
-
-    // Protected routes for authenticated users
-    return (
-      <ProtectedRoute>
-        {(() => {
-          const role = user?.role || 'user';
-
-          switch (currentPage) {
-            case 'role-selection':
-            case 'switch-role':
-              return <RoleSelection />;
-
-            case 'profile':
-              return <ProfilePage />;
-
-            case 'user-dashboard':
-            case 'my-tickets':
-            case 'saved-events':
-              return <UserDashboard />;
-
-            case 'creator-dashboard':
-            case 'analytics':
-              return <RoleGuard allowedRoles={['creator']}><CreatorDashboard /></RoleGuard>;
-
-            // 'vendor-profile-setup', 'vendor-bookings', 'vendor-earnings',
-            // 'vendor-reviews', 'vendor-analytics' and 'vendor-services' were
-            // handled here too, all falling through to this same component.
-            // Their only call sites were the six quick-action buttons on
-            // VendorDashboard, so every one of them re-rendered the page the
-            // user was already on. The buttons are gone and so are the arms.
-            case 'vendor-dashboard':
-              return <RoleGuard allowedRoles={['vendor']}><VendorDashboard /></RoleGuard>;
-
-            case 'create-event':
-              return <RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard>;
-
-            case 'event-management':
-              return <RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard>;
-
-            case 'qr-scanner':
-              return <RoleGuard allowedRoles={['creator']}><QRScanner /></RoleGuard>;
-
-            case 'games':
-              return <GamesPage />;
-
-            case 'settings':
-              return <SettingsPage />;
-
-            case 'notifications':
-              return <NotificationsPage />;
-
-            case 'privacy-settings':
-              return <PrivacySettingsPage />;
-
-            case 'feed':
-              return <SocialFeedPage />;
-
-            case 'explore':
-              return <ExplorePage />;
-
-            case 'dashboard':
-            default:
-              if (role === 'creator') return <CreatorDashboard />;
-              if (role === 'vendor') return <VendorDashboard />;
-              return <UserDashboard />;
-          }
-        })()}
-      </ProtectedRoute>
-    );
-  };
+  if (isLoading) return <Loading fullScreen size="lg" />;
+  if (persistedCurrentEvent && (!events || events.length === 0) && user) return <Loading fullScreen size="lg" />;
 
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <HardenedErrorBoundary>
-            <div className="min-h-screen bg-background text-foreground">
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  {/* Email deep links — must resolve outside the state machine
-                      or the emailed URLs dead-end on the default screen. */}
-                  <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/templates" element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
-                  <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                  <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
-                  <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-                  <Route path="*" element={
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={appMode + currentPage}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {/* Per-page boundary: a crash inside one page never
-                            takes down the app shell (nav/toasters). */}
-                        <HardenedErrorBoundary>
-                          {renderPage()}
-                        </HardenedErrorBoundary>
-                      </motion.div>
-                    </AnimatePresence>
-                  } />
-                </Routes>
-              </Suspense>
-            </div>
-            <PWAInstallBanner />
-            <Toaster />
-            <Sonner />
-          </HardenedErrorBoundary>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <HardenedErrorBoundary>
+          <div className="min-h-screen bg-background text-foreground">
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path={ROUTES.HOME} element={!user ? <LandingPageCreative onStartAuth={(intent) => setUserIntent(intent)} /> : <Navigate to={ROUTES.DASHBOARD} replace />} />
+                <Route path={ROUTES.AUTH} element={!user ? <AuthScreen initialMode="auth" userIntent={userIntent} /> : <Navigate to={ROUTES.DASHBOARD} replace />} />
+                <Route path={ROUTES.AUTH_VERIFY_EMAIL} element={<VerifyEmailPage />} />
+                <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
+                <Route path={ROUTES.JOIN_TOKEN} element={<JoinEventPage />} />
+                <Route path={ROUTES.JOIN_WILDCARD} element={<JoinEventPage />} />
+                <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path={ROUTES.CREATE_EVENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard></ProtectedRoute>} />
+                <Route path={ROUTES.EVENT_MANAGEMENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard></ProtectedRoute>} />
+                <Route path={ROUTES.SETTINGS} element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path={ROUTES.PRIVACY_SETTINGS} element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
+                <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+                <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
+                <Route path={ROUTES.EXPLORE} element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+                <Route path={ROUTES.PARTY_CULTURE_BLOG} element={<PartyCultureBlog />} />
+                <Route path={ROUTES.QR_SCANNER} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><QRScanner /></RoleGuard></ProtectedRoute>} />
+                <Route path={ROUTES.ROLE_SELECTION} element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
+                <Route path={ROUTES.GUEST_VIEW} element={<GuestViewRoute />} />
+                <Route path={ROUTES.LOGOUT} element={<Logout />} />
+                <Route path={ROUTES.CATCH_ALL} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+              </Routes>
+            </Suspense>
+          </div>
+          <PWAInstallBanner />
+          <Toaster />
+          <Sonner />
+        </HardenedErrorBoundary>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
+const JoinShell = () => (
+  <HardenedErrorBoundary>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/join/:token" element={<JoinEventPage />} />
+        <Route path="/join/*" element={<JoinEventPage />} />
+      </Routes>
+    </Suspense>
+  </HardenedErrorBoundary>
+);
+
 const App = () => {
-  if (/^\/join(?:\/|$)/.test(window.location.pathname)) {
-    return (
-      <BrowserRouter>
-        <HardenedErrorBoundary>
-          <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route path="/join/:token" element={<JoinEventPage />} />
-              <Route path="/join/*" element={<JoinEventPage />} />
-            </Routes>
-          </Suspense>
-        </HardenedErrorBoundary>
-      </BrowserRouter>
-    );
-  }
-  return <AuthenticatedApplication />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/join/*" element={<JoinShell />} />
+        <Route path="/*" element={<AuthenticatedShell />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 export default App;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking, Image } from 'react-native';
 import {
   CURRENT_PRIVACY_VERSION,
   CURRENT_TERMS_VERSION,
@@ -301,7 +301,9 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.logo}>🎉</Text>
+          <View style={styles.logoIcon}>
+            <Image source={require('../../assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
+          </View>
           <Text style={styles.title}>
             {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
           </Text>
@@ -542,7 +544,7 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.neutral[950],
+    backgroundColor: COLORS.cream[50],
   },
   scrollContent: {
     flexGrow: 1,
@@ -562,20 +564,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
-    fontSize: 64,
+  logoIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.pastels.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
+    tintColor: COLORS.neutral[900],
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: COLORS.neutral[900],
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#fff',
+    color: COLORS.neutral[900],
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     textAlign: 'center',
   },
   form: {
@@ -584,7 +601,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.neutral[800],
     marginBottom: 8,
   },
   consentRow: {
@@ -637,13 +654,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: COLORS.primary.main,
+    backgroundColor: COLORS.pastels.teal,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 28,
     alignItems: 'center',
-    shadowColor: COLORS.primary.main,
+    shadowColor: COLORS.pastels.teal,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
   },
@@ -651,7 +668,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.neutral[900],
     fontSize: 16,
     fontWeight: '700',
   },
@@ -661,7 +678,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
     textDecorationLine: 'underline',
   },
@@ -680,7 +697,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   recoveryBody: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
     lineHeight: 20,
   },
@@ -705,7 +722,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchText: {
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     fontSize: 14,
   },
   switchTextBold: {
@@ -751,7 +768,7 @@ const styles = StyleSheet.create({
   },
   infoItem: {
     fontSize: 14,
-    color: 'rgba(251, 250, 249, 0.72)',
+    color: COLORS.neutral[600],
     marginBottom: 8,
     paddingLeft: 8,
   },

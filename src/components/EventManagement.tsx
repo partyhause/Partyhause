@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -18,7 +19,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { eventService } from '@/lib/events';
 
 export const EventManagement = () => {
-  const { currentEvent, events, setCurrentEvent, setEvents, guests, setCurrentPage, isLoading } = usePartyStore();
+  const { currentEvent, events, setCurrentEvent, setEvents, guests, isLoading } = usePartyStore();
+  const navigate = useNavigate();
   // Ref to track if we've already tried to load guests for this event
   const guestLoadAttempted = useRef<Set<string>>(new Set());
   // Ref to track the last guest count for this event to avoid unnecessary re-fetches
@@ -133,7 +135,7 @@ export const EventManagement = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
-                onClick={() => setCurrentPage('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="icon-btn-liquid mr-4"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -174,7 +176,7 @@ export const EventManagement = () => {
                 </Button>
               )}
               <button
-                onClick={() => setCurrentPage('qr-scanner')}
+                onClick={() => navigate('/qr-scanner')}
                 className="btn-iridescent"
               >
                 <QrCode className="h-4 w-4 mr-2" />

@@ -1,0 +1,35 @@
+/* PartyHause Pastel Icon Theme
+   Icons inherit currentColor and are used with brand pastel tones.
+   Usage: <Icon className="icon-pastel-coral" />
+*/
+
+.icon-pastel-coral { color: hsl(var(--coral-500)); }
+.icon-pastel-coral-soft { color: hsl(var(--coral-300)); }
+
+.icon-pastel-magenta { color: hsl(var(--magenta-500)); }
+.icon-pastel-magenta-soft { color: hsl(var(--magenta-300)); }
+
+.icon-pastel-teal { color: hsl(var(--teal-500)); }
+.icon-pastel-teal-soft { color: hsl(var(--teal-300)); }
+
+.icon-pastel-periwinkle { color: hsl(var(--periwinkle-500)); }
+.icon-pastel-periwinkle-soft { color: hsl(var(--periwinkle-300)); }
+
+.icon-pastel-cream { color: hsl(var(--cream-700)); }
+.icon-pastel-cream-soft { color: hsl(var(--cream-400)); }
+
+.icon-pastel-neutral { color: hsl(var(--neutral-700)); }
+.icon-pastel-neutral-soft { color: hsl(var(--neutral-400)); }
+
+/* Pastel fill variants for solid icons */
+.icon-fill-pastel-coral { fill: hsl(var(--coral-200)); stroke: hsl(var(--coral-600)); }
+.icon-fill-pastel-magenta { fill: hsl(var(--magenta-200)); stroke: hsl(var(--magenta-600)); }
+.icon-fill-pastel-teal { fill: hsl(var(--teal-200)); stroke: hsl(var(--teal-600)); }
+.icon-fill-pastel-periwinkle { fill: hsl(var(--periwinkle-200)); stroke: hsl(var(--periwinkle-600)); }
+
+/* Soft background blobs for icon containers */
+.icon-bg-pastel-coral { background-color: hsl(var(--coral-50)); }
+.icon-bg-pastel-magenta { background-color: hsl(var(--magenta-50)); }
+.icon-bg-pastel-teal { background-color: hsl(var(--teal-50)); }
+.icon-bg-pastel-periwinkle { background-color: hsl(var(--periwinkle-50)); }
+.icon-bg-pastel-cream { background-color: hsl(var(--cream-100)); }

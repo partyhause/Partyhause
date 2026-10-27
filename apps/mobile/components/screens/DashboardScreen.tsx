@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +7,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/client';
 import { toLocalEvents } from '@/lib/mappers';
 import { EventCardCarousel } from '@/components/cards/EventCardCarousel';
+import { NotchedCard } from '@/components/ui/NotchedCard';
+import { MetricPill } from '@/components/ui/MetricPill';
+import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '@/constants/theme';
 import { Event } from '@/types/event';
-import { COLORS } from '@/constants/theme';
-
 interface DashboardScreenProps {
   userId: string;
   userEmail: string;
@@ -26,16 +27,10 @@ const formatDate = (dateString: string) => {
     year: 'numeric',
   });
 };
-
 export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScreenProps) => {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  // The carousel reports its page but nothing on this screen reads it; the
-  // setter alone satisfies the required onIndexChange prop.
   const [, setCurrentEventIndex] = useState(0);
-  // Impure clock reads belong in lazy initializers, not render: the new
-  // react-hooks/purity rule rejects Date.now()/new Date() during render.
-  // Both values are display thresholds, stale by one mount at worst.
   const [todayLabel] = useState(() => formatDate(new Date().toISOString()).toUpperCase());
   const [now] = useState(() => Date.now());
 
@@ -43,28 +38,11 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
     queryKey: ['user-events', userId],
     queryFn: async () => {
       if (!userId) return [];
-
-      // The old query was .from('events').eq('host_id', userId)
-      // .order('start_date'). GET /api/events already scopes to the caller and
-      // orders by start_date ascending (server/routes/events.ts), so both
-      // clauses are redundant here.
-      //
-      // Behaviour change worth knowing: the server scopes with
-      // OR[host_id, co-host, invited guest], where the previous direct query
-      // matched host_id alone. The dashboard now also shows events the user was
-      // invited to, which matches the web app.
-      const { data, error } = await api.events.list();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // toLocalEvents maps the API shape onto the local Event type, which
-      // requires `title` (the API returns `name`), `template_type` and
-      // `status`. See lib/mappers.ts for why that divergence exists.
-      return toLocalEvents(data);
+      const res = await api.events.list();
+      return toLocalEvents(res.data ?? []);
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const onRefresh = async () => {
@@ -104,7 +82,7 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
           pattern 2. The block carries the greeting and the screen's one
           oversized metric; the sheet holds the content and overlaps upward. */}
       <LinearGradient
-        colors={[COLORS.periwinkle[400], COLORS.periwinkle[600]]}
+        colors={[COLORS.pastels.periwinkle, '#C5A3E6']}
         style={styles.headerBlock}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -189,7 +167,9 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
               }
             >
               <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🎈</Text>
+                <View style={[styles.emptyIconWrap, { backgroundColor: COLORS.pastels.lavender }]}>
+                  <Ionicons name="calendar-outline" size={32} color={COLORS.neutral[900]} />
+                </View>
                 <Text style={styles.emptyTitle}>No events yet</Text>
                 <Text style={styles.emptyText}>
                   Create your first event and start inviting guests!
@@ -203,23 +183,29 @@ export const DashboardScreen = ({ userId, userEmail, onSignOut }: DashboardScree
           ) : (
             <>
               {/* Dotted-border stat pills: the concept's signature detail. */}
-              <View style={styles.statPills}>
-                <View style={styles.statPill}>
-                  <Ionicons name="calendar" size={18} color={COLORS.periwinkle[500]} />
-                  <Text style={styles.statValue}>{events.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <Ionicons name="document-text" size={18} color={COLORS.warning.main} />
-                  <Text style={styles.statValue}>{draftCount}</Text>
-                  <Text style={styles.statLabel}>Drafts</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <Ionicons name="time" size={18} color={COLORS.teal[800]} />
-                  <Text style={styles.statValue}>{upcomingCount}</Text>
-                  <Text style={styles.statLabel}>Upcoming</Text>
-                </View>
-              </View>
+               <View style={styles.statPills}>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.periwinkle }]}>
+                     <Ionicons name="calendar" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{events.length}</Text>
+                   <Text style={styles.statLabel}>Total</Text>
+                 </View>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.peach }]}>
+                     <Ionicons name="document-text" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{draftCount}</Text>
+                   <Text style={styles.statLabel}>Drafts</Text>
+                 </View>
+                 <View style={styles.statPill}>
+                   <View style={[styles.statIconWrap, { backgroundColor: COLORS.pastels.teal }]}>
+                     <Ionicons name="time" size={20} color={COLORS.neutral[900]} />
+                   </View>
+                   <Text style={styles.statValue}>{upcomingCount}</Text>
+                   <Text style={styles.statLabel}>Upcoming</Text>
+                 </View>
+               </View>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Your Events</Text>
                 <Text style={styles.sectionSubtitle}>
@@ -305,7 +291,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: COLORS.pastels.lavender,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -313,10 +299,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: COLORS.pastels.peach,
   },
   signOutText: {
-    color: COLORS.text.onDark,
+    color: COLORS.neutral[900],
     fontSize: 13,
     fontWeight: '600',
   },
@@ -358,14 +344,18 @@ const styles = StyleSheet.create({
   },
   statPill: {
     flex: 1,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: COLORS.cream[300],
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 24,
+    paddingVertical: 16,
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.background.primary,
+    gap: 10,
+    backgroundColor: COLORS.cream[100],
+  },
+  statIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 22,
@@ -406,9 +396,14 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
   },
-  emptyIcon: {
-    fontSize: 64,
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: COLORS.pastels.lavender,
   },
   emptyTitle: {
     fontSize: 22,

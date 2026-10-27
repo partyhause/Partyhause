@@ -182,9 +182,30 @@ export default {
         'gradient-brand': 'var(--gradient-brand)',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xs: "var(--radius-sm)",
+        sm: "var(--radius-md)",
+        md: "var(--radius-lg)",
+        lg: "var(--radius-xl)",
+        xl: "var(--radius-xxl)",
+        full: "9999px",
+      },
+      spacing: {
+        xs: "var(--space-xs)",
+        sm: "var(--space-sm)",
+        md: "var(--space-md)",
+        lg: "var(--space-lg)",
+        xl: "var(--space-xl)",
+        xxl: "var(--space-xxl)",
+        xxxl: "var(--space-xxxl)",
+        xxxxl: "var(--space-xxxxl)",
+      },
+      fontSize: {
+        h1: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.0125em" }],
+        h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.01em" }],
+        h3: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.008em" }],
+        body: ["1rem", { lineHeight: "1.5rem" }],
+        small: ["0.875rem", { lineHeight: "1.3125rem" }],
+        caption: ["0.75rem", { lineHeight: "1.125rem" }],
       },
       keyframes: {
         // UI Component Animations

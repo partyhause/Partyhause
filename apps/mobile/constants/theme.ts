@@ -32,7 +32,28 @@ export const BORDER_RADIUS = {
   lg: 12,
   xl: 16,
   xxl: 24,
+  card: 32,
   full: 9999,
+} as const;
+
+/**
+ * Shadows
+ */
+export const SHADOWS = {
+  soft: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
 } as const;
 
 /**
@@ -63,9 +84,9 @@ export const COLORS = {
   // surface colour, never a status colour. periwinkle is the evening accent;
   // text-bearing surfaces use 500 or darker.
   cream: {
-    50: '#FAF8F5',
-    100: '#F5F1EA',
-    200: '#EBE3D6',
+    50: '#E8D3B9',
+    100: '#E8D3B9',
+    200: '#F1E7D1',
     300: '#DCCEB7',
     400: '#CDBA98',
     500: '#BDA375',
@@ -75,6 +96,15 @@ export const COLORS = {
     900: '#604E2E',
     950: '#372D1B',
   },
+  pastels: {
+    coral: '#FF8A80',
+    teal: '#80CBC4',
+    periwinkle: '#B39DDB',
+    peach: '#FFCCBC',
+    sage: '#C5E1A5',
+    lavender: '#E1BEE7',
+  },
+
   teal: {
     50: '#F4FBFA',
     100: '#E8F7F5',
@@ -121,7 +151,7 @@ export const COLORS = {
   },
   neutral: {
     0: '#FFFFFF',
-    50: '#FBFAF9',
+    50: '#FFFBF0',
     100: '#F6F4F3',
     200: '#EBE7E5',
     300: '#D8D2CF',
@@ -138,14 +168,14 @@ export const COLORS = {
     secondary: '#6A5E58',    // neutral-600, 6.26:1 on white, 5.90:1 on cream-50
     tertiary: '#796D67',     // hsl(20 8% 44%), 5.00:1 on white, 4.72:1 on cream-50
     disabled: '#ABA09B',     // neutral-400
-    onDark: '#FBFAF9',       // neutral-50
+    onDark: '#FFFBF0',       // neutral-50
     inverse: '#FFFFFF',
   },
   background: {
-    primary: '#FFFFFF',
-    secondary: '#FAF8F5',    // cream-50, the page background
-    tertiary: '#F5F1EA',     // cream-100, inset surfaces
-    dark: '#181311',         // neutral-950
+    primary: '#E8D3B9',
+    secondary: '#E8D3B9',
+    tertiary: '#FFF9E5',
+    dark: '#181311',
   },
 } as const;
 
@@ -262,33 +292,7 @@ export const ICON_SIZES = {
   xl: 48,
 } as const;
 
-/**
- * Shadow Styles
- * Use sparingly - only when creating depth is necessary
- */
-export const SHADOWS = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-} as const;
+
 
 /**
  * Component Dimensions

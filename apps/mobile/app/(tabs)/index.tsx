@@ -1,20 +1,22 @@
 import { useCallback, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { Redirect, useFocusEffect } from "expo-router";
 import type { OnboardingState } from "@partyhause/core";
 import { api } from "@/lib/client";
-import { LandingScreen } from "@/components/screens/LandingScreenEnhanced";
+import { fetchOnboardingGate } from "@/lib/onboarding";
 import { AuthScreen } from "@/components/screens/AuthScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { UsernamePicker } from "@/components/UsernamePicker";
+import { LandingScreen } from "@/components/screens/LandingScreen";
 
-type AppMode = "loading" | "landing" | "auth" | "onboarding" | "dashboard";
+type AppMode = "landing" | "loading" | "auth" | "username_picker" | "dashboard";
 
 export default function HomeScreen() {
-  const [appMode, setAppMode] = useState<AppMode>("loading");
+  const [appMode, setAppMode] = useState<AppMode>("landing");
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   /**
    * Establish whether a usable session exists.
@@ -27,7 +29,7 @@ export default function HomeScreen() {
    */
   const checkAuth = useCallback(async () => {
     if (!(await api.auth.isAuthenticated())) {
-      setAppMode("landing");
+      setAppMode("auth");
       return;
     }
 
@@ -35,36 +37,41 @@ export default function HomeScreen() {
     if (error || !data) {
       setUserId(null);
       setUserEmail(null);
-      setAppMode("landing");
+      setAppMode("auth");
       return;
     }
 
     setUserId(data.id);
     setUserEmail(data.email);
 
-    // Username gate. `show_picker` is computed server-side from four columns
-    // precisely so this client and the web client cannot derive it differently;
-    // the only job here is to render it.
-    //
-    // Failing open on error: an unreachable status endpoint must not become an
-    // account lockout over a username prompt. The gate asks again next focus.
+    // Username picker gate - part of onboarding journey
     const onboardingResult = await api.users.onboardingState();
     if (!onboardingResult.error && onboardingResult.data?.show_picker) {
       setOnboarding(onboardingResult.data);
-      setAppMode("onboarding");
+      setAppMode("username_picker");
       return;
     }
 
     setOnboarding(null);
+
+    // The database decides, not local state. GET /api/onboarding returns
+    // flow.completed derived from the stored answers and the caller's
+    // entitlement; honoring a local AsyncStorage flag here instead meant a
+    // finished user was bounced back into the flow on every login, or an
+    // unfinished one admitted to the dashboard. A failed call falls through
+    // to the dashboard rather than gating: the /onboarding layout guard
+    // re-checks on mount, so a flaky network cannot strand anyone.
+    const gate = await fetchOnboardingGate();
+    if (gate) {
+      setNeedsOnboarding(!gate.completed);
+    }
     setAppMode("dashboard");
   }, []);
 
-  // On focus rather than on mount. This screen stays mounted while other
-  // routes are pushed over it, so a mount-only check could not observe a
-  // session ending elsewhere. Account deletion in /settings does exactly that:
-  // it destroys the account and clears the token, then returns here. Without a
-  // focus check the dashboard would still be rendered for a user who no longer
-  // exists, and every query on it would fail with 401.
+  // The gate below renders a redirect into /onboarding whenever the stored
+  // completion flag is missing, so checkAuth runs on every focus: it is what
+  // flips the flag state after the final onboarding step writes it and pops
+  // back here.
   useFocusEffect(
     useCallback(() => {
       void checkAuth();
@@ -80,19 +87,20 @@ export default function HomeScreen() {
     setAppMode("landing");
   };
 
+  if (appMode === "landing") {
+    return (
+      <LandingScreen
+        onGetStarted={() => { setAppMode("loading"); void checkAuth(); }}
+        onSignIn={() => { setAppMode("auth"); }}
+      />
+    );
+  }
+
   if (appMode === "loading") {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.periwinkle[400]} />
       </View>
-    );
-  }
-
-  if (appMode === "landing") {
-    return (
-      <LandingScreen
-        onGetStarted={() => setAppMode("auth")}
-      />
     );
   }
 
@@ -109,7 +117,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (appMode === "onboarding" && onboarding) {
+  if (appMode === "username_picker" && onboarding) {
     return (
       <View style={styles.onboardingContainer}>
         <UsernamePicker
@@ -121,13 +129,19 @@ export default function HomeScreen() {
               : "This is how people find you and tag you across PartyHause. Choose one to continue."
           }
           submitLabel="Continue"
-          // The control exists only when the server says this account may
-          // dismiss, which is true exactly for accounts predating the picker.
           onSkip={onboarding.skippable ? () => { void checkAuth(); } : undefined}
           onDone={() => { void checkAuth(); }}
         />
       </View>
     );
+  }
+
+  // Unfinished onboarding routes into the /onboarding group, where each step
+  // is a real expo-router route with its own URL. checkAuth on focus (above)
+  // is what lands the user back on the dashboard once the final step writes
+  // the completion flag and replaces home.
+  if (needsOnboarding && appMode === "dashboard") {
+    return <Redirect href="/onboarding/welcome" />;
   }
 
   return (
@@ -137,6 +151,8 @@ export default function HomeScreen() {
       onSignOut={handleSignOut}
     />
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -144,14 +160,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.neutral[950],
+    backgroundColor: COLORS.cream[100],
   },
   // Paper rather than the dark shell the dashboard uses: the picker is a form,
   // and its inputs and hairlines are specified against a light surface in
   // docs/BRAND.md.
   onboardingContainer: {
     flex: 1,
-    backgroundColor: "#FBFAF9",
+    backgroundColor: "COLORS.cream.50",
   },
 });
 

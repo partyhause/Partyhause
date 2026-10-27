@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCrewFeed } from '@/features/partycrew/hooks';
 import { ContentFeedCard, CrewingWithBar } from '@/features/partycrew/components';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { usePartyStore } from '@/store/usePartyStore';
 
 export default function SocialFeedPage() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   
   const contentTypeMap: Record<FilterTab, string | undefined> = {
     all: undefined,
@@ -99,7 +100,7 @@ export default function SocialFeedPage() {
     <PageShell
       title="PartyCrew Feed"
       maxWidth="md"
-      onBack={() => setCurrentPage('dashboard')}
+      onBack={() => navigate('/dashboard')}
       actions={
         <Button
           variant="ghost"
@@ -140,7 +141,7 @@ export default function SocialFeedPage() {
             description="Start following creators to see their content here!"
             action={{
               label: 'Discover Creators',
-              onClick: () => usePartyStore.getState().setCurrentPage('explore'),
+              onClick: () => navigate('/explore'),
             }}
           />
         )}

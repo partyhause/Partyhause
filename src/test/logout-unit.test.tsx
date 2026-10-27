@@ -50,7 +50,6 @@ describe('Logout Functionality Tests', () => {
     usePartyStore.setState({
       user: null,
       isAuthenticated: false,
-      currentPage: 'auth',
       events: [],
       currentEvent: null,
       guests: [],
@@ -69,7 +68,6 @@ describe('Logout Functionality Tests', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent],
       currentEvent: mockEvent,
       guests: [],
@@ -84,7 +82,6 @@ describe('Logout Functionality Tests', () => {
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
-    expect(state.currentPage).toBe('auth');
     expect(state.events).toEqual([]);
     expect(state.currentEvent).toBeNull();
     expect(state.guests).toEqual([]);
@@ -100,7 +97,6 @@ describe('Logout Functionality Tests', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [], // Empty events array
       currentEvent: mockEvent, // But currentEvent is persisted
       guests: [],
@@ -114,7 +110,6 @@ describe('Logout Functionality Tests', () => {
     // Verify store state is properly cleared
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
-    expect(state.currentPage).toBe('auth');
     expect(state.events).toEqual([]);
     expect(state.currentEvent).toBeNull();
     expect(state.guests).toEqual([]);
@@ -125,7 +120,6 @@ describe('Logout Functionality Tests', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent],
       currentEvent: mockEvent,
       guests: [],
@@ -144,7 +138,6 @@ describe('Logout Functionality Tests', () => {
     // Verify store state is cleared even with signOut error
     const state = usePartyStore.getState();
     expect(state.user).toBeNull();
-    expect(state.currentPage).toBe('auth');
     expect(state.events).toEqual([]);
     expect(state.currentEvent).toBeNull();
   });
@@ -154,7 +147,6 @@ describe('Logout Functionality Tests', () => {
     usePartyStore.setState({
       user: mockUser,
       isAuthenticated: true,
-      currentPage: 'dashboard',
       events: [mockEvent],
       currentEvent: mockEvent,
       guests: [],
@@ -171,28 +163,27 @@ describe('Logout Functionality Tests', () => {
     expect(state.loadedEventIds).toEqual(new Set<string>());
   });
 
-  it('should set currentPage to auth on logout', () => {
-    // Setup: User is on different pages
-    const pages = ['dashboard', 'create-event', 'event-management'];
-
-    pages.forEach(page => {
-      usePartyStore.setState({
-        user: mockUser,
-        isAuthenticated: true,
-        currentPage: page,
-        events: [mockEvent],
-        currentEvent: mockEvent,
-        guests: [],
-        isLoading: false,
-      });
-
-      // Trigger logout
-      const { logout } = usePartyStore.getState();
-      logout();
-
-      // Verify currentPage is set to auth
-      const state = usePartyStore.getState();
-      expect(state.currentPage).toBe('auth');
+  it('writes no page state on logout: routing lives in the router', () => {
+    // Setup: User is logged in
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [mockEvent],
+      currentEvent: mockEvent,
+      guests: [],
+      isLoading: false,
     });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // The React Router cutover removed currentPage from the store; logout
+    // components navigate('/auth') themselves. Pin the absence so a merge
+    // does not reintroduce a parallel navigation mechanism.
+    const state = usePartyStore.getState();
+    expect(state).not.toHaveProperty('currentPage');
+    expect(state.user).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
   });
 });

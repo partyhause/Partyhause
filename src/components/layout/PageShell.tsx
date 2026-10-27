@@ -17,6 +17,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeft, Bell, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useNavigate } from 'react-router-dom';
 import { usePartyStore } from '@/store/usePartyStore';
 import { useUnreadCount } from '@/features/notifications/useNotifications';
 
@@ -58,9 +59,12 @@ export function PageShell({
   children,
 }: PageShellProps) {
   const width = MAX_WIDTH_CLASS[maxWidth];
+  const user = usePartyStore((s) => s.user);
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
+      <header className="border-b bg-cream-50 sticky top-0 z-10">
         <div className={`${width} mx-auto px-4 py-3`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0">
@@ -72,9 +76,15 @@ export function PageShell({
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-foreground truncate">{title}</h1>
                 {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+                {user && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">Hi, {user.name || user.email?.split('@')[0] || 'Guest'} · {dateLabel}</p>
+                )}
               </div>
             </div>
-            {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="hidden sm:inline text-xs text-muted-foreground">{dateLabel}</span>
+              {actions && <div className="flex items-center gap-2">{actions}</div>}
+            </div>
           </div>
           {headerBottom && <div className="mt-3">{headerBottom}</div>}
         </div>
@@ -91,7 +101,7 @@ interface UserMenuProps {
 
 export function UserMenu({ showSettingsButton = false }: UserMenuProps) {
   const user = usePartyStore((s) => s.user);
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
+  const navigate = useNavigate();
   const name = user?.name || user?.email || 'Guest';
   // Live unread count from /api/notifications/unread-count (60s poll).
   const { data: unreadCount = 0 } = useUnreadCount();
@@ -103,7 +113,7 @@ export function UserMenu({ showSettingsButton = false }: UserMenuProps) {
         size="icon"
         className="relative rounded-full"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-        onClick={() => setCurrentPage('notifications')}
+        onClick={() => navigate('/notifications')}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -121,7 +131,7 @@ export function UserMenu({ showSettingsButton = false }: UserMenuProps) {
           size="icon"
           className="rounded-full"
           aria-label="Settings"
-          onClick={() => setCurrentPage('settings')}
+          onClick={() => navigate('/settings')}
         >
           <Settings className="h-5 w-5" />
         </Button>
@@ -130,7 +140,7 @@ export function UserMenu({ showSettingsButton = false }: UserMenuProps) {
         type="button"
         aria-label="Open your profile"
         className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        onClick={() => setCurrentPage('profile')}
+        onClick={() => navigate('/profile')}
       >
         <Avatar className="h-9 w-9">
           <AvatarFallback className="bg-orange-100 text-orange-600 font-bold text-sm">
@@ -147,11 +157,6 @@ export function UserMenu({ showSettingsButton = false }: UserMenuProps) {
  * Replaces the copies previously inlined in SettingsPage and ProfilePage.
  */
 export function useBackToDashboard(): () => void {
-  const role = usePartyStore((s) => s.user?.role || 'user');
-  const setCurrentPage = usePartyStore((s) => s.setCurrentPage);
-  return () => {
-    if (role === 'creator') setCurrentPage('creator-dashboard');
-    else if (role === 'vendor') setCurrentPage('vendor-dashboard');
-    else setCurrentPage('user-dashboard');
-  };
+  const navigate = useNavigate();
+  return () => navigate('/dashboard');
 }

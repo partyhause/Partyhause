@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePartyStore } from '@/store/usePartyStore';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
 import { EventTemplateSelection } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
@@ -33,7 +35,8 @@ interface EventTemplate {
 
 
 export const EventCreation = () => {
-  const { setCurrentPage, setEvents, events, user } = usePartyStore();
+  const { setEvents, events, user } = usePartyStore();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     event_type: 'single_day' as 'single_day' | 'multi_day',
@@ -388,17 +391,15 @@ export const EventCreation = () => {
   if (step === 'invite') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <Card className="max-w-lg w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Upload Your Event Invite
-            </CardTitle>
-            <CardDescription>
-              Add a custom invite image to make your event emails more personal and engaging.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <PastelCard variant="peach" className="max-w-lg w-full">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-semibold">Upload Your Event Invite</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Add a custom invite image to make your event emails more personal and engaging.
+          </p>
+          <div>
             <form onSubmit={handleInviteSubmit} className="space-y-4">
               {/* Error Display */}
               {error && (
@@ -468,8 +469,8 @@ export const EventCreation = () => {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </PastelCard>
       </div>
     );
   }
@@ -532,17 +533,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setStep('invite-template')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
-                      <Send className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">Send Invitations</CardTitle>
-                    <CardDescription>
-                      Choose a template and invite your guests
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="peach" onClick={() => setStep('invite-template')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Send className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Send Invitations</h3>
+                  <p className="text-sm text-gray-600">Choose a template and invite your guests</p>
+                </PastelCard>
               </motion.div>
 
               <motion.div
@@ -550,17 +547,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setCurrentPage('event-management')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">Manage Event</CardTitle>
-                    <CardDescription>
-                      Add timeline, music, and guest list
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="lavender" onClick={() => navigate('/event-management')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Manage Event</h3>
+                  <p className="text-sm text-gray-600">Add timeline, music, and guest list</p>
+                </PastelCard>
               </motion.div>
 
               <motion.div
@@ -568,17 +561,13 @@ export const EventCreation = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
-                <Card className="modern-card hover:shadow-xl transition-shadow cursor-pointer h-full" onClick={() => setCurrentPage('dashboard')}>
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
-                      <Check className="w-6 h-6 text-white" />
-                    </div>
-                    <CardTitle className="text-lg">View Dashboard</CardTitle>
-                    <CardDescription>
-                      See all your events and analytics
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <PastelCard variant="mint" onClick={() => navigate('/dashboard')} className="cursor-pointer">
+                  <div className="pastel-icon-wrap mb-4">
+                    <Check className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">View Dashboard</h3>
+                  <p className="text-sm text-gray-600">See all your events and analytics</p>
+                </PastelCard>
               </motion.div>
             </div>
 
@@ -590,7 +579,7 @@ export const EventCreation = () => {
               className="text-center"
             >
               <Button 
-                onClick={() => setCurrentPage('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 size="lg"
                 className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold px-8 py-6 text-lg"
               >
@@ -614,7 +603,7 @@ export const EventCreation = () => {
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <button
-                onClick={() => setCurrentPage('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="icon-btn-liquid"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -1074,7 +1063,7 @@ export const EventCreation = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentPage('dashboard')}
+                      onClick={() => navigate('/dashboard')}
                       disabled={isSubmitting}
                       className="flex-1"
                     >
