@@ -15,6 +15,7 @@ import {
   USERNAME_MIN_LENGTH,
   buildUsernameCandidates,
   checkUsernameCooldown,
+  generatedUsername,
   isGeneratedUsername,
   releasedUsernameHoldCutoff,
   usernameChangeAvailableAt,
@@ -278,8 +279,14 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
       update: data,
       create: {
         id: userId,
-        username: `u_${userId.slice(0, 8)}`,
-        username_normalized: `u_${userId.slice(0, 8)}`,
+        // Canonical derivation from the shared policy module, not a raw slice:
+        // Prisma 7 upserts compile to INSERT ... ON CONFLICT, so Postgres
+        // validates the create branch even when the update branch wins, and
+        // `u_${userId.slice(0, 8)}` breaks the username format CHECK for any
+        // id with a hyphen in its first eight characters (the dev bypass
+        // user's does: u_dev-user).
+        username: generatedUsername(userId),
+        username_normalized: generatedUsername(userId),
         display_name: (user?.name && user.name.trim().length > 0) ? user.name : (user?.email ? user.email.split('@')[0] : 'User'),
         ...data,
       },

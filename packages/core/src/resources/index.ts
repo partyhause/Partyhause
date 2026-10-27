@@ -420,6 +420,10 @@ export interface UserProfileUpdate {
   location?: string;
   /** Max 200. Must begin with http:// or https:// when non-empty. */
   website_url?: string;
+  /** The onboarding interests taxonomy. Empty array clears. */
+  interests?: string[];
+  /** Marketing consent, from the profile-completion screen's switch. */
+  marketing_opt_in?: boolean;
 }
 
 export interface UsersResource {

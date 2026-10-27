@@ -33,12 +33,12 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
  */
 const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [workspaceRoot];
+config.watchFolders = [path.resolve(workspaceRoot, 'packages/core')];
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.unstable_enableSymlinks = true;
+// unstable_enableSymlinks removed for SDK 57 – symlink resolution is standard in Metro now
 
 // require.context powers expo-router's file-based route discovery.
 config.transformer = {

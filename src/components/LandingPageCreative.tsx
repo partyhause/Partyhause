@@ -218,7 +218,8 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
    * never requested.
    */
   const prefersReducedMotion = useReducedMotion();
-  const showVideo = !prefersReducedMotion;
+  // Video backdrop disabled for cream concept alignment
+  const showVideo = false;
 
   const videoScale = useTransform(scrollYProgress, [0, 0.3], [1, 1.08]);
   const videoOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.35]);
@@ -274,12 +275,12 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* ---------------------------------------------------------------- */}
       {/* Hero backdrop                                                     */}
       {/* ---------------------------------------------------------------- */}
-      <motion.div
-        className="fixed inset-0 z-0 h-full w-full"
-        style={{ scale: videoScale, opacity: videoOpacity }}
-        aria-hidden="true"
-      >
-        {showVideo ? (
+      {showVideo && (
+        <motion.div
+          className="fixed inset-0 z-0 h-full w-full"
+          style={{ scale: videoScale, opacity: videoOpacity }}
+          aria-hidden="true"
+        >
           <video
             autoPlay
             muted
@@ -299,25 +300,14 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
           >
             <source src={HERO_VIDEO_SRC} type="video/mp4" />
           </video>
-        ) : (
-          <div
-            className="h-full w-full bg-neutral-900 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${HERO_VIDEO_POSTER})`,
-              filter: 'brightness(0.62) contrast(1.05) saturate(1.1)',
-            }}
-          />
-        )}
 
-        {/* Contrast wash, sized so white body text clears 4.5:1 over the
-            brightest frame of the footage. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/55 via-neutral-950/45 to-neutral-950/75" />
-        {/* Brand gradient as a surface tint. Permitted use. */}
-        <div
-          className="absolute inset-0 opacity-25 mix-blend-overlay"
-          style={{ backgroundImage: 'var(--gradient-brand)' }}
-        />
-      </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/55 via-neutral-950/45 to-neutral-950/75" />
+          <div
+            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            style={{ backgroundImage: 'var(--gradient-brand)' }}
+          />
+        </motion.div>
+      )}
 
       {/* ---------------------------------------------------------------- */}
       {/* Navigation                                                        */}
@@ -411,7 +401,21 @@ export const LandingPageCreative = ({ onStartAuth }: LandingPageCreativeProps) =
       {/* Hero                                                              */}
       {/* ---------------------------------------------------------------- */}
       <section className="relative z-10 px-6 pt-24">
-        <div className="bg-coral-700 min-h-[38vh] -mx-6 mb-0"></div>
+        <div className="relative bg-coral-700 min-h-[38vh] -mx-6 mb-0 overflow-hidden">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={HERO_VIDEO_POSTER}
+            className="absolute inset-0 w-full h-full object-cover opacity-30"
+            style={{ filter: 'brightness(1.1) contrast(1.05) saturate(1.1)' }}
+          >
+            <source src={HERO_VIDEO_SRC} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-coral-700/80" />
+        </div>
         <div className="relative -mt-10 mx-auto max-w-5xl bg-cream-50 rounded-3xl px-6 pt-20 pb-24 shadow-lg">
           <div className="text-center">
           <motion.p

@@ -6,7 +6,7 @@ import { PastelCard } from '@/components/ui/PastelCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { 
   Sparkles, 
   Send, 
@@ -479,8 +479,8 @@ export default function AIEventAssistant({
               </motion.div>
             )}
           </div>
-        </ScrollArea>
-      </Card>
+        </div>
+      </PastelCard>
 
       {/* A failed turn has to be visible. Without this the spinner simply stops
           and the user retypes the same message into the same failure. */}

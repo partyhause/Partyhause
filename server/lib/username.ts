@@ -35,6 +35,8 @@
  *   identity, so the generated shape is reserved as a namespace.
  */
 
+import { createHash } from 'crypto';
+
 /** Minimum length, matching `user_profiles_username_length_check`. */
 export const USERNAME_MIN_LENGTH = 3;
 
@@ -68,6 +70,9 @@ const MAX_RAW_INPUT_LENGTH = 200;
 
 /** The character set the database CHECK constraint permits. */
 const ALLOWED_CHARACTERS = /^[A-Za-z0-9_]+$/;
+
+/** A canonical UUID, the id shape every real signup carries. */
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The exact shape `usernameFromUuid` emits (`server/routes/auth.ts:88-98`).
@@ -398,6 +403,32 @@ export function validateUsername(raw: unknown): UsernameVerdict {
 export function isGeneratedUsername(username: unknown): boolean {
   if (typeof username !== 'string') return false;
   return GENERATED_HANDLE_SHAPE.test(username.trim().toLowerCase());
+}
+
+/**
+ * The generated handle for an account id, always valid.
+ *
+ * UUIDs (every real signup) derive from the full 128-bit value in base 36,
+ * keeping complete entropy and the exact shape accounts already hold. Anything
+ * else — the dev bypass user `dev-user-0000…` is the live example — hashes the
+ * id instead, because a raw slice of a non-hex id yields characters (`-`) the
+ * username format CHECK rejects, and Prisma 7 upserts validate the create
+ * branch even when the update branch wins.
+ *
+ * Deterministic: the same id always derives the same handle, so a retried
+ * upsert cannot collide with itself differently across attempts.
+ *
+ * @param id The account id. Any non-empty string.
+ * @returns A handle matching `GENERATED_HANDLE_SHAPE`, 3-30 characters.
+ */
+export function generatedUsername(id: string): string {
+  if (UUID_SHAPE.test(id)) {
+    const hex = id.replace(/-/g, '');
+    return `u_${BigInt(`0x${hex}`).toString(36)}`;
+  }
+  const digest = createHash('sha256').update(id).digest('hex');
+  // 25 hex characters = 100 bits; base 36 keeps it under the 30-character cap.
+  return `u_${BigInt(`0x${digest.slice(0, 25)}`).toString(36)}`;
 }
 
 /** Milliseconds in one day. Named so the arithmetic below reads. */

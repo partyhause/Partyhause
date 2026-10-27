@@ -107,6 +107,44 @@ COPY prisma/ ./prisma/
 COPY prisma.config.ts ./
 COPY --from=apibuilder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=apibuilder /app/node_modules/@prisma ./node_modules/@prisma
+# The full transitive closure of @prisma/config (loaded by prisma.config.ts at
+# runtime), computed from the lockfile tree. Copying only the direct deps
+# fails one module at a time ("Cannot find module 'effect'", then 'fast-check',
+# then 'pure-rand', ...). This list is every package reachable from
+# @prisma/config's dependency graph; prune it only by re-running the closure.
+COPY --from=apibuilder /app/node_modules/@standard-schema ./node_modules/@standard-schema
+COPY --from=apibuilder /app/node_modules/anymatch ./node_modules/anymatch
+COPY --from=apibuilder /app/node_modules/binary-extensions ./node_modules/binary-extensions
+COPY --from=apibuilder /app/node_modules/braces ./node_modules/braces
+COPY --from=apibuilder /app/node_modules/c12 ./node_modules/c12
+COPY --from=apibuilder /app/node_modules/chokidar ./node_modules/chokidar
+COPY --from=apibuilder /app/node_modules/confbox ./node_modules/confbox
+COPY --from=apibuilder /app/node_modules/deepmerge-ts ./node_modules/deepmerge-ts
+COPY --from=apibuilder /app/node_modules/defu ./node_modules/defu
+COPY --from=apibuilder /app/node_modules/destr ./node_modules/destr
+COPY --from=apibuilder /app/node_modules/dotenv ./node_modules/dotenv
+COPY --from=apibuilder /app/node_modules/effect ./node_modules/effect
+COPY --from=apibuilder /app/node_modules/empathic ./node_modules/empathic
+COPY --from=apibuilder /app/node_modules/exsolve ./node_modules/exsolve
+COPY --from=apibuilder /app/node_modules/fast-check ./node_modules/fast-check
+COPY --from=apibuilder /app/node_modules/fill-range ./node_modules/fill-range
+COPY --from=apibuilder /app/node_modules/giget ./node_modules/giget
+COPY --from=apibuilder /app/node_modules/glob-parent ./node_modules/glob-parent
+COPY --from=apibuilder /app/node_modules/is-binary-path ./node_modules/is-binary-path
+COPY --from=apibuilder /app/node_modules/is-extglob ./node_modules/is-extglob
+COPY --from=apibuilder /app/node_modules/is-glob ./node_modules/is-glob
+COPY --from=apibuilder /app/node_modules/is-number ./node_modules/is-number
+COPY --from=apibuilder /app/node_modules/jiti ./node_modules/jiti
+COPY --from=apibuilder /app/node_modules/normalize-path ./node_modules/normalize-path
+COPY --from=apibuilder /app/node_modules/ohash ./node_modules/ohash
+COPY --from=apibuilder /app/node_modules/pathe ./node_modules/pathe
+COPY --from=apibuilder /app/node_modules/perfect-debounce ./node_modules/perfect-debounce
+COPY --from=apibuilder /app/node_modules/picomatch ./node_modules/picomatch
+COPY --from=apibuilder /app/node_modules/pkg-types ./node_modules/pkg-types
+COPY --from=apibuilder /app/node_modules/pure-rand ./node_modules/pure-rand
+COPY --from=apibuilder /app/node_modules/rc9 ./node_modules/rc9
+COPY --from=apibuilder /app/node_modules/readdirp ./node_modules/readdirp
+COPY --from=apibuilder /app/node_modules/to-regex-range ./node_modules/to-regex-range
 
 # Copy built shared core package (required by server routes)
 COPY --from=apibuilder /app/packages/core ./packages/core

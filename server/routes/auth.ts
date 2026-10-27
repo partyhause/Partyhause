@@ -90,7 +90,8 @@ export interface SignupAccountInput {
  *
  * Base-36 keeps the full UUID entropy while satisfying the profile constraint
  * of 3-30 alphanumeric/underscore characters. Two usernames collide only when
- * their source UUIDs are identical.
+ * their source UUIDs are identical. Re-exported from the pure policy module,
+ * which also carries `generatedUsername` for non-UUID ids.
  */
 export function usernameFromUuid(userId: string): string {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {

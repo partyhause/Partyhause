@@ -92,22 +92,32 @@ model User {
   age_eligible               Boolean   @default(false)
   deletion_requested_at      DateTime?
   stripe_customer_id         String?   @unique
-  created_at                 DateTime  @default(now())
-  updated_at                 DateTime  @default(now()) @updatedAt
+
+  // Account role and card verification (migration 20261008000000
+  // _account_role_and_card_verification; file lost from disk, columns live in
+  // every database). account_role is the vendor-side role, distinct from
+  // user_profiles.account_type; the API route for it was removed (server/
+  // routes/users.ts), so nothing writes it yet.
+  // CHECK: IN ('creator', 'vendor', 'attendee')
+  account_role     String?
+  card_verified_at DateTime? @db.Timestamptz
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 
   // Relations
-  events                  Event[]               @relation("UserHostedEvents")
+  events                  Event[]                @relation("UserHostedEvents")
   event_co_hosts          EventCoHost[]
   media                   Media[]
   activity_participants   ActivityParticipant[]
-  vendor_tasks            VendorTask[]          @relation("VendorTaskAssignee")
+  vendor_tasks            VendorTask[]           @relation("VendorTaskAssignee")
   invite_templates        InviteTemplate[]
-  templates               Template[]            @relation("TemplateAuthor")
+  templates               Template[]             @relation("TemplateAuthor")
   template_usage          TemplateUsage[]
-  event_invite_tokens     EventInviteToken[]    @relation("TokenCreator")
-  cost_split_requests     CostSplitRequest[]    @relation("CostSplitCreator")
-  guest_crew_conversions  GuestCrewConversion[] @relation("ConversionUser")
-  guest_crew_conversions2 GuestCrewConversion[] @relation("ConversionByUser")
+  event_invite_tokens     EventInviteToken[]     @relation("TokenCreator")
+  cost_split_requests     CostSplitRequest[]     @relation("CostSplitCreator")
+  guest_crew_conversions  GuestCrewConversion[]  @relation("ConversionUser")
+  guest_crew_conversions2 GuestCrewConversion[]  @relation("ConversionByUser")
   polls                   Poll[]
   poll_votes              PollVote[]
   partyboard_stickies     PartyBoardSticky[]     @relation("PartyBoardStickyCreator")
@@ -118,6 +128,9 @@ model User {
   subscription            Subscription?
   ai_usage                AiUsage[]
   onboarding_response     OnboardingResponse?
+  vendor_profile          VendorProfile?
+  vendor_application      VendorApplication?
+  ticket_sales            TicketSale[]
 
   @@map("users")
 }
@@ -208,9 +221,21 @@ model Event {
   cancelled_at         DateTime?
   completed_at         DateTime?
 
+  // External event source (migration 20261009000000_add_external_event_source;
+  // file lost from disk, columns live in every database). place_id links an
+  // event to a geo_places row; external_source + external_event_id carry a
+  // provider identity with a UNIQUE index over both WHERE both NOT NULL — a
+  // partial index Prisma cannot express, so it lives in the database only and
+  // must never be dropped.
+  external_event_id  String? @db.VarChar(255)
+  external_source   String?
+  external_metadata Json?
+  place_id          String?
+
   // Relations
   host                   User                  @relation("UserHostedEvents", fields: [host_id], references: [id])
   active_game            Game?                 @relation("EventActiveGame", fields: [active_game_id], references: [id])
+  place                  GeoPlace?             @relation("EventPlace", fields: [place_id], references: [id])
   guests                 Guest[]
   games                  Game[]
   email_logs             EmailLog[]
@@ -234,12 +259,15 @@ model Event {
   guest_invitations      GuestInvitation[]
   invitation_deliveries  InvitationDelivery[]
   attendance_audits      AttendanceAudit[]
+  ticket_holds           TicketHold[]          @relation("TicketHoldEvent")
+  ticket_sales           TicketSale[]          @relation("TicketSaleEvent")
 
   @@index([host_id])
   @@index([status])
   @@index([start_date, end_date])
   @@index([template_type])
   @@index([privacy])
+  @@index([place_id])
   @@map("events")
 }
 
@@ -311,6 +339,7 @@ model Guest {
   guest_invitation       GuestInvitation?
   invitation_deliveries  InvitationDelivery[]
   attendance_audits      AttendanceAudit[]
+  ticket_sales           TicketSale[]
 
   @@unique([event_id, normalized_email])
   // One account can hold at most one guest seat per event. PostgreSQL treats
@@ -348,7 +377,9 @@ model Ticket {
   // CHECK: sold <= quantity
 
   // Relations
-  event Event @relation(fields: [event_id], references: [id])
+  event Event        @relation(fields: [event_id], references: [id])
+  holds TicketHold[] @relation("TicketHoldTicket")
+  sales TicketSale[] @relation("TicketSaleTicket")
 
   @@index([event_id])
   @@index([type])
@@ -505,6 +536,157 @@ model VendorTask {
   @@index([due_date])
   @@index([completed])
   @@map("vendor_tasks")
+}
+
+// ============================================================================
+// VENDOR MARKETPLACE (migration 20261007075636_vendor_marketplace; file lost
+// from disk, tables live in every database. Distinct from the per-event
+// Vendor/VendorTask pair above: these are the platform-side vendor identity,
+// catalogue and application-review tables. No API routes read them yet.)
+// ============================================================================
+
+/// A vendor's platform-wide business identity. One per user.
+model VendorProfile {
+  id                String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id           String   @unique
+  business_name     String
+  legal_name        String?
+  tax_id            String?
+  role              String
+  description       String?
+  website           String?
+  phone             String?
+  email             String
+  logo_url          String?
+  cover_url         String?
+  location_city     String?
+  location_region   String?
+  location_country  String?
+  service_radius_km Int?
+  rating_avg        Decimal? @db.Decimal(3, 2)
+  rating_count      Int      @default(0)
+  is_verified       Boolean  @default(false)
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  user     User            @relation(fields: [user_id], references: [id])
+  services VendorService[]
+
+  @@index([role])
+  @@index([location_country, location_region])
+  @@map("vendor_profiles")
+}
+
+/// A service a vendor offers, with a price band. Catalogue, not booking.
+model VendorService {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  vendor_id    String
+  name         String
+  description  String?
+  price_min    Decimal? @db.Decimal(10, 2)
+  price_max    Decimal? @db.Decimal(10, 2)
+  currency     String   @default("GBP")
+  duration_min Int?
+  tags         String[]
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  vendor VendorProfile @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  @@index([vendor_id])
+  @@map("vendor_services")
+}
+
+/// A user's application to become a vendor. One per user, reviewed by an admin.
+model VendorApplication {
+  id           String    @id @default(dbgenerated("gen_random_uuid()"))
+  user_id      String    @unique
+  status       String    @default("pending") // CHECK: IN ('pending', 'approved', 'rejected')
+  submitted_at DateTime  @default(now())
+  reviewed_at  DateTime?
+  notes        String?
+  reviewer_id  String?
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("vendor_applications")
+}
+
+/// A named place with a PostGIS point, for external event source matching.
+/// `coordinates` is read-only to Prisma: Unsupported columns cannot be
+/// written, and no code writes this table yet.
+model GeoPlace {
+  id          String                   @id @default(dbgenerated("gen_random_uuid()"))
+  name        String
+  address     String?
+  city        String?
+  region      String?
+  country     String?
+  coordinates Unsupported("geometry")?
+  created_at  DateTime                 @default(now())
+
+  events Event[] @relation("EventPlace")
+
+  @@index([city, region])
+  @@map("geo_places")
+}
+
+// ============================================================================
+// TICKETING LEDGER (migration 20261008000000_location_ticketing; file lost
+// from disk, tables live in every database. Holds are the reservation half,
+// sales the completed-purchase half. No API routes read either yet; the
+// existing Ticket model above is the inventory.)
+// ============================================================================
+
+/// A session-scoped reservation of tickets, expiring if unpaid.
+model TicketHold {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  event_id   String
+  ticket_id  String
+  session_id String
+  quantity   Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  event  Event  @relation("TicketHoldEvent", fields: [event_id], references: [id], onDelete: Cascade)
+  ticket Ticket @relation("TicketHoldTicket", fields: [ticket_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, ticket_id, session_id])
+  @@index([event_id, ticket_id])
+  @@index([expires_at])
+  @@map("ticket_holds")
+}
+
+/// A completed ticket purchase, against a user or an invited guest.
+model TicketSale {
+  id             String    @id @default(dbgenerated("gen_random_uuid()"))
+  event_id       String
+  ticket_id      String?
+  user_id        String?
+  guest_id       String?
+  quantity       Int       @default(1)
+  unit_price     Decimal   @db.Decimal(10, 2)
+  currency       String    @default("USD")
+  status         String    @default("paid")
+  payment_method String?
+  payment_intent String?   @unique
+  reference      String?   @unique
+  purchased_at   DateTime  @default(now())
+  expires_at     DateTime?
+  metadata       Json      @default("{}")
+
+  event Event @relation("TicketSaleEvent", fields: [event_id], references: [id], onDelete: Cascade)
+
+  ticket Ticket? @relation("TicketSaleTicket", fields: [ticket_id], references: [id])
+  user   User?   @relation(fields: [user_id], references: [id])
+  guest  Guest?  @relation(fields: [guest_id], references: [id])
+
+  @@index([event_id, status])
+  @@index([user_id, status])
+  @@index([purchased_at])
+  @@map("ticket_sales")
 }
 
 // ============================================================================
@@ -672,6 +854,15 @@ model UserProfile {
   // handle was machine-derived lowercase; an impersonation primitive the
   // moment users pick their own. See server/lib/username.ts.
   username_normalized String @unique
+
+  // B2C identity fields for the about-you step (migration
+  // 20261008010000_profile_b2c_fields; file lost from disk, columns live in
+  // every database). birth_date is a real calendar date, never the future;
+  // interests is the closed taxonomy the onboarding interests screen offers;
+  // marketing_opt_in defaults to opted out.
+  birth_date       DateTime? @db.Timestamptz
+  interests        String[]  @default([])
+  marketing_opt_in Boolean   @default(false)
 
   // Null means the handle is still the u_<base36(uuid)> value signup derived
   // (server/routes/auth.ts:88). Non-null is both "the user chose this" and the
@@ -1295,20 +1486,20 @@ model EventCostSummary {
 
 // Idempotency record for retryable IOS-MVP commands.
 model MvpCommand {
-  id              String    @id @default(dbgenerated("gen_random_uuid()"))
+  id              String   @id @default(dbgenerated("gen_random_uuid()"))
   actor_id        String
   idempotency_key String
   operation       String
   request_hash    String
-  status          String    @default("pending")
+  status          String   @default("pending")
   request_payload Json?
   response        Json?
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now()) @updatedAt
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
   expires_at      DateTime
 
-  actor                   User                 @relation("MvpCommandActor", fields: [actor_id], references: [id], onDelete: Cascade)
-  attendance_audit        AttendanceAudit?
+  actor                 User                 @relation("MvpCommandActor", fields: [actor_id], references: [id], onDelete: Cascade)
+  attendance_audit      AttendanceAudit?
   invitation_deliveries InvitationDelivery[] @relation("InvitationDeliveryCommand")
 
   @@unique([actor_id, idempotency_key])
