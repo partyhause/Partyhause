@@ -70,6 +70,10 @@ export interface OnboardingAnswerFacts {
   autonomy_level: string | null;
   agentic_wants: string[];
   biggest_pain: string | null;
+  /** Event-type chips from the onboarding interests screen. */
+  event_interests: string[];
+  /** The "Get tips and event inspiration" switch. */
+  marketing_opt_in: boolean;
   completed_at: Date | null;
 }
 
@@ -84,6 +88,8 @@ export const NO_ANSWERS: OnboardingAnswerFacts = {
   autonomy_level: null,
   agentic_wants: [],
   biggest_pain: null,
+  event_interests: [],
+  marketing_opt_in: false,
   completed_at: null,
 };
 

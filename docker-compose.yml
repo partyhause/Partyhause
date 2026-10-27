@@ -41,6 +41,9 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
+      # Netns owner for the web-container profile (header note). nginx listens
+      # on 80 inside this shared namespace; the host mapping is 8080.
+      - "8080:80"
     volumes:
       - .:/app
       - /app/node_modules

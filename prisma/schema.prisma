@@ -1708,6 +1708,16 @@ model OnboardingResponse {
   /// Specific agentic capabilities requested.
   agentic_wants String[] @default([])
 
+  /// Event-type chips picked on the onboarding interests screen (Birthday,
+  /// Wedding, Corporate, ...). Free strings: the chip vocabulary is a product
+  /// decision that changes without a migration. Max 20 x 64 chars is enforced
+  /// by the zod contract, not the database.
+  event_interests String[] @default([])
+
+  /// The "Get tips and event inspiration" switch from the onboarding profile
+  /// screen. False is both the default and the absence of consent.
+  marketing_opt_in Boolean @default(false)
+
   /// One free-text answer. Kept short deliberately; this is a survey, not a
   /// support ticket.
   biggest_pain String?
@@ -1722,5 +1732,6 @@ model OnboardingResponse {
 
   @@index([completed_at])
   @@index([organizer_type])
+  @@index([event_interests], type: Gin)
   @@map("onboarding_responses")
 }
