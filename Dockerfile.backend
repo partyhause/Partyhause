@@ -30,4 +30,4 @@ COPY --from=builder /app/packages/core ./packages/core
 RUN mkdir -p node_modules/@partyhause && ln -sf ../../packages/core node_modules/@partyhause/core
 
 EXPOSE 3001
-CMD ["sh","-c","npx prisma migrate deploy && tsx server/index.ts"]
+CMD ["sh","-c","npx prisma db migrate && tsx server/index.ts"]
