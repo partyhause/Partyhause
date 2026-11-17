@@ -108,10 +108,12 @@ class VerifyEmailView(APIView):
         try:
             token = serializer.validated_data['token']
             user = User.objects.filter(verification_token=token).first()
+            if not user:
+                return Response({"error": "Invalid verification link"}, status=status.HTTP_400_BAD_REQUEST)
             expires = user.verification_token_expires
             if timezone.is_naive(expires):
                 expires = timezone.make_aware(expires)
-            if not user or expires < timezone.now():
+            if expires < timezone.now():
                 return Response({"error": "Invalid verification link"}, status=status.HTTP_400_BAD_REQUEST)
             user.email_verified = True
             user.verification_token = None
