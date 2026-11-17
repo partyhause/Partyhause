@@ -72,13 +72,24 @@ class SignupView(APIView):
                 user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
                 user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
                 try:
-                    send_mail(
+                    html_message = render_to_string(
+                        'emails/verification_email.html',
+                        {
+                            'user': user,
+                            'token': new_token,
+                            'email': user.email,
+                            'protocol': 'http',
+                            'domain': 'localhost:5173',
+                        },
+                    )
+                    msg = EmailMessage(
                         'Verify your PartyHause email',
-                        f'Your verification code is: {new_token}',
+                        html_message,
                         settings.DEFAULT_FROM_EMAIL,
                         [user.email],
-                        fail_silently=False,
                     )
+                    msg.content_subtype = 'html'
+                    msg.send(fail_silently=False)
                 except Exception as e:
                     print(f'SIGNUP EMAIL ERROR: {e}')
                 # Do not issue a session token for unverified sign-ups
@@ -106,7 +117,17 @@ class VerifyEmailView(APIView):
             user.verification_token = None
             user.verification_token_expires = None
             user.save(update_fields=['email_verified', 'verification_token', 'verification_token_expires', 'updated_at'])
-            return _token_response(user, request)
+            # Store JWT in Django session so the session cookie authenticates
+            # the browser on redirect to /auth. Do NOT return the token in the
+            # body — the user signs in normally (no token handed to the user).
+            request.session['auth_token'] = sign_token(user)
+            request.session['auth_user_id'] = str(user.id)
+            request.session.save()
+            return Response({
+                'success': True,
+                'message': 'Email verified successfully. Please sign in.',
+                'redirect': '/auth',
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -130,13 +151,24 @@ class ResendVerificationView(APIView):
             user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
             user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
             try:
-                send_mail(
-                    'Verify your PartyHause email',
-                    f'Your verification code is: {new_token}',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
+                    html_message = render_to_string(
+                        'emails/verification_email.html',
+                        {
+                            'user': user,
+                            'token': new_token,
+                            'email': email,
+                            'protocol': 'http',
+                            'domain': 'localhost:5173',
+                        },
+                    )
+                    msg = EmailMessage(
+                        'Verify your PartyHause email',
+                        html_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                    )
+                    msg.content_subtype = 'html'
+                    msg.send(fail_silently=False)
             except Exception:
                 pass
             return Response({"message": "Verification email resent"}, status=status.HTTP_200_OK)
