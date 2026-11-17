@@ -109,7 +109,7 @@ function buildUrl(
   let normalisedPath = path.startsWith('/') ? path : `/${path}`;
   // Separate any pre-existing query string so the trailing slash only
   // lands on the path portion (e.g. /api/auth/login/, not ?eventId=xxx/).
-  const [pathPart, ...qsParts] = normalisedPath.split('?');
+  let [pathPart, ...qsParts] = normalisedPath.split('?');
   // All Django URL patterns expect a trailing slash (e.g. /api/auth/login/).
   // APPEND_SLASH=True raises RuntimeError on POST to a non-slash URL instead
   // of redirecting, so append one here.
