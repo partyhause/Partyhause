@@ -100,6 +100,10 @@ export const EventCreation = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await createEventAndContinue();
+  };
+
+  const createEventAndContinue = async () => {
     if (!user?.id) {
       setError('You must be logged in to create an event.');
       return;
@@ -175,14 +179,23 @@ export const EventCreation = () => {
     setTemplateData({});
     setStep('template');
   };
-
-  const proceedToEventForm = () => {
+  const proceedToEventForm = async () => {
     if (!formData.description.trim()) {
       setDescriptionError('Please add a short event description before continuing.');
       return;
     }
     setDescriptionError(null);
     setCompletedSteps(prev => [...new Set([...prev, 'details'])]);
+
+    // If the AI assistant already extracted the basics (name, date, time, location)
+    // there is no reason to make the user retype them in the manual form — just
+    // create the event now and move to the timeline step.
+    if (formData.name.trim() && formData.start_date && formData.start_time && formData.location.trim()) {
+      setCompletedSteps(prev => [...new Set([...prev, 'form'])]);
+      await createEventAndContinue();
+      return;
+    }
+
     setStep('form');
   };
 
@@ -666,8 +679,11 @@ export const EventCreation = () => {
                 if (data.formData) {
                   setTemplateData(data.formData);
                 }
-                setCompletedSteps(['ai-assistant']);
-                setStep('template');
+                // If the AI already selected a template, skip the redundant
+                // template-selection screen and go straight to details so the
+                // user doesn't re-choose what the planner already picked.
+                setCompletedSteps(data.templateId ? ['ai-assistant', 'template'] : ['ai-assistant']);
+                setStep(data.templateId ? 'details' : 'template');
               }}
               onBack={() => {
                 // Skip AI and go straight to manual template selection
