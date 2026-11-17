@@ -20,7 +20,7 @@ engineering reference.
 | Web | React 18.3.1, TypeScript 5.9.3, Vite 7.1.9, `vite-plugin-pwa` | `src/` |
 | UI | Tailwind CSS 3, shadcn/ui on Radix, framer-motion | `src/components/` |
 | Web state | Zustand 4 (one persisted store) plus TanStack Query v4 | `src/store/usePartyStore.ts` |
-| API | Express 4.22.1, run directly with `tsx`, no compile step | `server/` |
+| API | Django 4.2.30, Gunicorn on port 8001 | `django/` |
 | ORM | Prisma 7.10.0 with the `@prisma/adapter-pg` driver adapter | `prisma/`, `server/lib/prisma.ts` |
 | Database | PostgreSQL 15, Azure Flexible Server | `prisma/schema.prisma` |
 | Auth | Self-hosted JWT, HS256, bcryptjs cost 12 | `server/routes/auth.ts`, `server/middleware/auth.ts` |
@@ -47,7 +47,7 @@ DATABASE_URL="postgresql://localhost:5432/partyhause" npx tsx prisma/seed.ts
 
 # 4. Start everything (API, web, and Mailpit dev email catcher) in one terminal:
 npm run dev:all
-#   - API: http://localhost:3001
+#   - API: http://localhost:8001 (Django, proxied by Vite)
 #   - Web: http://localhost:5173 
 #   - Mailpit UI: http://localhost:8025
 #   - Logs: /tmp/ph-*.log
@@ -57,18 +57,13 @@ npm run dev:all
 ```bash
 # 1-3. (Same as above)
 
-# 4. Start the API on 3001. dev-api.ts sets AUTH_BYPASS=true for local work.
-npm run dev:api
-
-# 5. In another terminal, start the web app on 5173. It proxies /api to 3001.
+# 4. Start the Django API on 8001:
+#    cd django && python manage.py runserver 8001
+# 5. In another terminal, start the web app on 5173. Vite proxies /api to Django on 8001:
 npm run dev
-
-# 6. In a third terminal, start Mailpit for dev email (optional but recommended):
-mailpit   # UI at http://localhost:8025
-
 # 7. Verify.
-curl localhost:3001/api/health
-```
+curl localhost:8001/api/health
+**Backend rule (load-bearing):** The frontend's only backend is Django on port 8001. Vite proxies `/api` → `http://localhost:8001` (`vite.config.ts:83-85`). Keep `VITE_API_URL` empty so requests are same-origin relative paths that Vite proxies. If `VITE_API_URL` is set to an absolute origin, `apiUrl()` bypasses the proxy and hits that origin directly — this is what caused all API calls to hit dead port 8000. The Express server in `server/` (`index.ts`, port 3001) is **not** used by the frontend and must not be started for development — it is a retired duplicate. Do not add routes to `server/`; add them to `django/` and register them in `django/partyhause/urls.py`.
 
 ### Two corrections to long-standing claims
 

@@ -8,7 +8,7 @@
 //   - Storage Account + Blob containers
 //   - Azure Web PubSub (realtime fan-out)
 //   - Container Apps Environment
-//   - Combined Container App (nginx PWA + Express API sidecar, one origin)
+//   - Combined Container App (nginx PWA + Django API sidecar, one origin)
 //
 // Auth (Microsoft Entra External ID / Azure AD B2C) is configured out-of-band at
 // the tenant level — see MIGRATION_STATUS.md. The API container receives the
