@@ -106,7 +106,13 @@ function buildUrl(
   path: string,
   query?: RequestOptions['query'],
 ): string {
-  const normalisedPath = path.startsWith('/') ? path : `/${path}`;
+  let normalisedPath = path.startsWith('/') ? path : `/${path}`;
+  // All Django URL patterns expect a trailing slash (e.g. /api/auth/login/).
+  // APPEND_SLASH=True raises RuntimeError on POST to a non-slash URL instead
+  // of redirecting, so append one here.
+  if (normalisedPath.length > 1 && !normalisedPath.endsWith('/')) {
+    normalisedPath += '/';
+  }
   const url = `${baseUrl.replace(/\/+$/, '')}${normalisedPath}`;
   if (!query) return url;
   const params = new URLSearchParams();

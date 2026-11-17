@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-jidxkb_uou^v=*y26$zha_-=rtg0d9!n9cd5)-_wxg$3!8ze^$'
 DEBUG = True
-APPEND_SLASH = True
+APPEND_SLASH = True  # Django default; client sends trailing slashes
 PREPEND_WWW = False
 AUTH_USER_MODEL = 'accounts.User'
 LOGIN_URL = '/accounts/login/'
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'partyhause.middleware.CsrfExemptMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -119,6 +120,28 @@ CHANNEL_LAYERS = {
 
 CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
 CORS_ALLOW_CREDENTIALS = True
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_NAME = 'partyhause_session'
+SESSION_COOKIE_AGE = 604800  # 7 days, matches JWT lifetime
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # True in production with HTTPS
+SESSION_COOKIE_SAMESITE = 'lax'
+SESSION_COOKIE_DOMAIN = None
+SESSION_SAVE_EVERY_REQUEST = True
+
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'idempotency-key',
+]
 
 # so nothing reaches real inboxes during testing. UI at http://localhost:8025.
 # Email backend for local development — Mailpit catches all outbound mail

@@ -31,9 +31,15 @@ signer = TimestampSigner()
 User = get_user_model()
 
 
-def _token_response(user):
+def _token_response(user, request=None):
     """Return a JWT token response matching the frontend's expectations."""
     token = sign_token(user)
+    if request is not None:
+        # Store JWT in Django session so authenticated requests can be
+        # recognised even when the client sends no Authorization header.
+        request.session['auth_token'] = token
+        request.session['auth_user_id'] = str(user.id)
+        request.session.save()
     return Response({
         'token': token,
         'user': {
@@ -59,7 +65,7 @@ class SignupView(APIView):
                 invite_token = request.data.get('invite_token') or ''
                 if invite_token and user.email_verified:
                     # Invited signup: auto-verified, no verification email needed
-                    return _token_response(user)
+                    return _token_response(user, request)
                 # Non-invited sign-up: require verification
                 new_token = secrets.token_urlsafe(32)
                 user.verification_token = new_token
@@ -100,7 +106,7 @@ class VerifyEmailView(APIView):
             user.verification_token = None
             user.verification_token_expires = None
             user.save(update_fields=['email_verified', 'verification_token', 'verification_token_expires', 'updated_at'])
-            return _token_response(user)
+            return _token_response(user, request)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -156,8 +162,7 @@ class LoginView(APIView):
                 return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
             if not user.email_verified:
                 return Response({"error": "Email not verified", "needs_email_verification": True}, status=status.HTTP_403_FORBIDDEN)
-            return _token_response(user)
-            return _token_response(user)
+            return _token_response(user, request)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -183,8 +188,7 @@ class RoleUpdateView(SessionAuthMixin, APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.update(request.user, serializer.validated_data)
         # Re-issue a token so the client picks up the new role immediately
-        return _token_response(request.user)
-
+        return _token_response(request.user, request)
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
@@ -254,14 +258,14 @@ class ResetPasswordView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LogoutView(SessionAuthMixin, APIView):
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        try:
-            self._verify_token()
-        except _SessionAuthStop as e:
-            return e.args[0]
-        request.user.token_version += 1
-        request.user.save(update_fields=['token_version', 'updated_at'])
+        if getattr(request, 'user', None) and request.user.is_authenticated:
+            request.user.token_version += 1
+            request.user.save(update_fields=['token_version', 'updated_at'])
+        request.session.flush()
         return Response({"message": "Logged out"}, status=status.HTTP_200_OK)
 
 

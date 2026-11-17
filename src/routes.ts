@@ -12,7 +12,7 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   PRIVACY_SETTINGS: '/privacy-settings',
   TEMPLATES: '/templates',
-  PROFILE: '/profile/:id',
+  PROFILE: '/profile/:id?',
   FEED: '/feed',
   EXPLORE: '/explore',
   PARTY_CULTURE_BLOG: '/party-culture-blog',

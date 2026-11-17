@@ -53,7 +53,7 @@ services:
       DJANGO_SETTINGS_MODULE: partyhause.settings
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: postgresql://partyhause:partyhause@partyhause-db:5432/partyhause
-      SECRET_KEY: django-insecure-jidxkb_uou^v=*y26$zha_-=rtg0d9!n9cd5)-_wxg$3!8ze^$
+      SECRET_KEY: django-insecure-jidxkb_uou^v=*y26$$zha_-=rtg0d9!n9cd5)-_wxg$$3!8ze^$$
       DEBUG: "False"
       ALLOWED_HOSTS: "localhost,127.0.0.1,partyhause-django"
       EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
