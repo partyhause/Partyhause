@@ -64,8 +64,9 @@ console.log = (...args) => {
   realLog(...args);
 };
 
-await import(new URL('../server/index.ts', import.meta.url).href);
-await new Promise((r) => setTimeout(r, 1500));
+// The API (Django) is started separately by the operator (npm run dev:all or
+// docker compose), not booted here. This script only makes HTTP requests to it.
+await new Promise((r) => setTimeout(r, 500));
 
 const BASE = 'http://127.0.0.1:3995/api/auth';
 const post = async (path, body) => {
