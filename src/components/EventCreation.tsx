@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
-import { EventTemplateSelection } from '@/components/templates/EventTemplateSelection';
+import { PartyPlateSelection } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
 import AIEventAssistant from '@/components/templates/AIEventAssistant';
 import InviteTemplateSelection from '@/components/invites/InviteTemplateSelection';
@@ -51,7 +51,7 @@ export const EventCreation = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLocationTip, setShowLocationTip] = useState(false);
   const [showPlaylistTip, setShowPlaylistTip] = useState(false);
-  const [step, setStep] = useState<'ai-assistant' | 'template' | 'details' | 'form' | 'timeline' | 'invite' | 'invite-template' | 'invite-customize' | 'curate'>('ai-assistant');
+  const [step, setStep] = useState<'party-plate' | 'template' | 'ai-assistant' | 'details' | 'form' | 'timeline' | 'invite-template' | 'invite-upload' | 'invite-customize' | 'curate'>('party-plate');
   const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   const [templateData, setTemplateData] = useState<Record<string, any>>({});
   const [selectedInviteTemplate, setSelectedInviteTemplate] = useState<InviteTemplate | null>(null);
@@ -67,7 +67,7 @@ export const EventCreation = () => {
 
   // Define the event creation flow steps
   const EVENT_CREATION_STEPS: Step[] = [
-    { id: 'ai-assistant', label: 'AI Planner', description: 'Chat with AI to plan' },
+    { id: 'party-plate', label: 'PartyPlates', description: 'Pick a ready-made template' },
     { id: 'template', label: 'Choose Template', description: 'Pick your event type' },
     { id: 'details', label: 'Event Details', description: 'Fill in information' },
     { id: 'form', label: 'Basic Info', description: 'Date, time, location' },
@@ -401,7 +401,7 @@ export const EventCreation = () => {
     );
   }
 
-  if (step === 'invite') {
+  if (step === 'invite-upload') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
         <PastelCard variant="peach" className="max-w-lg w-full">
@@ -682,7 +682,7 @@ export const EventCreation = () => {
                 // If the AI already selected a template, skip the redundant
                 // template-selection screen and go straight to details so the
                 // user doesn't re-choose what the planner already picked.
-                setCompletedSteps(data.templateId ? ['ai-assistant', 'template'] : ['ai-assistant']);
+                setCompletedSteps(data.templateId ? ['party-plate', 'template'] : ['party-plate']);
                 setStep(data.templateId ? 'details' : 'template');
               }}
               onBack={() => {
@@ -706,7 +706,7 @@ export const EventCreation = () => {
             {/* Back Button */}
             <div className="mb-6 flex items-center justify-between">
               <button
-                onClick={() => setStep('ai-assistant')}
+                onClick={() => setStep('party-plate')}
                 className="icon-btn-liquid"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -774,7 +774,7 @@ export const EventCreation = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <EventTemplateSelection onSelectTemplate={handleTemplateSelect} />
+              <PartyPlateSelection onSelectTemplate={handleTemplateSelect} onUseAI={() => setStep('ai-assistant')} />
             </motion.div>
 
             {/* Skip Option */}
