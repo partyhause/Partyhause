@@ -2,13 +2,7 @@
  * Typed resource modules, one per API family.
  *
  * Paths and verbs here were taken from an AST walk of server/routes/*.ts, not
- * from memory. Two mismatches that walk exposed are corrected at the source:
- *
- *   - mobile issued `PATCH /api/guests`, but the server exposes
- *     `PUT /api/guests/:id`. The old call 404'd.
- *   - web calls `/api/partyboard/*` (7 call sites), for which no server route,
- *     router or Prisma model exists. It is deliberately absent below rather
- *     than given a client method that could never succeed.
+ * from memory.
  */
 
 import type { Transport, ApiResponse } from '../http/transport';
@@ -19,7 +13,9 @@ import type {
   OnboardingState, OwnUserProfile, UsernameAvailability, UsernameClaimResult,
 } from '../types';
 import { unwrapList, unwrapOne } from './envelopes';
+import { createPartyBoardResource } from './partyboard';
 
+export { createPartyBoardResource, type PartyBoardResource } from './partyboard';
 export { createAiResource, trimTranscript, MAX_CHAT_MESSAGES, MAX_CHAT_MESSAGE_CHARS } from './ai';
 export { createBillingResource } from './billing';
 export type { BillingResource, TrialStartResponse } from './billing';
@@ -57,6 +53,7 @@ export type {
  * Use `events.get()` to read a schedule. These endpoints remain for the table,
  * should anything start populating it.
  */
+
 /**
  * A timeline block as callers describe it.
  *
@@ -228,12 +225,10 @@ export interface CrewMembersPage {
   offset: number;
 }
 
-/**
- * GET /api/partycrew/crewing-with is paginated and keys its rows under
+/** GET /api/partycrew/crewing-with is paginated and keys its rows under
  * `creators`, not `members`. It also requires an explicit `userId` query
  * parameter naming whose crew list to read; the bearer token identifies the
- * caller but does not select the subject.
- */
+ * caller but does not select the subject. */
 export interface CrewingWithPage {
   creators: CrewCreatorRow[];
   total: number;
@@ -247,15 +242,12 @@ export interface CrewRequestsPage {
   requests: CrewMember[];
   total: number;
   has_more: boolean;
+  limit: number;
+  offset: number;
 }
 
 export interface PartyCrewResource {
   /** Paginated; returns the whole page so callers can drive infinite scroll. */
-  /**
-   * Paginated; returns the whole page so callers can drive infinite scroll.
-   * `includeMutualCount` opts into the route's `include_mutual_count=true`
-   * branch, which costs two extra queries and populates `mutual_crew_count`.
-   */
   members(options?: {
     limit?: number;
     offset?: number;

@@ -1357,21 +1357,28 @@ model PartyBoardStickyVote {
 model PartyBoardTask {
   id             String    @id @default(dbgenerated("gen_random_uuid()"))
   event_id       String
-  sticky_id      String    @unique
+  sticky_id      String?   @unique
   title          String
   estimated_cost Decimal?  @db.Decimal(10, 2)
   status         String    @default("open") // CHECK: IN ('open', 'done')
+  priority       String    @default("medium") // CHECK: IN ('low','medium','high','critical')
+  due_date       DateTime?
+  assignee_id    String?
+  actual_cost    Decimal?  @db.Decimal(10, 2)
+  description    String?
   created_by     String // references users(id)
   created_at     DateTime  @default(now())
   completed_at   DateTime?
 
   // Relations
   event   Event            @relation(fields: [event_id], references: [id])
-  sticky  PartyBoardSticky @relation(fields: [sticky_id], references: [id])
+  sticky  PartyBoardSticky? @relation(fields: [sticky_id], references: [id], onDelete: SetNull)
   creator User             @relation("PartyBoardTaskCreator", fields: [created_by], references: [id])
 
   @@index([event_id])
   @@index([status])
+  @@index([due_date])
+  @@index([assignee_id])
   @@map("partyboard_tasks")
 }
 

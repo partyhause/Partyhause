@@ -36,10 +36,10 @@
 # COMBINED IMAGE / TOPOLOGY
 #   One Container App serves frontend and backend together: nginx owns port 80
 #   and serves the static bundle with the full cache policy in nginx.conf, and
-#   proxies /api/* to the Express sidecar on localhost:3001 in the same
-#   network namespace. VITE_API_URL is passed EMPTY so the bundle sends
-#   same-origin relative requests (src/lib/apiBase.ts:9-12) and no CORS
-#   configuration is consulted. One revision update moves both tiers.
+#   proxies /api/* to the Django API sidecar on localhost:8001 in the same
+#   container. VITE_API_URL is passed EMPTY so the bundle sends same-origin
+#   relative requests (src/lib/apiBase.ts:9-12) and no CORS configuration is
+#   consulted. One revision update moves both tiers.
 
 set -euo pipefail
 
@@ -155,7 +155,7 @@ health_check() {
 }
 
 step "Health check: API"
-health_check "API" "/api/health"
+health_check "API" "/api/health/"
 
 step "Health check: Web (static shell)"
 health_check "Web" "/"
@@ -164,5 +164,6 @@ echo ""
 echo "Deployed."
 echo "  - Combined app: $BASE_URL"
 echo "  - Web (custom domain): https://$PUBLIC_DOMAIN/"
-echo "  - API health: $BASE_URL/api/health"
+echo "  - API health: $BASE_URL/api/health/"
 echo "  - Image: $ACR_NAME.azurecr.io/partyhause-combined:$IMAGE_TAG"
+

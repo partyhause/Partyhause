@@ -75,79 +75,10 @@ function normalisePath(raw) {
 
 // ---------------- SERVER ----------------
 function extractServer() {
-  const routerFiles = walkFiles(path.join(ROOT, 'server/routes'));
-  const perFile = new Map();
-  for (const f of routerFiles) {
-    const sf = parse(f);
-    const routes = [];
-    (function visit(n) {
-      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-        const obj = n.expression.expression;
-        const verb = n.expression.name.text.toLowerCase();
-        if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && /router/i.test(obj.text)) {
-          const p = staticText(n.arguments[0]);
-          if (p !== null) {
-            const line = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
-            const guarded = n.arguments.slice(1).some(a =>
-              /requireAuth|optionalAuth/.test(a.getText(sf)));
-            routes.push({ verb: verb.toUpperCase(), sub: p, line, guarded });
-          }
-        }
-      }
-      ts.forEachChild(n, visit);
-    })(sf);
-    perFile.set(path.relative(ROOT, f), routes);
-  }
-
-  // Resolve mount prefixes from server/index.ts
-  const idx = parse(path.join(ROOT, 'server/index.ts'));
-  const mounts = new Map(); // routerIdentifier -> prefix
-  (function visit(n) {
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)
-        && n.expression.name.text === 'use' && n.arguments.length >= 2) {
-      const prefix = staticText(n.arguments[0]);
-      const target = n.arguments[1];
-      if (prefix && ts.isIdentifier(target)) mounts.set(target.text, prefix);
-    }
-    ts.forEachChild(n, visit);
-  })(idx);
-
-  const importMap = new Map(); // identifier -> route file
-  (function visit(n) {
-    if (ts.isImportDeclaration(n) && n.importClause && n.importClause.name
-        && ts.isStringLiteral(n.moduleSpecifier)) {
-      importMap.set(n.importClause.name.text, n.moduleSpecifier.text);
-    }
-    ts.forEachChild(n, visit);
-  })(idx);
-
-  // Inline app.<verb> routes declared directly in index.ts
-  const inline = [];
-  (function visit(n) {
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-      const obj = n.expression.expression, verb = n.expression.name.text.toLowerCase();
-      if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && obj.text === 'app') {
-        const p = normalisePath(staticText(n.arguments[0]));
-        if (p) inline.push({ verb: verb.toUpperCase(), path: p, file: 'server/index.ts' });
-      }
-    }
-    ts.forEachChild(n, visit);
-  })(idx);
-
-  const table = [...inline];
-  for (const [ident, spec] of importMap) {
-    const prefix = mounts.get(ident);
-    if (!prefix) continue;
-    const rel = 'server/' + spec.replace(/^\.\//, '') + '.ts';
-    const routes = perFile.get(rel);
-    if (!routes) continue;
-    for (const r of routes) {
-      const joined = (prefix + (r.sub === '/' ? '' : r.sub)).replace(/\/+/g, '/');
-      table.push({ verb: r.verb, path: joined.replace(/\/$/, '') || prefix, file: rel, guarded: r.guarded });
-    }
-  }
-  return table;
+  // Server removed: Django owns API now. Return empty table.
+  return [];
 }
+
 
 // ---------------- CLIENTS ----------------
 function extractClient(dirs) {

@@ -15,7 +15,7 @@
     "build": "npx vite build",
     "build:web": "npx vite build",
     "build:mobile": "node ./scripts/build-mobile-pwa.cjs",
-    "typecheck": "npx tsc -p tsconfig.app.json && npx tsc -p tsconfig.node.json && npx tsc -p tsconfig.server.json && npx tsc -p packages/core/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json",
+    "typecheck": "npx tsc -p tsconfig.app.json && npx tsc -p tsconfig.node.json&& npx tsc -p packages/core/tsconfig.json && npx tsc -p packages/agentic-harness/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json",
     "build:check": "npm run typecheck && npm run audit:contracts && npm run icons:mobile:check && npx vite build",
     "lint": "eslint .",
     "preview": "npx vite preview",
@@ -26,11 +26,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:migrations": "prisma migrate deploy && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma migrate deploy && node scripts/verify-migration-invariants.cjs && npx tsx scripts/verify-mvp-concurrency.ts && npx tsx scripts/verify-signup-transaction.ts && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "test:coverage": "vitest run --coverage",
-    "server": "tsx server/index.ts",
     "deploy:full": "bash scripts/deploy-full.sh",
     "bind:domains": "bash scripts/bind-azure-custom-domains.sh",
-    "dev:api": "tsx watch server/dev-api.ts",
-    "dev:docker": "docker-compose up --build",
     "dev:all": "bash scripts/dev-all.sh",
     "audit:endpoints": "node scripts/audit-endpoints.cjs",
     "test:render": "vite build && playwright test --config=playwright.render.config.ts && node scripts/compare-render-parity.mjs",
@@ -107,7 +104,8 @@
     "tailwindcss-animate": "^1.0.7",
     "vite": "7.1.9",
     "zod": "^3.22.2",
-    "zustand": "^4.4.1"
+    "zustand": "^4.4.1",
+    "@partyhause/agentic-harness": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

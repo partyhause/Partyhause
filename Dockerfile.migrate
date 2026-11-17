@@ -1,65 +1,33 @@
-# Migration runner.
+# Migration runner for Django.
 #
 # WHY THIS IMAGE EXISTS
 #   Migrations were run by hand from a laptop against the production database,
-#   which is why psqlph-gipkzrenusqpy carries standing firewall rules named
-#   `temp-schema-push`, `DevLocalIP`, `AllowDevIP` and `dev-playferanmi`. Every
-#   one of those is a permanent hole punched for a one-off task, kept open
-#   because closing it was nobody's job.
-#
-#   Run from inside Azure instead and none of that is needed: the
-#   AllowAllAzureServices rule already covers it, and the migration takes the
-#   same network path to the same server as the API that will read the result.
-#   A migration that succeeds here cannot fail for the API because of
-#   connectivity, which is not true of one run from a laptop on a VPN.
-#
-# WHY IT IS NOT Dockerfile.api
-#   The API runtime stage installs with `--omit=dev`, and the `prisma` CLI is a
-#   devDependency, so `prisma migrate deploy` does not exist in that image. It
-#   also copies `server/` and `prisma/` but not `scripts/`, where the
-#   enrollment and preflight live. Adding all of that to the API image would
-#   put the migration tooling and the admin credentials it needs into the
-#   long-running public-facing container, which is the wrong place for both.
+#   punching permanent firewall holes for one-off tasks. Run from inside Azure
+#   instead: AllowAllAzureServices covers it, and the migration takes the same
+#   network path as the API.
 #
 # WHAT IT RUNS
-#   Nothing by default beyond the documented order. The command is supplied per
-#   execution so each step can be run and read on its own:
+#   docker run --rm -e DATABASE_URL=... partyhause-migrate \
+#     python manage.py migrate
 #
-#     node scripts/production-migration-preflight.cjs   # read-only
-#     node scripts/enroll-production-migrations.cjs     # writes _prisma_migrations
-#     npx prisma migrate deploy                         # applies pending SQL
-#
-#   Preflight deliberately fails once `_prisma_migrations` exists, because it
-#   describes the pre-enrollment state. That is why it is a separate execution
-#   rather than an && chain baked in here.
+# No CMD that mutates anything by default.
 
-FROM node:22.22.0-slim
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=partyhause.settings
 
 WORKDIR /app
 
-# Prisma's query engine needs OpenSSL, and the slim base does not ship it.
-# ca-certificates is required for `sslmode=require` against Azure PostgreSQL to
-# verify anything at all.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends libpq5 openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
+COPY django/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# The full dependency set, not --omit=dev: the `prisma` CLI lives in
-# devDependencies and is the entire point of this image.
-# --legacy-peer-deps for the reason given in Dockerfile and Dockerfile.api: the
-# lockfile was written with it and bare `npm ci` rejects it with a picomatch
-# conflict that reads like corruption.
-RUN npm ci --legacy-peer-deps
+COPY django/ ./django/
+WORKDIR /app/django
 
-COPY prisma/ ./prisma/
-COPY prisma.config.ts ./
-COPY scripts/ ./scripts/
-
-RUN npx prisma generate
-
-# No CMD that mutates anything. An image whose default behaviour is "migrate
-# the database it can reach" is one scheduling mistake away from doing it
-# unasked; every execution names its own step.
-CMD ["node", "-e", "console.log('Supply a command: preflight, enroll, or migrate deploy. See Dockerfile.migrate.')"]
+CMD ["python", "-e", "print('Supply a command: python manage.py migrate')"]

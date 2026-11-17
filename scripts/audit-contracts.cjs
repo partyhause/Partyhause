@@ -12,8 +12,8 @@
  *   getting it wrong. Reading is not verification.
  *
  * WHAT IT DOES
- *   Server side: walks server/routes/*.ts, resolves router.<verb>() paths
- *   against the app.use() mounts in server/index.ts, and collects the property
+ *   Server side: Django owns API now. Contract audits run against client calls only.
+ *   No server source walk; returns empty map.
  *   names of every 2xx `res.json({...})` object literal per route.
  *
  *   Client side: walks packages/core/src/resources/*.ts for the three call
@@ -95,81 +95,10 @@ function normalise(p) {
 
 // ------------------------- SERVER -------------------------
 function collectServer() {
-  const mounts = new Map();
-  const imports = new Map();
-  const indexPath = path.join(ROOT, 'server/index.ts');
-  const idx = parse(indexPath);
-  (function visit(n) {
-    if (ts.isImportDeclaration(n) && n.importClause?.name && ts.isStringLiteral(n.moduleSpecifier)) {
-      imports.set(n.importClause.name.text, n.moduleSpecifier.text);
-    }
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)
-        && n.expression.name.text === 'use' && n.arguments.length >= 2) {
-      const prefix = staticText(n.arguments[0]);
-      const target = n.arguments[1];
-      if (prefix && ts.isIdentifier(target)) mounts.set(target.text, prefix);
-    }
-    ts.forEachChild(n, visit);
-  })(idx);
-
-  const fileToPrefix = new Map();
-  for (const [ident, spec] of imports) {
-    const prefix = mounts.get(ident);
-    if (prefix) fileToPrefix.set(path.join(ROOT, 'server', spec.replace(/^\.\//, '') + '.ts'), prefix);
-  }
-
-  const routes = new Map(); // "VERB path" -> Set(keys)
-
-  // Routes declared inline on the app in server/index.ts, for example
-  // app.post('/api/send-email', ...), which are not mounted through a router.
-  (function visitInline(n) {
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-      const verb = n.expression.name.text.toLowerCase();
-      const obj = n.expression.expression;
-      if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && obj.text === 'app') {
-        const p = normalise(staticText(n.arguments[0]));
-        if (p && p.startsWith('/api')) {
-          const keys = new Set();
-          for (const handler of n.arguments.slice(1)) collectJsonKeys(handler, keys, idx);
-          routes.set(`${verb.toUpperCase()} ${p}`, keys);
-        }
-      }
-    }
-    ts.forEachChild(n, visitInline);
-  })(idx);
-
-  for (const [file, prefix] of fileToPrefix) {
-    if (!fs.existsSync(file)) continue;
-    const sf = parse(file);
-    (function visit(n) {
-      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-        const verb = n.expression.name.text.toLowerCase();
-        const obj = n.expression.expression;
-        if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && /router/i.test(obj.text)) {
-          const sub = staticText(n.arguments[0]);
-          if (sub !== null) {
-            const keys = new Set();
-            for (const handler of n.arguments.slice(1)) collectJsonKeys(handler, keys, sf);
-            // An optional trailing param (`/:id?`) serves both the collection
-            // and the item path, so register both forms.
-            const variants = /\/:[A-Za-z_][A-Za-z0-9_]*\?$/.test(sub)
-              ? [sub.replace(/\/:[A-Za-z_][A-Za-z0-9_]*\?$/, ''), sub]
-              : [sub];
-            for (const v of variants) {
-              const full = normalise(prefix + (v === '/' || v === '' ? '' : v));
-              const key = `${verb.toUpperCase()} ${full}`;
-              const merged = routes.get(key) || new Set();
-              for (const k of keys) merged.add(k);
-              routes.set(key, merged);
-            }
-          }
-        }
-      }
-      ts.forEachChild(n, visit);
-    })(sf);
-  }
-  return routes;
+  // Server removed: Django owns API now. Return empty map.
+  return new Map();
 }
+
 
 /** Record property names of 2xx res.json({...}) literals inside a handler. */
 function collectJsonKeys(node, out, sf) {

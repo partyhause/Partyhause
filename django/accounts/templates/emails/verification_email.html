@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Verify your email</title>
+</head>
+<body>
+  <h2>Verify your PartyHause account</h2>
+  <p>Hello {{ user.name }},</p>
+  <p>Click the link below to verify your email address:</p>
+  <p><a href="{{ protocol }}://{{ domain }}/auth/verify-email?uid={{ uid }}&token={{ token }}&email={{ user.email }}">Verify Email</a></p>
+  <p>This link will expire soon. If you didn't sign up for PartyHause, you can ignore this email.</p>
+</body>
+</html>
