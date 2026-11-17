@@ -42,17 +42,23 @@ class SessionAuthMixin:
 
     def _verify_token(self):
         auth_header = self.request.META.get('HTTP_AUTHORIZATION', '')
-        if not auth_header.startswith('Bearer '):
-            self._unauthorized('Missing Authorization header')
-        token = auth_header.split(' ', 1)[1]
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ', 1)[1]
+        else:
+            # Fall back to the JWT stored in the Django session (set at
+            # login/signup/verify-email) so browser requests with only the
+            # session cookie are authenticated too.
+            token = self.request.session.get('auth_token')
+            if not token:
+                self._unauthorized('Missing Authorization header')
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         except jwt.ExpiredSignatureError:
             self._unauthorized('Token expired')
         except jwt.InvalidTokenError:
             self._unauthorized('Invalid token')
-        user_id = payload.get('sub')
         token_version = payload.get('token_version', 0)
+        user_id = payload.get('sub')
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:

@@ -150,8 +150,4 @@ class UserView(SessionAuthMixin, APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({
-            'id': str(user.id),
-            'email': user.email,
-            'name': user.name,
-        })
+        return Response(ProfileSerializer(user).data)
