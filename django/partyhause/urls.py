@@ -42,6 +42,5 @@ urlpatterns = [
     # Health
     path('api/partyplates/', include('partyplates.urls')),
     path('api/health/', include('health.urls')),
-    path('api/health/', include('health.urls')),
     path('api/ai/', include('ai_chat.urls')),
- ]
+]

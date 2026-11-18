@@ -1,10 +1,13 @@
-# Media and binary files - left on device, stored elsewhere
+# =============================================================================
+# Media and binary files — left on device, stored elsewhere (per team decision)
+# =============================================================================
 *.png
 *.jpg
 *.jpeg
 *.gif
 *.svg
 *.webp
+*.ico
 *.mp3
 *.mp4
 *.mov
@@ -16,30 +19,186 @@
 *.gz
 *.rar
 *.7z
-*.pdf (keep only if very small)
+*.pdf
 *.doc
 *.docx
+*.ppt
+*.pptx
+*.xls
+*.xlsx
 
-# Build artifacts and dist
+# =============================================================================
+# Build artifacts and compiled output
+# =============================================================================
 dist/
 build/
+out/
 *.egg-info/
 *.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.tsbuildinfo
 *.npm/
 
-# IDE files
+# =============================================================================
+# Environment variables and secrets (never commit credentials)
+# =============================================================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.production.local
+.env.staging
+.env.development
+.env.development.local
+.env.test
+.env.example*
+*.env
+!.env.example
+
+# =============================================================================
+# OS-generated files
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# =============================================================================
+# IDE and editor files
+# =============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
-*.git/
+*~
+.project
+.pydevproject
+.c9/
+*.launch
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
 
-# Node modules
+# =============================================================================
+# Node.js / npm / frontend
+# =============================================================================
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.turbo/
+.cache/
+.next/
+.nuxt/
+.vercel/
+.netlify/
 
-# Environment variables
-.env.local
-.env.*.local
+# =============================================================================
+# Python / Django
+# =============================================================================
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.installed.cfg
+*.egg
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.django_secret_key
+
+# =============================================================================
+# Logs
+# =============================================================================
+*.log
+logs/
+npm-run-all-error.log
+/tmp/ph-*.log
+
+# =============================================================================
+# Certificate and key files
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# =============================================================================
+# Database / Prisma
+# =============================================================================
+*.sqlite
+*.sqlite3
+*.db
+.prisma/migrations.lock
+
+# =============================================================================
+# Testing / coverage
+# =============================================================================
+.coverage
+coverage/
+coverage.xml
+coverage.json
+.jest/
+vitest.config.mjs.cache
+
+# =============================================================================
+# Misc
+# =============================================================================
+*.orig
+*.rej
+*~
+.#*
+tags
+TAGS
 
 # LFS tracking (if needed later)
+# =============================================================================
+# Internal development context, direction, and instruction — not public-facing
+# Only public-facing documents are exposed on GitHub:
+#   README.md (root), docs/README.md (index), docs/BRAND.md (brand)
+# =============================================================================
+
+# Root-level internal context/instruction files
+AGENTS.md
+CLOSURE_SUMMARY.md
+DEPLOYMENT_STATE.md
+MOBILE_BACKEND_REVIEW.md
+PRODUCTION_READINESS_SUMMARY.md
+
+# Internal documentation (development context, specs, strategy, roadmaps)
+docs/*.md
+!docs/README.md
+!docs/BRAND.md
+docs/project/
+docs/mobile-ios-launch/
+docs/mobile/
+docs/testing/
+docs/marketing/
+docs/features/
+docs/images/ui-audit/
 # *.png filter=lfs diff=lfs merge=lfs -text
