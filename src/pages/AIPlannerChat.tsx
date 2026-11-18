@@ -18,13 +18,28 @@ export default function AIPlannerChat() {
   const [messages, setMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [input, setInput] = useState('');
   const [model, setModel] = useState(NVIDIA_MODELS[1].id);
+  const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    const newMessages = [...messages, { role: 'user', content: input }];
+    if (!input.trim() || loading) return;
+    const userMsg = { role: 'user', content: input };
+    const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
-    setMessages([...newMessages, { role: 'assistant', content: `Planning with PartyHause tools using ${model}...` }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages, model })
+      });
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content || 'No response';
+      setMessages([...newMessages, { role: 'assistant', content }]);
+    } catch (e) {
+      setMessages([...newMessages, { role: 'assistant', content: 'Error contacting AI service' }]);
+    }
+    setLoading(false);
   };
 
   return (
@@ -44,8 +59,8 @@ export default function AIPlannerChat() {
             ))}
           </div>
           <div className="flex gap-2">
-            <Input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask AI planner..." />
-            <Button onClick={sendMessage}><Send className="h-4 w-4" /></Button>
+            <Input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask AI planner..." onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+            <Button onClick={sendMessage} disabled={loading}><Send className="h-4 w-4" /></Button>
           </div>
         </CardContent>
       </Card>
