@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from . import views_async
 
 urlpatterns = [
-    path('chat/', views.ChatView.as_view(), name='chat'),
+    path('chat/', views_async.ChatStreamView.as_view(), name='chat'),
 ]

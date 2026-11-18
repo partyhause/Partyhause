@@ -20,6 +20,7 @@ export const ROUTES = {
   ROLE_SELECTION: '/role-selection',
   GUEST_VIEW: '/guest-view/:guestId',
   LOGOUT: '/logout',
+  AI_PLANNER: '/ai-planner',
   CATCH_ALL: '*',
 } as const;
 

@@ -36,6 +36,7 @@ const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
 const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const AIPlannerChat = lazy(() => import("@/pages/AIPlannerChat"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
 const VerifyEmailPage = lazy(() => import("@/pages/VerifyEmailPage"));
@@ -128,3 +129,4 @@ const App = () => {
 };
 
 export default App;
+                <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat \/>|<Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
