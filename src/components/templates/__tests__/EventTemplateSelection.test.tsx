@@ -13,7 +13,6 @@ vi.mock('@/components/ui/use-toast', () => ({
 
 const defaultProps = {
   onSelectTemplate: vi.fn(),
-  onUseAI: vi.fn(),
   onBack: vi.fn(),
 };
 
@@ -21,7 +20,6 @@ describe('PartyPlateSelection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     defaultProps.onSelectTemplate.mockReset();
-    defaultProps.onUseAI.mockReset();
     defaultProps.onBack.mockReset();
     mockUsePartyPlates.mockReset();
   });
@@ -112,20 +110,6 @@ describe('PartyPlateSelection', () => {
     expect(screen.getByText(/Failed to load/)).toBeInTheDocument();
   });
 
-  it('calls onUseAI when Chat with AI Planner is clicked', async () => {
-    mockUsePartyPlates.mockReturnValue({
-      system: [],
-      mine: [],
-      isLoading: false,
-      error: undefined,
-    });
-
-    render(<PartyPlateSelection {...defaultProps} />);
-
-    fireEvent.click(screen.getByText('Chat with AI Planner'));
-
-    expect(defaultProps.onUseAI).toHaveBeenCalledTimes(1);
-  });
 
   it('calls onBack when Back button is clicked', () => {
     mockUsePartyPlates.mockReturnValue({

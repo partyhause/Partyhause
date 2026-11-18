@@ -10,10 +10,9 @@ vi.mock('@/features/templates/hooks/useSavePartyPlate', () => ({
 }));
 
 vi.mock('@/components/templates/EventTemplateSelection', () => ({
-  PartyPlateSelection: ({ onSelectTemplate, onUseAI, onBack }: any) => (
+  PartyPlateSelection: ({ onSelectTemplate, onBack }: any) => (
     <div data-testid="party-plate-step">
       <button onClick={onBack}>Back</button>
-      <button onClick={onUseAI}>Use AI</button>
       <button
         onClick={() =>
           onSelectTemplate({

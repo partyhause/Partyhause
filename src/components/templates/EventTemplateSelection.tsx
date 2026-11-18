@@ -25,15 +25,14 @@ export interface EventTemplate {
 
 interface PartyPlateSelectionProps {
   onSelectTemplate: (template: EventTemplate) => void;
-  onUseAI: () => void;
   onBack?: () => void;
 }
 
 export const PartyPlateSelection: React.FC<PartyPlateSelectionProps> = ({
   onSelectTemplate,
-  onUseAI,
   onBack,
 }) => {
+
   const { system, mine, isLoading, error } = usePartyPlates();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
@@ -143,29 +142,6 @@ export const PartyPlateSelection: React.FC<PartyPlateSelectionProps> = ({
         </Tabs>
         )}
 
-        {/* AI-Powered Option */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8"
-        >
-          <Card className="border-2 border-dashed border-orange-300 hover:border-orange-500 transition-colors cursor-pointer">
-            <CardContent className="p-8 text-center">
-              <Wand2 className="h-12 w-12 text-orange-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Tell the AI Planner
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Just describe your event in plain language and I'll fill out all the details for you.
-              </p>
-              <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 flex items-center justify-center gap-2" onClick={onUseAI}>
-                <Wand2 className="w-4 h-4 mr-2" />
-                Chat with AI Planner
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );

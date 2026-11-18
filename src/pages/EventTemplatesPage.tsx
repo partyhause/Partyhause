@@ -11,7 +11,6 @@ export const EventTemplatesPage: React.FC = () => {
   const handleSelectTemplate = (template: any) => {
     navigate('/create-event', { state: { template } });
   };
-
   return (
     <PageShell
       title="Event Templates"
@@ -31,7 +30,6 @@ export const EventTemplatesPage: React.FC = () => {
           </p>
           <PartyPlateSelection
             onSelectTemplate={handleSelectTemplate}
-            onUseAI={() => navigate('/ai-planner')}
             onBack={() => navigate('/dashboard')}
           />
         </CardContent>

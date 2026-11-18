@@ -738,7 +738,6 @@ export const EventCreation = () => {
             >
               <PartyPlateSelection
                 onSelectTemplate={handleTemplateSelect}
-                onUseAI={() => setStep('ai-assistant')}
               />
             </motion.div>
             {/* Skip Option */}
@@ -841,7 +840,7 @@ export const EventCreation = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <PartyPlateSelection onSelectTemplate={handleTemplateSelect} onUseAI={() => setStep('ai-assistant')} />
+              <PartyPlateSelection onSelectTemplate={handleTemplateSelect} />
             </motion.div>
 
             {/* Skip Option */}
