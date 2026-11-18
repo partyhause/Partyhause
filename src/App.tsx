@@ -35,6 +35,7 @@ const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
 const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const PartyPlatesPage = lazy(() => import("@/pages/PartyPlatesPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const AIPlannerChat = lazy(() => import("@/pages/AIPlannerChat"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
@@ -84,7 +85,7 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.SETTINGS} element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PRIVACY_SETTINGS} element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
-                <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+                <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><PartyPlatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
                 <Route path={ROUTES.EXPLORE} element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
