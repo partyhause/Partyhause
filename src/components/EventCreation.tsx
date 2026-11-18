@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePartyStore } from '@/store/usePartyStore';
 import { eventService } from '@/lib/events';
 import { uploadImage, validateImageFile } from '@/lib/image-utils';
+import { apiPost } from '@/lib/api-client';
+import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +25,7 @@ import { TimelineBlock } from '@/features/timeline/types';
 import { timelineService } from '@/lib/timeline';
 import { ProgressStepper, CompactProgressBar, Step } from '@/components/ui/progress-stepper';
 import { FlowTip } from '@/components/ui/flow-tip';
+import { useSavePartyPlate } from '@/features/templates/hooks/useSavePartyPlate'
 
 interface EventTemplate {
   id: string;
@@ -156,6 +159,7 @@ export const EventCreation = () => {
       setIsSubmitting(false);
     }
   };
+  const { save: saveAsPartyPlate, isSaving: isSavingPlate } = useSavePartyPlate()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -695,7 +699,70 @@ export const EventCreation = () => {
       </div>
     );
   }
-
+  // PartyPlate Selection Step
+  if (step === 'party-plate') {
+    return (
+      <div className="min-h-screen relative">
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-block mb-4"
+              >
+                <Sparkles className="w-12 h-12 text-orange-500 mx-auto" />
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-4xl font-bold text-gray-900 mb-4"
+              >
+                Choose Your Event Template
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-gray-800 font-medium max-w-2xl mx-auto"
+              >
+                Start with a pre-designed template that matches your event type. We'll customize the details for you!
+              </motion.p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <PartyPlateSelection
+                onSelectTemplate={handleTemplateSelect}
+                onUseAI={() => setStep('ai-assistant')}
+              />
+            </motion.div>
+            {/* Skip Option */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-center mt-8"
+            >
+              <button
+                onClick={() => {
+                  setCompletedSteps(prev => [...new Set([...prev, 'party-plate'])]);
+                  setStep('template');
+                }}
+                className="btn-glass px-6 py-3"
+              >
+                Skip templates and create from scratch
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Template Selection Step
   if (step === 'template') {
     return (
@@ -1086,6 +1153,15 @@ export const EventCreation = () => {
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Back to Dashboard
                     </Button>
+                    <button
+                      type="button"
+                      onClick={() => void saveAsPartyPlate(formData)}
+                      disabled={isSavingPlate || isSubmitting}
+                      className="flex-1 btn-liquid-metal disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Save as PartyPlate
+                    </button>
                     <button
                       type="submit"
                       disabled={isSubmitting || !formData.name || !formData.start_date || !formData.start_time || !formData.end_time || !formData.location || (formData.event_type === 'multi_day' && !formData.end_date)}

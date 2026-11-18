@@ -1,0 +1,1 @@
+{"name":"@partyhause/mcp-servers","version":"0.1.0","type":"module","private":true,"scripts":{"partyboard":"node src/partyboard/server.js","timeline":"node src/timeline/server.js","liveday":"node src/liveday/server.js"},"dependencies":{"@modelcontextprotocol/sdk":"^1.0.0","zod":"^3.25.0"}}

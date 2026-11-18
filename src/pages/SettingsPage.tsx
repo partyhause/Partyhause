@@ -140,6 +140,18 @@ export default function SettingsPage() {
             </Card>
           </button>
         ))}
+        <Card className="hover:shadow-md transition-all">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-2 rounded-xl bg-muted">
+              <AtSign className="h-5 w-5 text-foreground" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">AI Event Planner</p>
+              <p className="text-xs text-muted-foreground">Enable agentic planning with MCP tools</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Switch Role */}

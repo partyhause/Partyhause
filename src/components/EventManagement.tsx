@@ -25,6 +25,17 @@ export const EventManagement = () => {
   const guestLoadAttempted = useRef<Set<string>>(new Set());
   // Ref to track the last guest count for this event to avoid unnecessary re-fetches
   const lastGuestCount = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    if (currentEvent || events.length === 0 || isLoading) return;
+    // Auto-select the most recent event when arriving without context
+    // (e.g. clicking back from the QR scanner with no currentEvent set).
+    const latest = events.slice().sort((a, b) => {
+      const da = new Date(a.start_date || a.date || 0).getTime();
+      const db = new Date(b.start_date || b.date || 0).getTime();
+      return db - da;
+    })[0];
+    void setCurrentEvent(latest);
+  }, [currentEvent, events, isLoading, setCurrentEvent]);
 
   useEffect(() => {
     if (!currentEvent || isLoading) return;

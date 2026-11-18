@@ -41,25 +41,40 @@ def deep_merge(target: dict, source: dict) -> dict:
     return output
 
 
-class EventTemplateListView(APIView):
-    """GET /api/event-templates/ — List public templates (with optional filters).
+class EventTemplateListView(SessionAuthMixin, APIView):
+    """GET /api/event-templates/ — List templates.
 
-    Mirrors Express GET /api/event-templates: no auth required for listing,
-    filters by category. Django has no featured/price_tier columns, so only
-    category is supported here.
+    Returns public system templates plus the authenticated user's own
+    templates (published or not), annotated with ``source`` so the client
+    can render them as "Discover" vs "Mine".
     """
 
-    permission_classes = [AllowAny]
-
     def get(self, request):
-        templates = EventTemplate.objects.filter(published=True).order_by('-usage_count', '-created_at')
+        try:
+            self._verify_token()
+        except _SessionAuthStop:
+            # Unauthenticated callers still see public system templates.
+            self.request.user = None
 
-        category = request.query_params.get('category')
-        if category:
-            templates = templates.filter(category=category)
+        user = self.request.user
 
-        serializer = EventTemplateSerializer(templates, many=True)
-        return Response({'templates': serializer.data})
+        system_qs = EventTemplate.objects.filter(author_id__isnull=True, published=True)
+        user_qs = EventTemplate.objects.filter(author_id=user.id).order_by('-created_at') if user and user.is_authenticated else EventTemplate.objects.none()
+
+        system_ser = EventTemplateSerializer(system_qs, many=True)
+        user_ser = EventTemplateSerializer(user_qs, many=True)
+
+        # Annotate source so the client can split Discover / Mine.
+        for item in system_ser.data:
+            item['source'] = 'system'
+        for item in user_ser.data:
+            item['source'] = 'user'
+
+        return Response({
+            'system': system_ser.data,
+            'mine': user_ser.data,
+            'templates': system_ser.data + user_ser.data,
+        })
 
     def post(self, request):
         """Create a new template owned by the authenticated user."""

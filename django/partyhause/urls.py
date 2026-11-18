@@ -40,5 +40,8 @@ urlpatterns = [
     # RSVP
     path('api/rsvp/', include('rsvp.urls')),
     # Health
+    path('api/partyplates/', include('partyplates.urls')),
     path('api/health/', include('health.urls')),
-]
+    path('api/health/', include('health.urls')),
+    path('api/ai/', include('ai_chat.urls')),
+ ]

@@ -42,8 +42,7 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ event_id: eventId });
-    if (sessionId) params.append('session_id', sessionId);
+    const params = new URLSearchParams({ eventId });
 
     const { data, error: apiError } = await apiGet<{ stickies: StickyItem[] }>(
       `/api/partyboard/stickies?${params.toString()}`,

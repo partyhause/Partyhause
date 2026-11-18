@@ -1,0 +1,54 @@
+{
+  "engine": "mobile-safari",
+  "surface": "support",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedAssets": [],
+  "documentWidth": 390,
+  "viewportWidth": 390,
+  "bodyHeight": 3092,
+  "overflowingElements": [],
+  "landmarks": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 228
+    },
+    "main": {
+      "x": 0,
+      "y": 228,
+      "width": 390,
+      "height": 2763
+    },
+    "footer": {
+      "x": 0,
+      "y": 2991,
+      "width": 390,
+      "height": 101
+    },
+    "nav": {
+      "x": 24,
+      "y": 3029,
+      "width": 342,
+      "height": 24
+    },
+    "h1": {
+      "x": 24,
+      "y": 85,
+      "width": 342,
+      "height": 37
+    }
+  },
+  "cssSupport": {
+    "flex gap": true,
+    "grid gap": true,
+    "aspect-ratio": true,
+    "backdrop-filter": true,
+    ":has()": true,
+    "inset shorthand": true,
+    "color-mix": true,
+    "dvh unit": true,
+    "text-wrap balance": true
+  }
+}
