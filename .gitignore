@@ -195,4 +195,19 @@ internal-docs/
 docs/*.md
 !docs/README.md
 !docs/BRAND.md
+# Dev test scripts (not for production repo)
+test-*.js
+test-api-only.js
+test.sh
+
+# Dev artifacts and reports
+*.har
+csi-report.*
+dependency_graph.*
+
+# Build artifacts
+*.tsbuildinfo
+
+# Dev scripts
+monitor-deployment.ps1
 # *.png filter=lfs diff=lfs merge=lfs -text
