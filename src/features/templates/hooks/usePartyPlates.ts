@@ -21,10 +21,11 @@ export interface PartyPlate {
 
 /** Single source of truth for system (PartyPlates) templates.
  *  Used by both the frontend fallback AND should match Django seed_data/.
- *  Keeping them in sync ensures no duplicate templates when API comes online. */
+ *  IDs match TemplateFormRouter switch cases exactly (bare category names).
+ */
 export const SYSTEM_TEMPLATES: PartyPlate[] = [
   {
-    id: 'system-birthday',
+    id: 'birthday',
     name: 'Birthday Celebration',
     slug: 'birthday-celebration',
     description: 'Celebrate with friends, cake, and balloons.',
@@ -41,7 +42,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-wedding',
+    id: 'wedding',
     name: 'Wedding Celebration',
     slug: 'wedding-celebration',
     description: 'Say I do with a beautifully planned wedding.',
@@ -58,7 +59,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-conference',
+    id: 'conference',
     name: 'Professional Conference',
     slug: 'professional-conference',
     description: 'Host a business conference with speakers and sessions.',
@@ -75,7 +76,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-festival',
+    id: 'festival',
     name: 'Music Festival',
     slug: 'music-festival',
     description: 'Multi-stage festival with food and camping.',
@@ -92,7 +93,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-block-party',
+    id: 'block-party',
     name: 'Block Party',
     slug: 'block-party',
     description: 'Neighborhood gathering with food and music.',
@@ -109,7 +110,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-kids-birthday',
+    id: 'kids-birthday',
     name: 'Kids Birthday Party',
     slug: 'kids-birthday-party',
     description: 'Fun celebration for little ones with games and activities.',
@@ -126,7 +127,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-product-launch',
+    id: 'product-launch',
     name: 'Product Launch',
     slug: 'product-launch',
     description: 'Unveil your new product with a professional launch event.',
@@ -143,7 +144,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-fundraiser',
+    id: 'fundraiser',
     name: 'Fundraiser Gala',
     slug: 'fundraiser-gala',
     description: 'Raise funds for your cause with an elegant evening event.',
@@ -160,7 +161,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-travel',
+    id: 'travel',
     name: 'Group Travel',
     slug: 'group-travel',
     description: 'Plan a group getaway with friends or family.',
@@ -177,7 +178,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-workshop',
+    id: 'workshop',
     name: 'Workshop',
     slug: 'workshop',
     description: 'Hands-on learning session with materials and instruction.',
@@ -194,7 +195,7 @@ export const SYSTEM_TEMPLATES: PartyPlate[] = [
     source: 'system',
   },
   {
-    id: 'system-hackathon',
+    id: 'hackathon',
     name: 'Hackathon',
     slug: 'hackathon',
     description: 'Intensive coding event to build and ship in a weekend.',
