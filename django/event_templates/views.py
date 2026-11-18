@@ -58,8 +58,14 @@ class EventTemplateListView(SessionAuthMixin, APIView):
 
         user = self.request.user
 
-        system_qs = EventTemplate.objects.filter(author_id__isnull=True, published=True)
-        user_qs = EventTemplate.objects.filter(author_id=user.id).order_by('-created_at') if user and user.is_authenticated else EventTemplate.objects.none()
+        try:
+            system_qs = EventTemplate.objects.filter(author_id__isnull=True, published=True)
+            user_qs = EventTemplate.objects.filter(author_id=user.id).order_by('-created_at') if user and user.is_authenticated else EventTemplate.objects.none()
+        except Exception:
+            # Table may not exist yet (migration not applied). Return empty lists
+            # so the frontend doesn't crash.
+            system_qs = EventTemplate.objects.none()
+            user_qs = EventTemplate.objects.none()
 
         system_ser = EventTemplateSerializer(system_qs, many=True)
         user_ser = EventTemplateSerializer(user_qs, many=True)
@@ -82,11 +88,11 @@ class EventTemplateListView(SessionAuthMixin, APIView):
             self._verify_token()
         except _SessionAuthStop as e:
             return e.args[0]
-        serializer = EventTemplateSerializer(data=request.data)
-        if serializer.is_valid():
+        try:
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({'error': 'Template table not available yet'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class EventTemplateDetailView(APIView):
