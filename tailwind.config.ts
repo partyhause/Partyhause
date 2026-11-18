@@ -199,6 +199,13 @@ export default {
         xxxl: "var(--space-xxxl)",
         xxxxl: "var(--space-xxxxl)",
       },
+      fontFamily: {
+        // docs/BRAND.md section 5. Outfit for display/headings and wordmark;
+        // Inter for body/UI/data. Both self-hosted OFL fonts.
+        outfit: ['var(--font-outfit)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        inter: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       fontSize: {
         h1: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.0125em" }],
         h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.01em" }],
