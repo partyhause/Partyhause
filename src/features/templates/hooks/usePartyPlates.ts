@@ -8,7 +8,7 @@ export interface PartyPlate {
   category: string;
   hero_image_url?: string;
   price_tier: string;
-  default_payload?: unknown
+  default_payload?: unknown;
   featured?: boolean;
   usage_count?: number;
   author_id?: string | null;
@@ -18,8 +18,14 @@ export const usePartyPlates = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['partyplates'],
     queryFn: async () => {
-      const res = await apiGet<{ system: PartyPlate[]; mine: PartyPlate[]; templates: PartyPlate[] }>('/api/event-templates/');
-      return res.data;
+      try {
+        const res = await apiGet<{ system: PartyPlate[]; mine: PartyPlate[]; templates: PartyPlate[] }>('/api/event-templates/');
+        return res.data;
+      } catch {
+        // Network or transport error — return empty lists so the UI
+        // renders empty Discover/Mine tabs instead of crashing.
+        return { system: [], mine: [], templates: [] };
+      }
     },
     staleTime: 5 * 60 * 1000,
   });
