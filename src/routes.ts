@@ -12,6 +12,9 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   PRIVACY_SETTINGS: '/privacy-settings',
   TEMPLATES: '/templates',
+  INVITE_TEMPLATES: '/invite-templates',
+  EVENT_TEMPLATES: '/event-templates',
+  AI_PLANNER: '/ai-planner',
   PROFILE: '/profile/:id?',
   FEED: '/feed',
   EXPLORE: '/explore',
@@ -20,7 +23,6 @@ export const ROUTES = {
   ROLE_SELECTION: '/role-selection',
   GUEST_VIEW: '/guest-view/:guestId',
   LOGOUT: '/logout',
-  AI_PLANNER: '/ai-planner',
   CATCH_ALL: '*',
 } as const;
 

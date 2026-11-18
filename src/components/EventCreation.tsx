@@ -15,7 +15,7 @@ import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
 import { PartyPlateSelection } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
-import AIEventAssistant from '@/components/templates/AIEventAssistant';
+import AIEventAssistant from '@/features/ai-assistant/AIEventAssistant';
 import InviteTemplateSelection from '@/components/invites/InviteTemplateSelection';
 import InviteCustomization from '@/components/invites/InviteCustomization';
 import { InviteTemplate, CustomInviteData } from '@/types/invites';

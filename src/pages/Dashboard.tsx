@@ -71,7 +71,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { icon: Plus, label: 'Create Event', page: '/create-event', variant: 'peach' as const },
-              { icon: Sparkles, label: 'PartyPlates', page: '/templates', variant: 'lavender' as const },
+              { icon: Sparkles, label: 'PartyPlates', page: '/event-templates', variant: 'lavender' as const },
               { icon: QrCode, label: 'QR Scanner', page: '/qr-scanner', variant: 'teal' as const },
               { icon: Users, label: 'Crew', page: '/feed', variant: 'mint' as const },
               { icon: Sparkles, label: 'AI Planner', page: '/ai-planner', variant: 'butter' as const },
