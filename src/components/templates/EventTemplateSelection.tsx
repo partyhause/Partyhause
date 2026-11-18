@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Sparkles, Wand2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Sparkles,
+  Wand2,
+  Cake,
+  Heart,
+  Building2,
+  Rocket,
+  Music2,
+  Plane,
+  Users,
+  Wrench,
+  Laptop,
+  GraduationCap,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
