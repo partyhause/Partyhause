@@ -27,7 +27,6 @@ const GuestViewRoute = () => {
   return <GuestView guestId={guestId ?? ''} />;
 };
 
-const TemplateManager = lazy(() => import("@/components/TemplateManager"));
 const JoinEventPage = lazy(() => import("@/components/JoinEventPage").then(m => ({ default: m.JoinEventPage })));
 const RoleSelection = lazy(() => import("@/components/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const Logout = lazy(() => import("@/components/Logout"));
@@ -87,6 +86,7 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PRIVACY_SETTINGS} element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.EVENT_TEMPLATES} element={<ProtectedRoute><EventTemplatesPage /></ProtectedRoute>} />
+                <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
                 <Route path={ROUTES.INVITE_TEMPLATES} element={<ProtectedRoute><InviteTemplatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
