@@ -129,4 +129,3 @@ const App = () => {
 };
 
 export default App;
-                <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat \/>|<Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
