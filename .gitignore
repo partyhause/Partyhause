@@ -191,14 +191,8 @@ MOBILE_BACKEND_REVIEW.md
 PRODUCTION_READINESS_SUMMARY.md
 
 # Internal documentation (development context, specs, strategy, roadmaps)
+internal-docs/
 docs/*.md
 !docs/README.md
 !docs/BRAND.md
-docs/project/
-docs/mobile-ios-launch/
-docs/mobile/
-docs/testing/
-docs/marketing/
-docs/features/
-docs/images/ui-audit/
 # *.png filter=lfs diff=lfs merge=lfs -text
