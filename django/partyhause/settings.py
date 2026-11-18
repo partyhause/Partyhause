@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'cost_split',
     'rsvp',
     'health',
+    'ai_chat',
 ]
 
 MIDDLEWARE = [
