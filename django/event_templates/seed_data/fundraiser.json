@@ -1,0 +1,20 @@
+{
+  "id": "fundraiser-001",
+  "name": "Fundraiser Gala",
+  "slug": "fundraiser-gala",
+  "description": "Raise funds for your cause with an elegant evening event.",
+  "category": "fundraiser",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "fundraiser",
+    "includes_auction": true,
+    "includes_dinner": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

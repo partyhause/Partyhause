@@ -1,0 +1,20 @@
+{
+  "id": "kids-birthday-001",
+  "name": "Kids Birthday Party",
+  "slug": "kids-birthday-party",
+  "description": "Fun celebration for little ones with games and activities.",
+  "category": "kids-birthday",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "kids-birthday",
+    "includes_games": true,
+    "includes_activities": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

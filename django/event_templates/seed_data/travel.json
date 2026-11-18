@@ -1,0 +1,20 @@
+{
+  "id": "travel-001",
+  "name": "Group Travel",
+  "slug": "group-travel",
+  "description": "Plan a group getaway with friends or family.",
+  "category": "travel",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "multi_day",
+    "theme": "travel",
+    "includes_accommodation": true,
+    "includes_transport": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

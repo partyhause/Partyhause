@@ -1,0 +1,20 @@
+{
+  "id": "hackathon-001",
+  "name": "Hackathon",
+  "slug": "hackathon",
+  "description": "Intensive coding event to build and ship in a weekend.",
+  "category": "hackathon",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "multi_day",
+    "theme": "hackathon",
+    "includes_food": true,
+    "includes_prizes": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}
