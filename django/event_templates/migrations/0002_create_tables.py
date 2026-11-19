@@ -51,6 +51,7 @@ class Migration(migrations.Migration):
                         ('usage_count', models.IntegerField(default=0)),
                         ('created_at', models.DateTimeField(auto_now_add=True)),
                         ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('author_id', models.UUIDField(blank=True, null=True)),
                     ],
                     options={
                         'db_table': 'templates',

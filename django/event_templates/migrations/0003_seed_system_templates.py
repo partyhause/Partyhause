@@ -8,7 +8,7 @@ from django.db import migrations
 
 def seed_templates(apps, schema_editor):
     EventTemplate = apps.get_model('event_templates', 'EventTemplate')
-    seed_dir = os.path.join(os.path.dirname(__file__), 'seed_data')
+    seed_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'seed_data')
     if not os.path.isdir(seed_dir):
         return
     for filename in sorted(os.listdir(seed_dir)):
