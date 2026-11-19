@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Sparkles } from 'lucide-react';
+import { getStoredToken } from '@/lib/auth-storage';
 
 const NVIDIA_MODELS = [
   { id: 'nvidia/nemotron-3.5-super-vl-120b-a12b', name: 'Nemotron 3.5 Super VL' },
@@ -29,17 +30,21 @@ export default function AIPlannerChat() {
     setMessages(newMessages);
     setInput('');
     setLoading(true);
-    
+
     try {
-      const res = await fetch('/api/ai/chat', {
+      const token = getStoredToken();
+      const res = await fetch('/api/ai/chat/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ messages: newMessages, model })
       });
       if (!res.ok) throw new Error('Request failed');
       const reader = res.body?.getReader();
       if (!reader) throw new Error('No stream');
-      
+
       let assistantContent = '';
       const decoder = new TextDecoder();
       while (true) {

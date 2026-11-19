@@ -1,27 +1,38 @@
 import os
 import asyncio
 import json
-from django.http import StreamingHttpResponse
-from asgiref.sync import sync_to_async
+from django.http import StreamingHttpResponse, JsonResponse
+from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from accounts.session_auth import SessionAuthMixin, _SessionAuthStop
 
-class ChatStreamView(SessionAuthMixin):
+@method_decorator(csrf_exempt, name='dispatch')
+class ChatStreamView(SessionAuthMixin, View):
     REQUIRES_VERIFIED = True
 
     async def post(self, request):
-        # Verify auth sync
         try:
             self._verify_token()
         except _SessionAuthStop as e:
-            return e.args[0]
-        
-        messages = request.data.get('messages', [])
-        model = request.data.get('model', 'nvidia/nemotron-3.5-lightning-30b-a3b')
-        
+            resp = e.args[0]
+            # Convert DRF Response to Django JsonResponse
+            if hasattr(resp, 'data'):
+                return JsonResponse(resp.data, status=resp.status_code)
+            return JsonResponse({'error': str(resp)}, status=500)
+
+        try:
+            body = json.loads(request.body.decode() or '{}')
+        except Exception:
+            return JsonResponse({'error': 'invalid json'}, status=400)
+
+        messages = body.get('messages', [])
+        model = body.get('model', 'nvidia/nemotron-3.5-lightning-30b-a3b')
+
         api_key = os.environ.get('NVIDIA_API_KEY')
         if not api_key:
-            return StreamingHttpResponse(b'error', status=500)
-        
+            return JsonResponse({'error': 'NVIDIA API key not configured'}, status=500)
+
         async def event_stream():
             import httpx
             headers = {
@@ -51,7 +62,7 @@ class ChatStreamView(SessionAuthMixin):
                                 yield f"data: {json.dumps(chunk)}\n\n"
                             except:
                                 pass
-        
+
         response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'

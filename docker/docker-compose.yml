@@ -45,8 +45,8 @@ services:
 
   partyhause-django:
     build:
-      context: .
-      dockerfile: ./Dockerfile.api
+      context: ..
+      dockerfile: ./docker/Dockerfile.api
     ports:
       - "8001:8001"
     environment:
@@ -56,6 +56,7 @@ services:
       SECRET_KEY: django-insecure-jidxkb_uou^v=*y26$$zha_-=rtg0d9!n9cd5)-_wxg$$3!8ze^$$
       DEBUG: "False"
       ALLOWED_HOSTS: "localhost,127.0.0.1,partyhause-django"
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY}
       EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
       EMAIL_HOST: partyhause-mailpit
       EMAIL_PORT: "1025"
@@ -76,8 +77,8 @@ services:
 
   partyhause-web:
     build:
-      context: .
-      dockerfile: ./Dockerfile.dev
+      context: ..
+      dockerfile: ./docker/Dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
