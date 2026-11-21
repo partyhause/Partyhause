@@ -1,0 +1,189 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { usePartyStore, type Event } from '@/store/usePartyStore';
+import { clearAuth } from '@/lib/auth-storage';
+
+vi.mock('@/lib/auth-storage', () => ({
+  getStoredToken: vi.fn(),
+  setStoredToken: vi.fn(),
+  getStoredUser: vi.fn(),
+  setStoredUser: vi.fn(),
+  clearAuth: vi.fn(),
+}));
+
+// Mock event service
+vi.mock('@/lib/events', () => ({
+  eventService: {
+    getUserEvents: vi.fn(),
+    createEvent: vi.fn()
+  }
+}));
+
+describe('Logout Functionality Tests', () => {
+  const mockUser = {
+    id: 'test-user-id',
+    email: 'test@example.com',
+    name: 'Test User'
+  };
+
+  // Typed as Event so the fixture cannot drift from the model again. The
+  // previous literal was untyped and omitted six required fields
+  // (start_date, end_date, event_type, is_public, created_at, updated_at)
+  // while setting a non-existent `event_date`.
+  const mockEvent: Event = {
+    id: 'test-event-id',
+    host_id: 'test-user-id',
+    name: 'Test Event',
+    start_date: '2025-01-01T12:00:00Z',
+    end_date: '2025-01-01T18:00:00Z',
+    event_type: 'single_day',
+    is_public: false,
+    location: 'Test Location',
+    spotify_playlist_url: 'https://spotify.com/test',
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset store to initial state
+    usePartyStore.setState({
+      user: null,
+      isAuthenticated: false,
+      events: [],
+      currentEvent: null,
+      guests: [],
+      loadedEventIds: new Set<string>(),
+      fetchingEventId: null,
+      isLoading: false,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should clear user state on logout', () => {
+    // Setup: User is logged in
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [mockEvent],
+      currentEvent: mockEvent,
+      guests: [],
+      isLoading: false,
+    });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // Verify store state is cleared
+    const state = usePartyStore.getState();
+    expect(state.user).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.events).toEqual([]);
+    expect(state.currentEvent).toBeNull();
+    expect(state.guests).toEqual([]);
+
+    // The store reset is not enough on its own: localStorage must be cleared
+    // too, or a reload rehydrates the session that was just discarded.
+    expect(clearAuth).toHaveBeenCalled();
+  });
+
+  it('should handle logout when currentEvent exists but events array is empty', () => {
+    // Setup: User logged in but with persisted currentEvent and empty events array
+    // This simulates the scenario that caused the blank page
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [], // Empty events array
+      currentEvent: mockEvent, // But currentEvent is persisted
+      guests: [],
+      isLoading: false,
+    });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // Verify store state is properly cleared
+    const state = usePartyStore.getState();
+    expect(state.user).toBeNull();
+    expect(state.events).toEqual([]);
+    expect(state.currentEvent).toBeNull();
+    expect(state.guests).toEqual([]);
+  });
+
+  it('should handle logout failure gracefully', () => {
+    // Setup: User is logged in
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [mockEvent],
+      currentEvent: mockEvent,
+      guests: [],
+      isLoading: false,
+    });
+
+    // Simulate clearAuth throwing (e.g., storage unavailable) — logout state reset must still succeed
+    (clearAuth as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('Network error');
+    });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // Verify store state is cleared even with signOut error
+    const state = usePartyStore.getState();
+    expect(state.user).toBeNull();
+    expect(state.events).toEqual([]);
+    expect(state.currentEvent).toBeNull();
+  });
+
+  it('should reset loadedEventIds on logout', () => {
+    // Setup: User is logged in with some loaded events
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [mockEvent],
+      currentEvent: mockEvent,
+      guests: [],
+      loadedEventIds: new Set(['event-1', 'event-2']),
+      isLoading: false,
+    });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // Verify loadedEventIds is reset
+    const state = usePartyStore.getState();
+    expect(state.loadedEventIds).toEqual(new Set<string>());
+  });
+
+  it('writes no page state on logout: routing lives in the router', () => {
+    // Setup: User is logged in
+    usePartyStore.setState({
+      user: mockUser,
+      isAuthenticated: true,
+      events: [mockEvent],
+      currentEvent: mockEvent,
+      guests: [],
+      isLoading: false,
+    });
+
+    // Trigger logout
+    const { logout } = usePartyStore.getState();
+    logout();
+
+    // The React Router cutover removed currentPage from the store; logout
+    // components navigate('/auth') themselves. Pin the absence so a merge
+    // does not reintroduce a parallel navigation mechanism.
+    const state = usePartyStore.getState();
+    expect(state).not.toHaveProperty('currentPage');
+    expect(state.user).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+  });
+});

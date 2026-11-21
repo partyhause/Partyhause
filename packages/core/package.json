@@ -1,0 +1,63 @@
+{
+  "name": "@partyhause/core",
+  "version": "0.1.0",
+  "description": "Shared logic and utilities for PartyHause mobile and web apps.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./mvp": {
+      "types": "./src/mvp.ts",
+      "default": "./src/mvp.ts"
+    },
+    "./contracts": {
+      "types": "./src/contracts/index.ts",
+      "default": "./src/contracts/index.ts"
+    },
+    "./contracts/billing": {
+      "types": "./src/contracts/billing.ts",
+      "default": "./src/contracts/billing.ts"
+    },
+    "./contracts/primitives": {
+      "types": "./src/contracts/primitives.ts",
+      "default": "./src/contracts/primitives.ts"
+    },
+    "./contracts/guest": {
+      "types": "./src/contracts/guest.ts",
+      "default": "./src/contracts/guest.ts"
+    },
+    "./contracts/event": {
+      "types": "./src/contracts/event.ts",
+      "default": "./src/contracts/event.ts"
+    },
+    "./contracts/social": {
+      "types": "./src/contracts/social.ts",
+      "default": "./src/contracts/social.ts"
+    },
+    "./contracts/user": {
+      "types": "./src/contracts/user.ts",
+      "default": "./src/contracts/user.ts"
+    },
+    "./contracts/ai": {
+      "types": "./src/contracts/ai.ts",
+      "default": "./src/contracts/ai.ts"
+    },
+    "./app-install": {
+      "types": "./src/app-install.ts",
+      "default": "./src/app-install.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.25.0"
+  }
+}

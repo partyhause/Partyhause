@@ -1,0 +1,82 @@
+FROM node:24-slim AS webbuilder
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+# --legacy-peer-deps is required, not defensive. The lockfile is written with
+# that flag; bare `npm ci` rejects it with a picomatch conflict.
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
+# Build the shared core package first (required by src/lib/api-client.ts)
+RUN npm run build --workspace=packages/core
+
+# Vite inlines VITE_* env vars at BUILD time. VITE_API_URL left EMPTY: nginx
+# proxies /api/* to the Django sidecar over localhost, same-origin.
+ARG VITE_API_URL
+ARG VITE_APP_NAME=PartyHause
+ARG VITE_APP_URL
+ARG VITE_ENTRA_TENANT_ID
+ARG VITE_ENTRA_SPA_CLIENT_ID
+ARG VITE_ENTRA_POLICY
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_APP_NAME=$VITE_APP_NAME
+ENV VITE_APP_URL=$VITE_APP_URL
+ENV VITE_ENTRA_TENANT_ID=$VITE_ENTRA_TENANT_ID
+ENV VITE_ENTRA_SPA_CLIENT_ID=$VITE_ENTRA_SPA_CLIENT_ID
+ENV VITE_ENTRA_POLICY=$VITE_ENTRA_POLICY
+
+# Fix tsconfig for web build (remove expo dependency)
+RUN sed -i '/"extends": "expo/d' tsconfig.json || true
+
+# Build the Vite PWA
+RUN npm run build:web
+
+# --- Runtime stage: nginx front door + Django API sidecar ---
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=partyhause.settings
+
+WORKDIR /app
+
+# nginx + tini (PID 1 reaps sidecar, forwards signals), openssl + ca-certs
+# for sslmode=require against PostgreSQL, curl for the entrypoint readiness gate.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nginx tini curl openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY django/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY django/ ./django/
+WORKDIR /app/django
+
+# Collect static once so whitenoise/gunicorn serve without FS hits at runtime.
+RUN python manage.py collectstatic --noinput 2>/dev/null || true
+
+WORKDIR /app
+
+# Static bundle from the web builder
+COPY --from=webbuilder /app/dist /usr/share/nginx/html
+
+# Full cache policy plus the /api proxy to the Django sidecar on localhost:8001.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Debian's nginx ships sites-enabled/default (demo server block, default_server
+# on port 80). It wins over conf.d, so remove it.
+RUN rm -f /etc/nginx/sites-enabled/default
+
+# Fail the build rather than ship a container that will not start.
+RUN nginx -t
+
+EXPOSE 80
+
+# Entrypoint starts the Django sidecar, waits for /api/health, then runs nginx.
+COPY docker/entrypoint.sh docker/entrypoint.sh
+RUN chmod +x docker/entrypoint.sh
+
+# tini is PID 1: reaps the sidecar, forwards SIGTERM to both processes.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["docker/entrypoint.sh"]

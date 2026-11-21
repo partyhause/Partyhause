@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=partyhause.settings
+
+WORKDIR /app
+
+# System deps: psycopg2 needs libpq; curl is used by the compose healthcheck;
+# openssl + ca-certificates for sslmode=require.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libpq5 curl openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY django/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY django/ ./django/
+WORKDIR /app/django
+
+# Collect static so gunicorn + whitenoise serve them without hitting the FS at runtime.
+RUN python manage.py collectstatic --noinput 2>/dev/null || true
+
+EXPOSE 8001
+
+# Gunicorn behind nginx in the combined image; standalone in compose.
+CMD ["gunicorn", "partyhause.wsgi:application", "--bind", "0.0.0.0:8001", "--workers", "2", "--threads", "4", "--timeout", "120"]

@@ -1,0 +1,19 @@
+{
+  "name": "Music Festival",
+  "slug": "music-festival",
+  "description": "A multi-stage music festival with food trucks and camping.",
+  "category": "festival",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "multi_day",
+    "theme": "festival",
+    "includes_stages": true,
+    "includes_camping": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.22.0'
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: partyhause_ci
+          POSTGRES_PASSWORD: partyhause_ci
+          POSTGRES_USER: partyhause_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U partyhause_ci -d partyhause_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://partyhause_ci:partyhause_ci@localhost:5432/partyhause_ci
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # --legacy-peer-deps is required. The lockfile is written by a resolver
+      # running with that flag; bare `npm ci` recomputes a conflicting tree and
+      # fails on picomatch, which looks like a corrupt lockfile and is not one.
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # @prisma/client ships as a stub whose types are written by `generate`.
+      # Without this step the package exports nothing, and typechecking
+      # tsconfig.server.json fails with TS2305 "has no exported member
+      # 'PrismaClient'" plus knock-on TS2322 errors where inferred query
+      # results collapse to `unknown`. There is no postinstall hook, so
+      # `npm ci` alone does not produce it. It passes locally only because a
+      # previous manual `prisma generate` left the client in node_modules.
+      # No database connection is required to generate from the schema.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Verify database migrations
+        run: npm run test:migrations
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck & Build
+        run: npm run build:check
+
+      - name: Run tests
+        run: npm run test:run
+
+      - name: Validate Expo project
+        run: npm run doctor:mobile
+
+      - name: Export iOS bundle
+        run: npm run build:ios:export

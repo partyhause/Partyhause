@@ -1,0 +1,21 @@
+FROM node:24-slim
+
+WORKDIR /app
+
+# Workspace manifests must exist before npm ci so the workspace: protocol dep
+# (@partyhause/agentic-harness) resolves.
+COPY package.json package-lock.json ./
+COPY packages ./packages
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
+# Workspace link for bare '@partyhause/core' imports.
+RUN mkdir -p node_modules/@partyhause && ln -sfn ../../packages/core node_modules/@partyhause/core
+
+EXPOSE 5173
+
+# Vite dev server; VITE_API_PROXY_TARGET is injected at runtime by compose
+# (http://partyhause-django:8001) so /api proxies to Django on the same
+# Docker network.
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]

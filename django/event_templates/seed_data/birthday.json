@@ -1,0 +1,19 @@
+{
+  "name": "Birthday Celebration",
+  "slug": "birthday-celebration",
+  "description": "Celebrate another trip around the sun with friends, cake, and balloons.",
+  "category": "birthday",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "birthday",
+    "includes_cake": true,
+    "includes_balloons": true
+  },
+  "required_fields_schema": null,
+  "featured": true,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

@@ -1,0 +1,60 @@
+/**
+ * useSuggestedUsers Hook - Web Version
+ * Fetches suggested users/creators to follow
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { getStoredToken } from '@/lib/auth-storage';
+import { apiRequest } from '../api/client';
+import { Creator } from '../types';
+
+interface UseSuggestedUsersResult {
+  users: Creator[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+export function useSuggestedUsers(limit: number = 20): UseSuggestedUsersResult {
+  const [users, setUsers] = useState<Creator[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    const token = getStoredToken();
+    
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Server returns { suggestions, total } (not { users }).
+      const data = await apiRequest<{ suggestions: Creator[]; total: number }>(
+        `/api/users/suggested?limit=${limit}`
+      );
+
+      setUsers(data.suggestions || []);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load suggested users';
+      setError(errorMsg);
+      console.error('[useSuggestedUsers Error]:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  return {
+    users,
+    isLoading,
+    error,
+    refetch: fetchUsers,
+  };
+}

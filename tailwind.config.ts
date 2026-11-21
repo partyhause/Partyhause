@@ -1,0 +1,352 @@
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: ["class"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        // PartyHause brand palette. Values live in src/index.css :root and are
+        // specified in docs/BRAND.md section 4. Exposed here so components can
+        // write `bg-coral-700` / `text-neutral-700` instead of reaching for a
+        // raw hex, which is how three competing palettes accumulated before.
+        coral: {
+          50: "hsl(var(--coral-50))",
+          100: "hsl(var(--coral-100))",
+          200: "hsl(var(--coral-200))",
+          300: "hsl(var(--coral-300))",
+          400: "hsl(var(--coral-400))",
+          500: "hsl(var(--coral-500))",
+          600: "hsl(var(--coral-600))",
+          700: "hsl(var(--coral-700))",
+          800: "hsl(var(--coral-800))",
+          900: "hsl(var(--coral-900))",
+          950: "hsl(var(--coral-950))",
+        },
+        magenta: {
+          50: "hsl(var(--magenta-50))",
+          100: "hsl(var(--magenta-100))",
+          200: "hsl(var(--magenta-200))",
+          300: "hsl(var(--magenta-300))",
+          400: "hsl(var(--magenta-400))",
+          500: "hsl(var(--magenta-500))",
+          600: "hsl(var(--magenta-600))",
+          700: "hsl(var(--magenta-700))",
+          800: "hsl(var(--magenta-800))",
+          900: "hsl(var(--magenta-900))",
+          950: "hsl(var(--magenta-950))",
+        },
+        // docs/BRAND.md section 12.1, the concept palette. cream is the surface
+        // family (page background, warm cards). teal is the cool accent,
+        // category surfaces only, never a status colour. periwinkle is the
+        // evening accent; text-bearing surfaces use 500 or darker.
+        cream: {
+          50: "hsl(var(--cream-50))",
+          100: "hsl(var(--cream-100))",
+          200: "hsl(var(--cream-200))",
+          300: "hsl(var(--cream-300))",
+          400: "hsl(var(--cream-400))",
+          500: "hsl(var(--cream-500))",
+          600: "hsl(var(--cream-600))",
+          700: "hsl(var(--cream-700))",
+          800: "hsl(var(--cream-800))",
+          900: "hsl(var(--cream-900))",
+          950: "hsl(var(--cream-950))",
+        },
+        teal: {
+          50: "hsl(var(--teal-50))",
+          100: "hsl(var(--teal-100))",
+          200: "hsl(var(--teal-200))",
+          300: "hsl(var(--teal-300))",
+          400: "hsl(var(--teal-400))",
+          500: "hsl(var(--teal-500))",
+          600: "hsl(var(--teal-600))",
+          700: "hsl(var(--teal-700))",
+          800: "hsl(var(--teal-800))",
+          900: "hsl(var(--teal-900))",
+          950: "hsl(var(--teal-950))",
+        },
+        periwinkle: {
+          50: "hsl(var(--periwinkle-50))",
+          100: "hsl(var(--periwinkle-100))",
+          200: "hsl(var(--periwinkle-200))",
+          300: "hsl(var(--periwinkle-300))",
+          400: "hsl(var(--periwinkle-400))",
+          500: "hsl(var(--periwinkle-500))",
+          600: "hsl(var(--periwinkle-600))",
+          700: "hsl(var(--periwinkle-700))",
+          800: "hsl(var(--periwinkle-800))",
+          900: "hsl(var(--periwinkle-900))",
+          950: "hsl(var(--periwinkle-950))",
+        },
+        neutral: {
+          0: "hsl(var(--neutral-0))",
+          50: "hsl(var(--neutral-50))",
+          100: "hsl(var(--neutral-100))",
+          200: "hsl(var(--neutral-200))",
+          300: "hsl(var(--neutral-300))",
+          400: "hsl(var(--neutral-400))",
+          500: "hsl(var(--neutral-500))",
+          600: "hsl(var(--neutral-600))",
+          700: "hsl(var(--neutral-700))",
+          800: "hsl(var(--neutral-800))",
+          900: "hsl(var(--neutral-900))",
+          950: "hsl(var(--neutral-950))",
+        },
+        brand: "hsl(var(--brand))",
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          surface: "hsl(var(--success-surface))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          surface: "hsl(var(--warning-surface))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          surface: "hsl(var(--danger-surface))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          surface: "hsl(var(--info-surface))",
+        },
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+          glow: "hsl(var(--accent-glow))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        // New Orange Color Scale
+        orange: {
+          50: "hsl(var(--orange-50))",
+          100: "hsl(var(--orange-100))",
+          200: "hsl(var(--orange-200))",
+          300: "hsl(var(--orange-300))",
+          400: "hsl(var(--orange-400))",
+          500: "hsl(var(--orange-500))",
+          600: "hsl(var(--orange-600))",
+          700: "hsl(var(--orange-700))",
+          800: "hsl(var(--orange-800))",
+          900: "hsl(var(--orange-900))",
+        },
+        // Legacy status alias. `error` is kept because existing components
+        // reference it, but it now resolves to --danger rather than
+        // --error-red, which was byte-identical to the primary brand colour.
+        // Prefer `danger` in new code; success/warning/info are defined once,
+        // above, with their surface variants.
+        error: "hsl(var(--danger))",
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-card': 'var(--gradient-card)',
+        'gradient-hero': 'var(--gradient-hero)',
+        // docs/BRAND.md s4.7. Iso-lightness coral to magenta, both endpoints at
+        // L=60%, so it holds constant perceived weight and cannot band.
+        'gradient-brand': 'var(--gradient-brand)',
+      },
+      borderRadius: {
+        xs: "var(--radius-sm)",
+        sm: "var(--radius-md)",
+        md: "var(--radius-lg)",
+        lg: "var(--radius-xl)",
+        xl: "var(--radius-xxl)",
+        full: "9999px",
+      },
+      spacing: {
+        xs: "var(--space-xs)",
+        sm: "var(--space-sm)",
+        md: "var(--space-md)",
+        lg: "var(--space-lg)",
+        xl: "var(--space-xl)",
+        xxl: "var(--space-xxl)",
+        xxxl: "var(--space-xxxl)",
+        xxxxl: "var(--space-xxxxl)",
+      },
+      fontFamily: {
+        // docs/BRAND.md section 5. Outfit for display/headings and wordmark;
+        // Inter for body/UI/data. Both self-hosted OFL fonts.
+        outfit: ['var(--font-outfit)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        inter: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        h1: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.0125em" }],
+        h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.01em" }],
+        h3: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.008em" }],
+        body: ["1rem", { lineHeight: "1.5rem" }],
+        small: ["0.875rem", { lineHeight: "1.3125rem" }],
+        caption: ["0.75rem", { lineHeight: "1.125rem" }],
+      },
+      keyframes: {
+        // UI Component Animations
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        
+        // Liquid Metal Animations
+        "liquid-ripple": {
+          "0%": { transform: "scale(0.95)", opacity: "1" },
+          "50%": { transform: "scale(1.05)", opacity: "0.8" },
+          "100%": { transform: "scale(0.95)", opacity: "1" },
+        },
+        "liquid-flow": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "liquid-morph": {
+          "0%, 100%": { 
+            transform: "translate(0, 0) scale(1)",
+            borderRadius: "60% 40% 30% 70% / 60% 30% 70% 40%"
+          },
+          "33%": { 
+            transform: "translate(50px, -30px) scale(1.1)",
+            borderRadius: "30% 60% 70% 40% / 50% 60% 30% 60%"
+          },
+          "66%": { 
+            transform: "translate(-40px, 20px) scale(0.95)",
+            borderRadius: "50% 60% 30% 60% / 30% 70% 50% 40%"
+          },
+        },
+        "metal-shimmer": {
+          "0%": { backgroundPosition: "-200% center" },
+          "100%": { backgroundPosition: "200% center" },
+        },
+        "float-smooth": {
+          "0%, 100%": { transform: "translateY(0px) rotate(0deg)" },
+          "33%": { transform: "translateY(-8px) rotate(2deg)" },
+          "66%": { transform: "translateY(-4px) rotate(-2deg)" },
+        },
+        "float-gentle": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        "glow-pulse-liquid": {
+          "0%, 100%": {
+            boxShadow: "0 0 20px hsla(233, 81%, 71%, 0.2), 0 0 40px hsla(233, 81%, 71%, 0.1)",
+          },
+          "50%": {
+            boxShadow: "0 0 40px hsla(233, 81%, 71%, 0.4), 0 0 80px hsla(233, 81%, 71%, 0.2)",
+          },
+        },
+        "gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "particle-float": {
+          "0%, 100%": {
+            transform: "translateY(0) translateX(0) scale(1)",
+            opacity: "0",
+          },
+          "10%": { opacity: "0.6" },
+          "90%": { opacity: "0.6" },
+          "100%": {
+            transform: "translateY(-100vh) translateX(50px) scale(0)",
+            opacity: "0",
+          },
+        },
+        "light-sweep": {
+          "0%, 100%": { left: "-5%", opacity: "0" },
+          "50%": { left: "105%", opacity: "1" },
+        },
+        
+        // Legacy Animations
+        "orange-pulse": {
+          "0%, 100%": {
+            transform: "scale(1)",
+            boxShadow: "0 0 20px hsl(var(--orange-500) / 0.3)",
+          },
+          "50%": {
+            transform: "scale(1.05)",
+            boxShadow: "0 0 30px hsl(var(--orange-400) / 0.6)",
+          },
+        },
+        "orange-glow": {
+          "0%, 100%": { filter: "drop-shadow(0 2px 8px hsl(var(--orange-500) / 0.4))" },
+          "50%": { filter: "drop-shadow(0 4px 16px hsl(var(--orange-400) / 0.6))" },
+        },
+        "slide-up": {
+          "0%": { transform: "translateY(100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "bounce-in": {
+          "0%": { transform: "scale(0.3)", opacity: "0" },
+          "50%": { transform: "scale(1.05)", opacity: "1" },
+          "70%": { transform: "scale(0.9)" },
+          "100%": { transform: "scale(1)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        // UI Components
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        
+        // Liquid Metal Effects
+        "liquid-ripple": "liquid-ripple 3s ease-in-out infinite",
+        "liquid-flow": "liquid-flow 8s ease infinite",
+        "liquid-morph": "liquid-morph 20s ease-in-out infinite",
+        "metal-shimmer": "metal-shimmer 3s linear infinite",
+        "float-smooth": "float-smooth 6s ease-in-out infinite",
+        "float-gentle": "float-gentle 4s ease-in-out infinite",
+        "glow-pulse-liquid": "glow-pulse-liquid 2s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 8s ease infinite",
+        "gradient-holographic": "gradient-shift 10s ease infinite",
+        "particle-float": "particle-float 6s ease-in-out infinite",
+        "light-sweep": "light-sweep 4s ease-in-out infinite",
+        
+        // Legacy Animations
+        "orange-pulse": "orange-pulse 2s ease-in-out infinite",
+        "orange-glow": "orange-glow 3s ease-in-out infinite",
+        "slide-up": "slide-up 0.5s ease-out",
+        "bounce-in": "bounce-in 0.6s ease-out",
+        "fade-in": "fade-in 0.4s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;

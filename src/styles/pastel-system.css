@@ -1,0 +1,104 @@
+/* Pastel Multicolour Design System
+   Source: UI DESIGN PROMPT — Pastel Multicolour, Curved Cards & Modern Interface
+   Primary surfaces: cream and off-white. Accents alternate per card for rhythm.
+*/
+
+:root {
+  /* Primary pastel accent palette */
+  --pastel-lavender: #A6A7E8;
+  --pastel-pink: #F28AA7;
+  --pastel-peach: #FFA36F;
+  --pastel-butter: #FFE49A;
+  --pastel-mint: #A9DCCB;
+  --pastel-teal: #378F82;
+
+  /* Supporting surfaces */
+  --pastel-bg-pale-pink: #FBE7F7;
+  --pastel-bg-cream-white: #FFFDF2;
+  --pastel-bg-light-lavender: #EAE8FF;
+  --pastel-soft-orange: #F6B347;
+  --pastel-muted-blue-grey: #858EAC;
+  --pastel-dark-charcoal: #24252B;
+
+  /* Radii */
+  --radius-card: 32px;
+  --radius-pill: 9999px;
+  --radius-soft: 24px;
+
+  /* Shadows */
+  --shadow-soft: 0 8px 24px rgba(36, 37, 43, 0.06);
+  --shadow-layered: 0 12px 36px rgba(36, 37, 43, 0.08);
+
+  /* Spacing rhythm */
+  --space-card-pad: 1.5rem;
+}
+
+/* Base page background */
+.pastel-page {
+  background: var(--pastel-bg-cream-white);
+  color: var(--pastel-dark-charcoal);
+  font-family: Inter, Plus Jakarta Sans, Manrope, DM Sans, system-ui, sans-serif;
+}
+
+/* Signature curved card */
+.pastel-card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  padding: var(--space-card-pad);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pastel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-layered);
+}
+
+/* Card colour variants – alternate for rhythm */
+.pastel-card--lavender { background: linear-gradient(180deg, #ffffff 0%, #F0F0FF 100%); border: 1px solid color-mix(in srgb, var(--pastel-lavender) 20%, transparent); }
+.pastel-card--pink { background: linear-gradient(180deg, #ffffff 0%, var(--pastel-bg-pale-pink) 100%); border: 1px solid color-mix(in srgb, var(--pastel-pink) 20%, transparent); }
+.pastel-card--peach { background: linear-gradient(180deg, #ffffff 0%, #FFF0E6 100%); border: 1px solid color-mix(in srgb, var(--pastel-peach) 20%, transparent); }
+.pastel-card--butter { background: linear-gradient(180deg, #ffffff 0%, #FFF9E0 100%); border: 1px solid color-mix(in srgb, var(--pastel-butter) 20%, transparent); }
+.pastel-card--mint { background: linear-gradient(180deg, #ffffff 0%, #E8F6F2 100%); border: 1px solid color-mix(in srgb, var(--pastel-mint) 20%, transparent); }
+.pastel-card--teal { background: linear-gradient(180deg, #ffffff 0%, #E6F2F1 100%); border: 1px solid color-mix(in srgb, var(--pastel-teal) 20%, transparent); }
+
+/* Pill buttons */
+.pastel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--pastel-lavender);
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Organic decorative background shape */
+.pastel-bg-blob {
+  position: absolute;
+  inset: auto auto -20% -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--pastel-lavender) 30%, transparent), transparent);
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Typography scale */
+.pastel-h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; }
+.pastel-h2 { font-size: 1.75rem; font-weight: 700; }
+.pastel-body { font-size: 1rem; line-height: 1.6; color: var(--pastel-dark-charcoal); }
+.pastel-caption { color: var(--pastel-muted-blue-grey); font-size: 0.875rem; }
+
+/* Icon container */
+.pastel-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--pastel-lavender) 15%, white);
+}

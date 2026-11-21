@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180x180.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/icons/favicon-48x48.png" />
+    <!-- No manifest link here on purpose. vite-plugin-pwa injects the
+         rel=manifest tag pointing at manifest.webmanifest at build time.
+         A hardcoded link to /manifest.json shipped a second, competing
+         manifest in the same document, and its static source in public/
+         disagreed with the generated one on scope and icons. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#FF5233" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PartyHause" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="PartyHause" />
+    <title>PartyHause - Create Unforgettable Events</title>
+    <meta name="description" content="Create unforgettable events with friends. Manage guest lists, send invitations, track RSVPs, and create lasting memories." />
+    <meta name="author" content="PartyHause" />
+
+    <!--
+      og:image and twitter:image are absolute and point at a PNG.
+
+      They previously pointed at /placeholder.svg. Two things were wrong with
+      that. No major crawler renders SVG as a share image, so the card fell
+      back to a bare link on every platform; and a root-relative path is not
+      reliably resolved by crawlers that fetch the tag without the page
+      context. The card below is a real 1200x630 PNG that already shipped in
+      public/brand/icons and was never referenced.
+    -->
+    <meta property="og:site_name" content="PartyHause" />
+    <meta property="og:url" content="https://partyhause.com/" />
+    <meta property="og:title" content="PartyHause - Create Unforgettable Events" />
+    <meta property="og:description" content="Create unforgettable events with friends. Manage guest lists, send invitations, track RSVPs, and create lasting memories." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://partyhause.com/brand/icons/social-card-1200x630.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PartyHause. Plan. Party. Perfect." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <!--
+      twitter:site is intentionally absent. The tag must name an X handle the
+      brand controls, and no handle has been registered yet; pointing it at an
+      unregistered or lookalike handle credits a stranger on every shared
+      link. summary_large_image cards render without it, so omitting it is the
+      correct state until a handle exists.
+    -->
+    <meta name="twitter:title" content="PartyHause - Create Unforgettable Events" />
+    <meta name="twitter:description" content="Create unforgettable events with friends. Manage guest lists, send invitations, track RSVPs, and create lasting memories." />
+    <meta name="twitter:image" content="https://partyhause.com/brand/icons/social-card-1200x630.png" />
+    <meta name="twitter:image:alt" content="PartyHause. Plan. Party. Perfect." />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

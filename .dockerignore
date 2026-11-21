@@ -1,0 +1,33 @@
+node_modules
+**/node_modules
+dist
+dev-dist
+.git
+.github
+.vercel
+.vite
+docs
+test-images
+*.ps1
+csi-report.*
+.expo
+apps/mobile/.expo
+apps/mobile/node_modules
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/web-build
+packages/core/node_modules
+packages/core/dist
+bun.lockb
+netlify
+LICENSE
+
+# `scripts` was excluded here. Dockerfile.migrate copies it, because
+# enroll-production-migrations.cjs and production-migration-preflight.cjs are
+# the production path for adopting the migration history, and an excluded
+# directory fails silently: the image builds, and the script is simply absent
+# at runtime. That is the same defect `public/` carried for the entire life of
+# the Azure stack, which is why a test in src/test/bundle-chunk-graph.test.ts
+# now guards both. The whole directory is 248K across 24 text files, so keeping
+# it in the context costs nothing measurable and a clever negation pattern
+# would reintroduce exactly the silence this comment exists to prevent.

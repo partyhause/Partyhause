@@ -1,0 +1,72 @@
+# PartyHause local dev stack: Postgres + Mailpit + API + web.
+#
+#   docker compose up --build
+#
+#   web      http://localhost:5173   (proxies /api to the api service)
+#   api      http://localhost:3001/api/health
+#   mail UI  http://localhost:8025   (Mailpit; every dev email lands here)
+#   db       localhost:5433          (host 5433, so it cannot clash with a local
+#                                    Postgres already on 5432)
+#
+# The API runs prisma generate + migrate deploy before starting, so a fresh db
+# is migrated on first boot. JWT_SECRET, INVITATION_TOKEN_SECRET and AUTH_BYPASS
+# are dev-defaulted by server/dev-api.ts, which is what `npm run dev:api` runs.
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: partyhause
+      POSTGRES_PASSWORD: partyhause
+      POSTGRES_DB: partyhause
+    ports:
+      - "5433:5432"
+    volumes:
+      - ph-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U partyhause -d partyhause"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      NODE_ENV: development
+      DATABASE_URL: postgresql://partyhause:partyhause@db:5432/partyhause
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:8080
+    command: npx prisma migrate deploy && tsx server/dev-api.ts
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:80"
+    environment:
+      VITE_API_URL: http://localhost:3001
+      VITE_APP_NAME: PartyHause
+      VITE_APP_URL: http://localhost:8080
+    depends_on:
+      - api
+
+volumes:
+  ph-db-data:

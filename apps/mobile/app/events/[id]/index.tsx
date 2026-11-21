@@ -1,0 +1,1032 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { api } from '@/lib/client';
+import { Event, getEventLocation, getEventTitle } from '@/types/event';
+import { COLORS } from '@/constants/theme';
+
+interface EventStats {
+  total_guests: number;
+  guests_accepted: number;
+  guests_declined: number;
+  guests_pending: number;
+  guests_checked_in: number;
+  timeline_blocks: number;
+  media_count: number;
+}
+
+
+export default function EventDetailsScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [stats, setStats] = useState<EventStats>({
+    total_guests: 0,
+    guests_accepted: 0,
+    guests_declined: 0,
+    guests_pending: 0,
+    guests_checked_in: 0,
+    timeline_blocks: 0,
+    media_count: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  /** Guards the cancel write so a double tap cannot issue two PUTs. */
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      fetchEventDetails();
+    }
+  }, [id]);
+
+  const fetchEventDetails = async () => {
+    try {
+      // Validate id parameter
+      if (!id) {
+        console.error('[Event Details] Event ID is missing');
+        Alert.alert('Error', 'Event ID is missing');
+        setLoading(false);
+        return;
+      }
+
+      console.log('[Event Details] Fetching event:', id);
+
+      if (!(await api.auth.isAuthenticated())) {
+        Alert.alert(
+          'Authentication Required',
+          'Please sign in to view event details',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => router.push('/') }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Was GET /api/events?id=<id>. The route takes the id from the path
+      // (/:id?) and ignores that query parameter, so this returned the
+      // caller's event LIST: data.event was undefined and the screen showed an
+      // empty event with zeroed stats.
+      const { data, error: apiError } = await api.events.getWithStats(id);
+
+      if (apiError) {
+        console.error('[Event Details] API error:', apiError.status, apiError.message);
+        if (apiError.status === 401 || apiError.status === 403) {
+          Alert.alert('Unauthorized', 'You do not have permission to view this event',
+            [{ text: 'OK', onPress: () => router.back() }]);
+        } else if (apiError.status === 404) {
+          Alert.alert('Event Not Found', 'This event does not exist or has been deleted',
+            [{ text: 'OK', onPress: () => router.back() }]);
+        } else {
+          Alert.alert('Error', `Failed to load event details. ${apiError.message}`);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data?.event) {
+        setEvent(data.event);
+      }
+      if (data?.stats) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error('[Event Details] Exception:', error);
+      Alert.alert(
+        'Error', 
+        'Failed to load event details. Please check your connection and try again.',
+        [
+          { text: 'Retry', onPress: () => fetchEventDetails() },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Move the event to its terminal state via PUT /api/events/:id.
+   *
+   * Writes 'cancelled', which the CHECK constraint on events.status accepts
+   * and which the purpose-built POST /api/mvp/events/:id/cancel writes too.
+   * This used to write 'archived' on the grounds that the constraint refused
+   * 'cancelled'; that migration (20260905000200) has since added the value,
+   * and archiving left `cancelled_at` unset, so a client filtering cancelled
+   * events never saw this one and the badge read ARCHIVED.
+   *
+   * The transport resolves rather than throws, so the error is read off the
+   * response. Authorisation is enforced server-side, which answers 403 to a
+   * guest or a view-only co-host; that is surfaced rather than swallowed.
+   */
+  const handleCancelEvent = async (): Promise<void> => {
+    if (!id || cancelling) return;
+
+    setCancelling(true);
+    const { data, error: apiError } = await api.events.update(id, { status: 'cancelled' });
+    setCancelling(false);
+
+    if (apiError) {
+      console.error('[Event Details] Cancel failed:', apiError.status, apiError.message);
+      if (apiError.status === 401 || apiError.status === 403) {
+        Alert.alert(
+          'Not allowed',
+          'Only the host or a co-host with edit permission can cancel this event.',
+        );
+      } else if (apiError.status === 404) {
+        Alert.alert('Event not found', 'This event no longer exists.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert('Could not cancel event', apiError.message);
+      }
+      return;
+    }
+
+    // Reflect the new status locally so the danger zone hides immediately; the
+    // screen is popped anyway, but a failed pop must not leave stale UI behind.
+    if (data) setEvent(data);
+
+    Alert.alert('Event cancelled', 'Guests will see the event as cancelled.', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
+  };
+
+  // Cases match the CHECK constraint on events.status, which accepts
+  // 'cancelled' alongside the other five values.
+  const getStatusColor = (status?: string | null): string => {
+    switch (status) {
+      case 'published':
+        return COLORS.success.main;
+      case 'active':
+        return COLORS.periwinkle[500];
+      case 'draft':
+        return COLORS.warning.main;
+      case 'cancelled':
+      case 'archived':
+        return COLORS.error.main;
+      case 'completed':
+        return COLORS.neutral[600];
+      default:
+        return COLORS.neutral[600];
+    }
+  };
+
+  // template_type is nullable, so this must accept its absence.
+  const getTemplateIcon = (template?: string | null): keyof typeof Ionicons.glyphMap => {
+    const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+      birthday: 'gift',
+      'kids-birthday': 'balloon',
+      wedding: 'heart',
+      'product-launch': 'rocket',
+      fundraiser: 'cash',
+      festival: 'musical-notes',
+      conference: 'business',
+      travel: 'airplane',
+      'block-party': 'home',
+      class: 'school',
+      hackathon: 'code-slash',
+      corporate: 'briefcase',
+    };
+    return iconMap[template ?? ''] || 'calendar';
+  };
+
+  const renderBirthdayDetails = (settings: Record<string, any>) => {
+    if (!settings) return null;
+
+    return (
+      <View style={styles.templateDetailsSection}>
+        <Text style={styles.sectionTitle}>🎂 Birthday Party Details</Text>
+        
+        {/* Birthday Child Info */}
+        {settings.birthday_person && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Birthday Child</Text>
+            <Text style={styles.detailCardValue}>
+              {settings.birthday_person}
+              {settings.age && ` (turning ${settings.age})`}
+            </Text>
+            {settings.milestone && (
+              <Text style={styles.detailCardSubtext}>{settings.milestone}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Guest Info */}
+        {(settings.expected_guest_count || settings.age_range) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Guest Information</Text>
+            {settings.expected_guest_count && (
+              <Text style={styles.detailCardValue}>
+                Expected: {settings.expected_guest_count} guests
+              </Text>
+            )}
+            {settings.age_range && (
+              <Text style={styles.detailCardSubtext}>Ages: {settings.age_range}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Venue & Theme */}
+        {(settings.venue_type || settings.theme) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Venue & Theme</Text>
+            {settings.venue_type && (
+              <Text style={styles.detailCardValue}>📍 {settings.venue_type}</Text>
+            )}
+            {settings.theme && (
+              <Text style={styles.detailCardValue}>🎨 Theme: {settings.theme}</Text>
+            )}
+            {settings.dress_code && (
+              <Text style={styles.detailCardSubtext}>Dress Code: {settings.dress_code}</Text>
+            )}
+            {settings.venue_package && (
+              <Text style={styles.detailCardSubtext}>Package: {settings.venue_package}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Activities */}
+        {(settings.selected_activities?.length > 0 || settings.custom_activities) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🎉 Activities & Entertainment</Text>
+            {settings.selected_activities?.length > 0 && (
+              <View style={styles.chipContainer}>
+                {settings.selected_activities.map((activity: string, index: number) => (
+                  <View key={index} style={styles.activityChip}>
+                    <Text style={styles.activityChipText}>{activity}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {settings.custom_activities && (
+              <Text style={styles.detailCardSubtext}>{settings.custom_activities}</Text>
+            )}
+            {settings.entertainment_notes && (
+              <Text style={styles.detailCardSubtext}>📝 {settings.entertainment_notes}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Food & Cake */}
+        {(settings.food_menu || settings.cake_details) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🍰 Food & Cake</Text>
+            {settings.food_menu && (
+              <Text style={styles.detailCardValue}>Menu: {settings.food_menu}</Text>
+            )}
+            {settings.cake_details && (
+              <Text style={styles.detailCardValue}>Cake: {settings.cake_details}</Text>
+            )}
+            {settings.allergy_notes && (
+              <View style={styles.alertBox}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.error.main} />
+                <Text style={styles.alertText}>Allergies: {settings.allergy_notes}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Gift Preferences */}
+        {settings.gift_preference && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🎁 Gift Preferences</Text>
+            {settings.gift_preference === 'registry' && settings.registry_links?.length > 0 && (
+              <>
+                <Text style={styles.detailCardValue}>Gift Registry:</Text>
+                {settings.registry_links.map((link: string, index: number) => (
+                  <Text key={index} style={styles.linkText} numberOfLines={1}>
+                    {link}
+                  </Text>
+                ))}
+              </>
+            )}
+            {settings.gift_preference === 'no-gifts' && (
+              <Text style={styles.detailCardValue}>No gifts please 💝</Text>
+            )}
+            {settings.gift_preference === 'donation' && settings.donation_info && (
+              <Text style={styles.detailCardValue}>Donate to: {settings.donation_info}</Text>
+            )}
+            {settings.gift_preference === 'wishes' && settings.gift_wishes && (
+              <Text style={styles.detailCardValue}>{settings.gift_wishes}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Parent Logistics */}
+        {(settings.parent_stay_required || settings.supervision_ratio || settings.pickup_time) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>👨‍👩‍👧 Parent Information</Text>
+            {settings.parent_stay_required && (
+              <View style={styles.alertBox}>
+                <Ionicons name="people" size={16} color={COLORS.periwinkle[500]} />
+                <Text style={styles.alertText}>Parents must stay</Text>
+              </View>
+            )}
+            {settings.supervision_ratio && (
+              <Text style={styles.detailCardValue}>Supervision: {settings.supervision_ratio}</Text>
+            )}
+            {settings.pickup_time && (
+              <Text style={styles.detailCardValue}>Pickup Time: {settings.pickup_time}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Safety & Requirements */}
+        {(settings.safety_requirements || settings.what_to_bring || settings.equipment_provided) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>⚠️ Safety & Requirements</Text>
+            {settings.safety_requirements && (
+              <Text style={styles.detailCardValue}>Safety: {settings.safety_requirements}</Text>
+            )}
+            {settings.what_to_bring && (
+              <View style={styles.alertBox}>
+                <Ionicons name="bag-handle" size={16} color={COLORS.success.main} />
+                <Text style={styles.alertText}>Bring: {settings.what_to_bring}</Text>
+              </View>
+            )}
+            {settings.equipment_provided && (
+              <Text style={styles.detailCardSubtext}>Provided: {settings.equipment_provided}</Text>
+            )}
+            {settings.venue_rules && (
+              <Text style={styles.detailCardSubtext}>Venue Rules: {settings.venue_rules}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Photography */}
+        {settings.photography_arrangement && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>📸 Photography</Text>
+            <Text style={styles.detailCardValue}>
+              {settings.photography_arrangement === 'professional' && 'Professional Photographer'}
+              {settings.photography_arrangement === 'parent-volunteers' && 'Parent Volunteers'}
+              {settings.photography_arrangement === 'none' && 'No Photos'}
+            </Text>
+            {settings.photographer_details && (
+              <Text style={styles.detailCardSubtext}>{settings.photographer_details}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Weather Backup */}
+        {settings.backup_plan && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>☔ Weather Backup Plan</Text>
+            <Text style={styles.detailCardValue}>{settings.backup_plan}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderAdultBirthdayDetails = (settings: Record<string, any>) => {
+    if (!settings) return null;
+
+    return (
+      <View style={styles.templateDetailsSection}>
+        <Text style={styles.sectionTitle}>🎂 Birthday Celebration Details</Text>
+        
+        {/* Birthday Celebrant Info */}
+        {settings.birthday_person && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Birthday Celebrant</Text>
+            <Text style={styles.detailCardValue}>
+              {settings.birthday_person}
+              {settings.age && ` (turning ${settings.age})`}
+            </Text>
+            {settings.milestone && (
+              <Text style={styles.detailCardSubtext}>{settings.milestone}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Guest Info */}
+        {settings.expected_guest_count && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Guest Information</Text>
+            <Text style={styles.detailCardValue}>
+              Expected: {settings.expected_guest_count} guests
+            </Text>
+          </View>
+        )}
+
+        {/* Venue & Theme */}
+        {(settings.venue_type || settings.theme) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Venue & Theme</Text>
+            {settings.venue_type && (
+              <Text style={styles.detailCardValue}>📍 {settings.venue_type}</Text>
+            )}
+            {settings.theme && (
+              <Text style={styles.detailCardValue}>🎨 Theme: {settings.theme}</Text>
+            )}
+            {settings.dress_code && (
+              <Text style={styles.detailCardSubtext}>Dress Code: {settings.dress_code}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Food & Drinks */}
+        {(settings.catering_style || settings.bar_service || settings.menu_notes) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🍽️ Food & Drinks</Text>
+            {settings.catering_style && (
+              <Text style={styles.detailCardValue}>Catering: {settings.catering_style}</Text>
+            )}
+            {settings.bar_service && (
+              <Text style={styles.detailCardValue}>🍸 Bar: {settings.bar_service}</Text>
+            )}
+            {settings.signature_cocktail && (
+              <Text style={styles.detailCardSubtext}>Signature: {settings.signature_cocktail}</Text>
+            )}
+            {settings.menu_notes && (
+              <Text style={styles.detailCardSubtext}>{settings.menu_notes}</Text>
+            )}
+            {settings.allergy_notes && (
+              <View style={styles.alertBox}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.error.main} />
+                <Text style={styles.alertText}>Allergies: {settings.allergy_notes}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Entertainment */}
+        {(settings.entertainment_type || settings.entertainment_details) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🎵 Entertainment</Text>
+            {settings.entertainment_type && (
+              <Text style={styles.detailCardValue}>
+                {settings.entertainment_type === 'dj' && '🎧 DJ'}
+                {settings.entertainment_type === 'band' && '🎸 Live Band'}
+                {settings.entertainment_type === 'karaoke' && '🎤 Karaoke'}
+                {settings.entertainment_type === 'comedy' && '🎭 Comedy Show'}
+                {settings.entertainment_type === 'none' && 'No Entertainment'}
+              </Text>
+            )}
+            {settings.entertainment_details && (
+              <Text style={styles.detailCardSubtext}>{settings.entertainment_details}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Gift Preferences */}
+        {settings.gift_preference && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>🎁 Gift Preferences</Text>
+            {settings.gift_preference === 'registry' && settings.registry_links?.length > 0 && (
+              <>
+                <Text style={styles.detailCardValue}>Gift Registry:</Text>
+                {settings.registry_links.map((link: string, index: number) => (
+                  <Text key={index} style={styles.linkText} numberOfLines={1}>
+                    {link}
+                  </Text>
+                ))}
+              </>
+            )}
+            {settings.gift_preference === 'no-gifts' && (
+              <Text style={styles.detailCardValue}>No gifts please 💝</Text>
+            )}
+            {settings.gift_preference === 'donation' && settings.donation_info && (
+              <Text style={styles.detailCardValue}>Donate to: {settings.donation_info}</Text>
+            )}
+            {settings.gift_preference === 'wishes' && settings.gift_wishes && (
+              <Text style={styles.detailCardValue}>{settings.gift_wishes}</Text>
+            )}
+          </View>
+        )}
+
+        {/* Special Features */}
+        {(settings.photo_booth || settings.toasts_speeches) && (
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>✨ Special Features</Text>
+            {settings.photo_booth && (
+              <Text style={styles.detailCardValue}>📸 Photo Booth Included</Text>
+            )}
+            {settings.booth_details && (
+              <Text style={styles.detailCardSubtext}>{settings.booth_details}</Text>
+            )}
+            {settings.toasts_speeches && (
+              <Text style={styles.detailCardValue}>🥂 Toasts & Speeches Scheduled</Text>
+            )}
+            {settings.toast_schedule && (
+              <Text style={styles.detailCardSubtext}>{settings.toast_schedule}</Text>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderTemplateDetails = () => {
+    if (!event?.settings) return null;
+
+    switch (event.template_type) {
+      case 'birthday':
+        return renderAdultBirthdayDetails(event.settings);
+      case 'kids-birthday':
+        return renderBirthdayDetails(event.settings);
+      // Add other template types here as they're implemented
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Stack.Screen options={{ title: 'Event Details' }} />
+        <ActivityIndicator size="large" color={COLORS.periwinkle[500]} />
+      </View>
+    );
+  }
+
+  if (!event) {
+    return (
+      <View style={styles.centered}>
+        <Stack.Screen options={{ title: 'Event Not Found' }} />
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.error.main} />
+        <Text style={styles.errorText}>Event not found</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* headerRight carried an edit-event button whose handler was an empty
+          block. It was doubly dead: `_layout.tsx` sets `headerShown: false`
+          both globally and for this screen, so the header hosting it never
+          rendered. Removed rather than implemented, because a control nobody
+          could reach is not a missing feature. `title` is kept to match the
+          loading and error branches above, and is what would appear if the
+          header were ever enabled. */}
+      <Stack.Screen options={{ title: getEventTitle(event) }} />
+
+      <ScrollView style={styles.content}>
+        {/* Event Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.templateBadge}>
+              <Ionicons
+                name={getTemplateIcon(event.template_type)}
+                size={20}
+                color={COLORS.periwinkle[500]}
+              />
+              <Text style={styles.templateText}>
+                {event.template_type?.replace('-', ' ')?.toUpperCase() || 'EVENT'}
+              </Text>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(event.status) }]}>
+              <Text style={styles.statusText}>{event.status?.toUpperCase() || 'UNKNOWN'}</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.title}>{getEventTitle(event)}</Text>
+          {event.description && (
+            <Text style={styles.description}>{event.description}</Text>
+          )}
+
+          {/* Event Details */}
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar" size={20} color={COLORS.neutral[600]} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Start Date</Text>
+                <Text style={styles.detailValue}>
+                  {new Date(event.start_date || event.date || event.event_date || '').toLocaleString()}
+                </Text>
+              </View>
+            </View>
+            {event.end_date && (
+              <View style={styles.detailRow}>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.neutral[600]} />
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>End Date</Text>
+                  <Text style={styles.detailValue}>
+                    {new Date(event.end_date).toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            )}
+            {event.location && (
+              <View style={styles.detailRow}>
+                <Ionicons name="location" size={20} color={COLORS.neutral[600]} />
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>{getEventLocation(event)}</Text>
+                </View>
+              </View>
+            )}
+            <View style={styles.detailRow}>
+              <Ionicons name="lock-closed" size={20} color={COLORS.neutral[600]} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Privacy</Text>
+                <Text style={styles.detailValue}>
+                  {event.privacy ? event.privacy.charAt(0).toUpperCase() + event.privacy.slice(1) : 'Private'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Stats Overview */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Event Statistics</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{stats.total_guests}</Text>
+              <Text style={styles.statLabel}>Total Guests</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: COLORS.success.main }]}>
+                {stats.guests_accepted}
+              </Text>
+              <Text style={styles.statLabel}>Accepted</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: COLORS.neutral[600] }]}>
+                {stats.guests_pending}
+              </Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: COLORS.periwinkle[500] }]}>
+                {stats.guests_checked_in}
+              </Text>
+              <Text style={styles.statLabel}>Checked In</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Template-Specific Details */}
+        {renderTemplateDetails()}
+
+        {/* Management Actions */}
+        <View style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Manage Event</Text>
+          
+          {/* Create Invites */}
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push(`/events/${id}/invites/templates`)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="mail" size={24} color={COLORS.periwinkle[500]} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Create Invitations</Text>
+              <Text style={styles.actionSubtitle}>
+                Design and send custom invites to guests
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={COLORS.neutral[400]} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push(`/events/${id}/guests`)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="people" size={24} color={COLORS.periwinkle[500]} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Guest List</Text>
+              <Text style={styles.actionSubtitle}>
+                Manage guests, RSVPs, and check-ins
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={COLORS.neutral[400]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push(`/events/${id}/activities`)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="calendar" size={24} color={COLORS.periwinkle[500]} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Activities</Text>
+              <Text style={styles.actionSubtitle}>
+                {stats.timeline_blocks} scheduled activities
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={COLORS.neutral[400]} />
+          </TouchableOpacity>
+
+          {/* Media, Vendors and Games cards were removed here. Media and
+              Vendors had empty onPress handlers and no API behind them: the
+              server mounts no /api/media or /api/vendors router, so there was
+              nothing for a screen to call. Games navigated to /events/:id/games,
+              whose screens were parked in _deferred/ and have now been deleted.
+              A card that reports a count and does nothing when tapped reads as a
+              loading bug rather than an unbuilt feature. */}
+
+          
+        </View>
+
+        {/* Danger Zone. Guarded on the two terminal states; a cancelled event
+            must not offer its own cancel button again. */}
+        {event.status !== 'archived' && event.status !== 'cancelled' && (
+          <View style={styles.dangerZone}>
+            <TouchableOpacity
+              style={styles.dangerButton}
+              disabled={cancelling}
+              onPress={() => {
+                Alert.alert(
+                  'Cancel Event',
+                  'Are you sure you want to cancel this event? This action cannot be undone.',
+                  [
+                    { text: 'No', style: 'cancel' },
+                    { text: 'Yes, Cancel', style: 'destructive', onPress: handleCancelEvent },
+                  ]
+                );
+              }}
+            >
+              {cancelling ? (
+                <ActivityIndicator size="small" color={COLORS.error.main} />
+              ) : (
+                <Ionicons name="close-circle" size={20} color={COLORS.error.main} />
+              )}
+              <Text style={styles.dangerButtonText}>
+                {cancelling ? 'Cancelling…' : 'Cancel Event'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background.secondary,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background.secondary,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.neutral[600],
+    marginTop: 16,
+  },
+  content: {
+    flex: 1,
+  },
+  header: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.neutral[200],
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  templateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: COLORS.periwinkle[50],
+    borderRadius: 16,
+  },
+  templateText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.periwinkle[500],
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.neutral[800],
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: COLORS.neutral[600],
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  detailsContainer: {
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: COLORS.neutral[400],
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: COLORS.neutral[800],
+    fontWeight: '500',
+  },
+  statsSection: {
+    backgroundColor: '#fff',
+    padding: 20,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.neutral[200],
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.neutral[800],
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: COLORS.background.secondary,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.neutral[800],
+  },
+  statLabel: {
+    fontSize: 14,
+    color: COLORS.neutral[600],
+    marginTop: 4,
+  },
+  actionsSection: {
+    backgroundColor: '#fff',
+    padding: 20,
+    marginTop: 12,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.periwinkle[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  actionContent: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.neutral[800],
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 14,
+    color: COLORS.neutral[600],
+  },
+  dangerZone: {
+    padding: 20,
+    marginTop: 12,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: COLORS.error.main,
+  },
+  dangerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.error.main,
+  },
+  // Template Details Styles
+  templateDetailsSection: {
+    backgroundColor: '#fff',
+    padding: 20,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.neutral[200],
+  },
+  detailCard: {
+    backgroundColor: COLORS.background.secondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  detailCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.neutral[800],
+    marginBottom: 8,
+  },
+  detailCardValue: {
+    fontSize: 15,
+    color: COLORS.neutral[700],
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  detailCardSubtext: {
+    fontSize: 14,
+    color: COLORS.neutral[600],
+    marginTop: 4,
+    lineHeight: 20,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  activityChip: {
+    backgroundColor: COLORS.periwinkle[50],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.periwinkle[200],
+  },
+  activityChipText: {
+    fontSize: 13,
+    color: COLORS.periwinkle[500],
+    fontWeight: '500',
+  },
+  linkText: {
+    fontSize: 14,
+    color: COLORS.periwinkle[500],
+    textDecorationLine: 'underline',
+    marginTop: 4,
+  },
+  alertBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(225, 45, 51, 0.08)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.error.main,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.neutral[800],
+    fontWeight: '500',
+  },
+});

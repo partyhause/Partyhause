@@ -1,0 +1,375 @@
+import React from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { InviteTemplate, InviteCustomization } from '@/types/invites';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+interface InvitePreviewProps {
+  template: InviteTemplate;
+  customization?: Partial<InviteCustomization>;
+  eventData: {
+    title: string;
+    date: string;
+    time?: string;
+    location?: string;
+    host_name?: string;
+  };
+  scale?: number;
+}
+
+export function InvitePreview({
+  template,
+  customization,
+  eventData,
+  scale = 1,
+}: InvitePreviewProps) {
+  // Merge template colors with custom colors
+  const colors = {
+    ...template.colors,
+    ...customization?.custom_colors,
+  };
+
+  const customMessage = customization?.custom_message || 
+    `You're invited to ${eventData.title}!`;
+
+  const showDetails = customization?.show_event_details !== false;
+  const showRSVP = customization?.show_rsvp_button !== false;
+
+  /**
+   * Render an event date as "Saturday, October 4, 2026".
+   *
+   * This was `date-fns` `format(d, 'EEEE, MMMM d, yyyy')`, and `date-fns` was
+   * never a dependency of this app. It resolved only because apps/mobile used
+   * to be hoisted into the npm workspace, so Metro found the web app's copy at
+   * the repository root. Giving mobile its own node_modules removed that copy
+   * and the iOS build failed at the bundle step with "Unable to resolve module
+   * date-fns".
+   *
+   * Replaced rather than declared: this was the only call in the app, and
+   * Intl produces byte-identical output for this pattern, verified across
+   * several dates. Adding a dependency to keep one format string would also
+   * mean maintaining it against two different React majors.
+   *
+   * The locale is pinned to en-US deliberately. `date-fns` `format` without a
+   * `locale` option always renders English regardless of device settings, so
+   * passing `undefined` here would silently change what existing users see.
+   */
+  const formatEventDate = (dateString: string) => {
+    // A bare 'YYYY-MM-DD' parses as UTC midnight, so rendering it device-local
+    // shifts the day across midnight for a host west of UTC. Anchoring it to
+    // local midnight keeps the calendar day the caller supplied.
+    const parsed = /\d{4}-\d{2}-\d{2}$/.test(dateString)
+      ? new Date(`${dateString}T00:00:00`)
+      : new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) return dateString;
+
+    return parsed.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  // Different layouts
+  const renderClassicLayout = () => (
+    <LinearGradient
+      colors={[colors.background, colors.background]}
+      style={[styles.previewContainer, { transform: [{ scale }] }]}
+    >
+      {/* Decorative Border */}
+      <View style={[styles.decorativeBorder, { borderColor: colors.primary }]} />
+
+      {/* Header Icon/Decoration */}
+      <View style={styles.headerDecoration}>
+        <View style={[styles.decorativeDot, { backgroundColor: colors.accent }]} />
+        <View style={[styles.decorativeLine, { backgroundColor: colors.primary }]} />
+        <View style={[styles.decorativeDot, { backgroundColor: colors.accent }]} />
+      </View>
+
+      {/* Invitation Text */}
+      <Text style={[styles.invitationLabel, { color: colors.secondary }]}>
+        You're Invited
+      </Text>
+
+      {/* Event Title */}
+      <Text style={[styles.eventTitle, { color: colors.text }]}>
+        {eventData.title}
+      </Text>
+
+      {/* Custom Message */}
+      {customMessage && (
+        <Text style={[styles.customMessage, { color: colors.secondary }]}>
+          {customMessage}
+        </Text>
+      )}
+
+      {/* Event Details */}
+      {showDetails && (
+        <View style={styles.detailsContainer}>
+          {/* Date */}
+          <View style={styles.detailRow}>
+            <Ionicons name="calendar" size={20} color={colors.primary} />
+            <Text style={[styles.detailText, { color: colors.text }]}>
+              {formatEventDate(eventData.date)}
+            </Text>
+          </View>
+
+          {/* Time */}
+          {eventData.time && (
+            <View style={styles.detailRow}>
+              <Ionicons name="time" size={20} color={colors.primary} />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                {eventData.time}
+              </Text>
+            </View>
+          )}
+
+          {/* Location */}
+          {eventData.location && (
+            <View style={styles.detailRow}>
+              <Ionicons name="location" size={20} color={colors.primary} />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                {eventData.location}
+              </Text>
+            </View>
+          )}
+
+          {/* Host */}
+          {eventData.host_name && (
+            <View style={styles.detailRow}>
+              <Ionicons name="person" size={20} color={colors.primary} />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                Hosted by {eventData.host_name}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* RSVP Button Placeholder */}
+      {showRSVP && (
+        <View style={[styles.rsvpButton, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.rsvpButtonText, { color: colors.accent }]}>
+            RSVP Now
+          </Text>
+        </View>
+      )}
+
+      {/* Footer */}
+      {customization?.custom_footer && (
+        <Text style={[styles.footer, { color: colors.secondary }]}>
+          {customization.custom_footer}
+        </Text>
+      )}
+    </LinearGradient>
+  );
+
+  const renderCardLayout = () => (
+    <LinearGradient
+      colors={[colors.primary, colors.secondary]}
+      style={[styles.previewContainer, { transform: [{ scale }] }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      {/* Card Content */}
+      <View style={[styles.cardContent, { backgroundColor: colors.background }]}>
+        {/* Title */}
+        <Text style={[styles.cardTitle, { color: colors.primary }]}>
+          {eventData.title}
+        </Text>
+
+        {/* Message */}
+        <Text style={[styles.cardMessage, { color: colors.text }]}>
+          {customMessage}
+        </Text>
+
+        {/* Details */}
+        {showDetails && (
+          <View style={styles.cardDetails}>
+            <View style={[styles.cardDetailItem, { borderLeftColor: colors.primary }]}>
+              <Text style={[styles.cardDetailLabel, { color: colors.secondary }]}>
+                DATE
+              </Text>
+              <Text style={[styles.cardDetailValue, { color: colors.text }]}>
+                {formatEventDate(eventData.date)}
+              </Text>
+            </View>
+
+            {eventData.time && (
+              <View style={[styles.cardDetailItem, { borderLeftColor: colors.primary }]}>
+                <Text style={[styles.cardDetailLabel, { color: colors.secondary }]}>
+                  TIME
+                </Text>
+                <Text style={[styles.cardDetailValue, { color: colors.text }]}>
+                  {eventData.time}
+                </Text>
+              </View>
+            )}
+
+            {eventData.location && (
+              <View style={[styles.cardDetailItem, { borderLeftColor: colors.primary }]}>
+                <Text style={[styles.cardDetailLabel, { color: colors.secondary }]}>
+                  LOCATION
+                </Text>
+                <Text style={[styles.cardDetailValue, { color: colors.text }]}>
+                  {eventData.location}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* RSVP */}
+        {showRSVP && (
+          <View style={[styles.rsvpButton, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.rsvpButtonText, { color: colors.background }]}>
+              RSVP
+            </Text>
+          </View>
+        )}
+      </View>
+    </LinearGradient>
+  );
+
+  // Render based on layout type
+  const renderLayout = () => {
+    switch (template.layout) {
+      case 'card':
+        return renderCardLayout();
+      case 'classic':
+      default:
+        return renderClassicLayout();
+    }
+  };
+
+  return renderLayout();
+}
+
+const styles = StyleSheet.create({
+  previewContainer: {
+    width: SCREEN_WIDTH - 40,
+    aspectRatio: 3 / 4,
+    borderRadius: 16,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  decorativeBorder: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    right: 15,
+    bottom: 15,
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  headerDecoration: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 30,
+  },
+  decorativeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  decorativeLine: {
+    width: 60,
+    height: 2,
+  },
+  invitationLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  eventTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  customMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  detailsContainer: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 30,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  detailText: {
+    fontSize: 15,
+    flex: 1,
+  },
+  rsvpButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 25,
+    marginTop: 'auto',
+  },
+  rsvpButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  footer: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  
+  // Card Layout Styles
+  cardContent: {
+    margin: 20,
+    padding: 30,
+    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  cardMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  cardDetails: {
+    gap: 16,
+    marginVertical: 20,
+  },
+  cardDetailItem: {
+    borderLeftWidth: 3,
+    paddingLeft: 12,
+  },
+  cardDetailLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  cardDetailValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
