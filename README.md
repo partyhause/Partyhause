@@ -13,7 +13,7 @@ the person who booked the venue is the only one who knows what time the food arr
 PartyHause closes the gaps. One place to build the event, invite people, see who said yes, agree
 on the things that need agreeing on, and run the night without checking four apps.
 
-Live at **[partyhause.com](https://partyhause.com)**.
+Live at **[partyhause.uk](https://partyhause.uk)**.
 
 ---
 
