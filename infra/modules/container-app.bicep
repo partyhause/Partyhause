@@ -27,12 +27,12 @@ param targetPort int
 param envVars array = []
 
 @description('''Create the AcrPull role assignment for the app's managed
-identity. Default false: in the existing prod environment both app
-identities already hold AcrPull via out-of-band assignments, and a
-template-created duplicate of the same (principal, role, scope) triple
-fails with RoleAssignmentExists. Set true when provisioning a fresh
-environment.''')
-param manageAcrPullAssignment bool = false
+identity. Default true: the app cannot pull images at boot without it, so
+provisioning must grant AcrPull to the system-assigned identity rather than
+relying on an out-of-band assignment that a future `az deployment sub create`
+does not recreate. Set false only when provisioning into an environment where
+the assignment already exists out-of-band, to avoid RoleAssignmentExists.''')
+param manageAcrPullAssignment bool = true
 
 @description('''Secrets exposed to the container app. Each item is either
 { name: string, value: string } or a Key Vault reference
@@ -94,12 +94,24 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: appName
           image: image
           env: envVars
+          probe: {
+            type: 'http'
+            http: {
+              get: {
+                path: '/api/health/'
+                port: targetPort
+                scheme: 'HTTP'
+              }
+            }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          }
           resources: {
             cpu: json('0.5')
             memory: '1.0Gi'
           }
         }
-      ]
       scale: {
         minReplicas: minReplicas
         maxReplicas: maxReplicas

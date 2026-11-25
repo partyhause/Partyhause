@@ -25,9 +25,8 @@ export default function AIPlannerChat() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
-    const userMsg = { role: 'user', content: input };
+    const userMsg: { role: 'user' | 'assistant'; content: string } = { role: 'user', content: input };
     const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
     setInput('');
     setLoading(true);
 
@@ -47,6 +46,7 @@ export default function AIPlannerChat() {
 
       let assistantContent = '';
       const decoder = new TextDecoder();
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;

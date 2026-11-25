@@ -4,12 +4,13 @@ import { apiGet } from '@/lib/api-client';
 export interface PartyPlate {
   id: string;
   name: string;
+  slug?: string;
   description?: string;
   category: string;
   icon?: string;
   color?: string;
   hero_image_url?: string;
-  price_tier: string;
+  price_tier?: string;
   default_payload?: unknown;
   required_fields_schema?: unknown;
   featured?: boolean;

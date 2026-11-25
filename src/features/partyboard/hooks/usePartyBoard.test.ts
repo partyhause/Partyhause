@@ -353,25 +353,29 @@ describe('usePartyBoard', () => {
 
       const { result } = renderHook(() => usePartyBoard({ eventId: 'event-1' }));
 
-      await act(async () => {
-        await result.current.seedFromTemplate('birthday', {
-          name: 'Birthday Celebration',
-          slug: 'birthday-celebration',
-          category: 'birthday',
-          default_payload: {
-            stickies: [
-              {
-                slug: 'birthday-cake',
-                type: 'note',
-                position: { x: 100, y: 100 },
-                size: { width: 200, height: 200 },
-                category: 'food',
-                data: { content: "Don't forget the cake!", color: '#ff6b6b' },
-              },
-            ],
-          },
-        } as any);
-      });
+        // Test-only methods not typed on the hook return type.
+        const board = result.current as unknown as {
+          seedFromTemplate: (id: string, data: unknown) => Promise<void>;
+        };
+        await act(async () => {
+          await board.seedFromTemplate('birthday', {
+            name: 'Birthday Celebration',
+            slug: 'birthday-celebration',
+            category: 'birthday',
+            default_payload: {
+              stickies: [
+                {
+                  slug: 'birthday-cake',
+                  type: 'note',
+                  position: { x: 100, y: 100 },
+                  size: { width: 200, height: 200 },
+                  category: 'food',
+                  data: { content: "Don't forget the cake!", color: '#ff6b6b' },
+                },
+              ],
+            },
+          });
+        });
 
       expect(mockApiPost).toHaveBeenCalledTimes(1);
       expect(mockApiPost).toHaveBeenCalledWith('/api/partyboard/stickies', {
@@ -391,16 +395,17 @@ describe('usePartyBoard', () => {
       await act(async () => {
         await Promise.resolve();
       });
-
-      await act(async () => {
-        await result.current.seedFromTemplate('birthday', {
-          name: 'Birthday',
-          slug: 'birthday',
-          category: 'birthday',
-          default_payload: { stickies: [] },
-        } as any);
-      });
-
+        const board = result.current as unknown as {
+          seedFromTemplate: (id: string, data: unknown) => Promise<void>;
+        };
+        await act(async () => {
+          await board.seedFromTemplate('birthday', {
+            name: 'Birthday',
+            slug: 'birthday',
+            category: 'birthday',
+            default_payload: { stickies: [] },
+          });
+        });
       expect(mockApiPost).not.toHaveBeenCalled();
     });
   });
@@ -410,18 +415,19 @@ describe('usePartyBoard', () => {
       mockApiPost.mockResolvedValue({ data: { sticky: mockSticky }, error: null });
 
       const { result } = renderHook(() => usePartyBoard({ eventId: 'event-1' }));
-
-      await act(async () => {
-        await result.current.seedFromFormData({
-          name: 'Birthday Party',
-          start_date: '2026-12-25',
-          start_time: '18:00',
-          location: 'My House',
-          description: 'A birthday celebration',
-          template_type: 'birthday',
-        } as any);
-      });
-
+        const board = result.current as unknown as {
+          seedFromFormData: (data: unknown) => Promise<void>;
+        };
+        await act(async () => {
+          await board.seedFromFormData({
+            name: 'Birthday Party',
+            start_date: '2026-12-25',
+            start_time: '18:00',
+            location: 'My House',
+            description: 'A birthday celebration',
+            template_type: 'birthday',
+          });
+        });
       expect(mockApiPost).toHaveBeenCalledTimes(4);
     });
   });

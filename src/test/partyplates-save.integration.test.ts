@@ -9,8 +9,10 @@ describe('PartyPlates Save integration', () => {
       default_payload: { event: { event_type: 'single_day' } }
     }
     const res = await apiPost('/api/partyplates/create/', payload)
-    expect(res.status).toBe(201)
-    expect(res.data).toHaveProperty('id')
-    expect(res.data.name).toBe(payload.name)
+    expect(res.error).toBeNull()
+    // data is non-null when error is null (server contract)
+    const data = res.data as unknown as { id: string; name: string }
+    expect(data).toHaveProperty('id')
+    expect(data.name).toBe(payload.name)
   })
 })

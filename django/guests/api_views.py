@@ -32,19 +32,33 @@ class GuestViewSet(viewsets.ModelViewSet):
         event_id = request.data.get('event_id')
         email = request.data.get('email')
         name = request.data.get('name', '')
-        
+        custom_message = request.data.get('custom_message', '')
+
         from events.models import Event
         try:
             event = Event.objects.get(id=event_id, host=request.user)
-            normalized_email = email.lower().strip()
-            
-            guest, created = Guest.objects.get_or_create(
-                event=event,
-                normalized_email=normalized_email,
-                defaults={'name': name, 'email': email}
-            )
-            
-            serializer = self.get_serializer(guest)
-            return Response(serializer.data)
         except Event.DoesNotExist:
             return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        normalized_email = email.lower().strip()
+
+        guest, created = Guest.objects.get_or_create(
+            event=event,
+            normalized_email=normalized_email,
+            defaults={'name': name, 'email': email}
+        )
+
+        # Send the invitation email (verification/reset/invite all route through
+        # the configured backend: ACS primary, Resend fallback).
+        try:
+            from guests.email_service import GuestInvitationService
+            GuestInvitationService(event).send_invitation(guest, custom_message)
+        except Exception as exc:  # noqa: BLE001
+            # Do not fail the invite because mail failed; record and report.
+            import logging
+            logging.getLogger(__name__).error(
+                'Invitation email failed for %s: %s', email, exc
+            )
+
+        serializer = self.get_serializer(guest)
+        return Response(serializer.data)

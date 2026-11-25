@@ -5,9 +5,9 @@
 #
 # Services:
 #   db        PostgreSQL 15, host port 5434 (avoids local Postgres on 5432)
-#   mailpit   SMTP :1025, UI :8026  (host 8026 to avoid clash with local Mailpit)
+#   mailpit   SMTP :1026, UI :8026  (host 8026 to avoid clash with local Mailpit)
 #   django    Django API on :8001   (auth, events, guests, partyboard, etc.)
-#   web       Vite dev server on :5173, proxies /api -> django:8001
+#   web       nginx serving pre-built Vite PWA on :5174, proxies /api -> django:8001
 #
 # Every service has a healthcheck and restart=unless-stopped so a crashed
 # container is detected and restarted automatically.
@@ -57,13 +57,16 @@ services:
       DEBUG: "False"
       ALLOWED_HOSTS: "localhost,127.0.0.1,partyhause-django"
       NVIDIA_API_KEY: ${NVIDIA_API_KEY}
-      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
-      EMAIL_HOST: partyhause-mailpit
-      EMAIL_PORT: "1025"
-      EMAIL_HOST_USER: ""
-      EMAIL_HOST_PASSWORD: ""
-      EMAIL_USE_TLS: "False"
-      DEFAULT_FROM_EMAIL: "PartyHause <dev@partyhause.local>"
+      # Email: Azure Communication Services (primary) + Resend fallback.
+      # When ACS_CONNECTION_STRING + ACS_SENDER_ADDRESS are unset, the Django
+      # settings fall back to the local Mailpit catcher (no real delivery).
+      ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING}
+      ACS_SENDER_ADDRESS: ${ACS_SENDER_ADDRESS}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      # Publicly reachable frontend URL for links in email
+      # (verification, password reset, invitations).
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       partyhause-db:
         condition: service_healthy
@@ -80,26 +83,19 @@ services:
       context: ..
       dockerfile: ./docker/Dockerfile.dev
     ports:
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - partyhause-web-node-modules:/app/node_modules
+      - "5174:80"
     environment:
       VITE_API_PROXY_TARGET: http://partyhause-django:8001
-      VITE_API_URL: ""
-      WEB_PORT: "5173"
-    command: sh -c "npm ci --legacy-peer-deps && npx vite --host 0.0.0.0 --port 5173"
     depends_on:
       partyhause-django:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"const http=require('http');http.get('http://127.0.0.1:5173/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:80/ >/dev/null || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 10s
+      start_period: 5s
     restart: unless-stopped
 
 volumes:
   partyhause-db-data:
-  partyhause-web-node-modules:

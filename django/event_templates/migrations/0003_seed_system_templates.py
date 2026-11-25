@@ -29,7 +29,6 @@ def seed_templates(apps, schema_editor):
                 'featured': data.get('featured', False),
                 'published': data.get('published', True),
                 'usage_count': data.get('usage_count', 0),
-                'author_id': data.get('author_id') or None,
             },
         )
 

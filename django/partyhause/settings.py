@@ -44,8 +44,9 @@ INSTALLED_APPS = [
     'event_templates',
     'cost_split',
     'rsvp',
-    'health',
     'ai_chat',
+    'external_events',
+    'health',
 ]
 
 MIDDLEWARE = [
@@ -83,8 +84,10 @@ WSGI_APPLICATION = 'partyhause.wsgi.application'
 ASGI_APPLICATION = 'partyhause.asgi.application'
 
 import os
+_allowed = os.environ.get('ALLOWED_HOSTS', '')
+_fallback = ['localhost', '127.0.0.1', 'partyhause-django', 'ca-app-partyhause-combined.salmonsand-b1c1ecc2.eastus2.azurecontainerapps.io', 'partyhause.uk', 'www.partyhause.uk']
+ALLOWED_HOSTS = [h for h in _allowed.split(',') if h] or _fallback
 from urllib.parse import urlparse
-
 _database_url = os.environ.get('DATABASE_URL', 'postgresql://partyhause:partyhause@db:5432/partyhause')
 _parsed = urlparse(_database_url)
 DATABASES = {
@@ -95,6 +98,7 @@ DATABASES = {
         'PASSWORD': _parsed.password or 'partyhause',
         'HOST': _parsed.hostname or 'localhost',
         'PORT': str(_parsed.port or 5432),
+        'OPTIONS': ({'sslmode': 'require'} if _parsed.hostname and _parsed.hostname not in ('localhost', '127.0.0.1', 'partyhause-db') else {}),
     }
 }
 
@@ -104,6 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
+
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -119,7 +124,11 @@ CHANNEL_LAYERS = {
     },
 }
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'https://partyhause.uk',
+    'https://www.partyhause.uk',
+]
 CORS_ALLOW_CREDENTIALS = True
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_NAME = 'partyhause_session'
@@ -130,7 +139,11 @@ SESSION_COOKIE_SAMESITE = 'lax'
 SESSION_COOKIE_DOMAIN = None
 SESSION_SAVE_EVERY_REQUEST = True
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'https://partyhause.uk',
+    'https://www.partyhause.uk',
+]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -144,18 +157,60 @@ CORS_ALLOW_HEADERS = [
     'idempotency-key',
 ]
 
-# so nothing reaches real inboxes during testing. UI at http://localhost:8025.
-# Email backend for local development — Mailpit catches all outbound mail
-# so nothing reaches real inboxes during testing. UI at http://localhost:8026.
-# Inside Docker, EMAIL_HOST must be the compose service name 'partyhause-mailpit';
-# not 'localhost' (which resolves to the container itself).
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'partyhause-mailpit')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '1025'))
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'
-DEFAULT_FROM_EMAIL = 'PartyHause <dev@partyhause.local>'
-SERVER_EMAIL = 'PartyHause <dev@partyhause.local>'
+# Email transport: Azure Communication Services (primary) with Resend fallback.
+#
+# EMAIL_BACKEND selects the Django backend. Use the ACS-backed backend in any
+# environment where real delivery is desired; fall back to the SMTP backend
+# (Mailpit) only when ACS_CONNECTION_STRING is unset, so local dev still works
+# without credentials.
+#
+# ACS requires a verified sender address. ACS_SENDER_ADDRESS must be a
+# sender bound to a DNS-verified domain in the Communication Service (e.g.
+# noreply@partyhause.uk). Until that domain is verified, mail still flows via
+# the Resend fallback using RESEND_FROM_EMAIL.
+#
+# Env vars (all optional; unset => Mailpit local catcher):
+#   ACS_CONNECTION_STRING   ACS connection string (Key Vault in production)
+#   ACS_SENDER_ADDRESS      Verified sender, e.g. noreply@partyhause.uk
+#   RESEND_API_KEY          Resend API key (fallback provider)
+#   RESEND_FROM_EMAIL       Verified Resend sender address
+#   FRONTEND_URL            Base URL for links in email (reset/verify/invite)
+_ACS_CONN = (os.environ.get('ACS_CONNECTION_STRING') or '').strip()
+_ACS_SENDER = (os.environ.get('ACS_SENDER_ADDRESS') or '').strip()
+_RESEND_KEY = (os.environ.get('RESEND_API_KEY') or '').strip()
+
+if _ACS_CONN and _ACS_SENDER:
+    EMAIL_BACKEND = 'partyhause.email_backends.AzureCommunicationEmailBackend'
+    DEFAULT_FROM_EMAIL = _ACS_SENDER or 'PartyHause <noreply@partyhause.uk>'
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+elif _RESEND_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.resend.com'
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = 'resend'
+    EMAIL_HOST_PASSWORD = _RESEND_KEY
+    EMAIL_USE_TLS = True
+    DEFAULT_FROM_EMAIL = (os.environ.get('RESEND_FROM_EMAIL') or '').strip() or 'PartyHause <noreply@partyhause.uk>'
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+else:
+    # Local development: Mailpit catches all outbound mail, nothing reaches
+    # real inboxes. UI at http://localhost:8026 (compose) / 8025 (local).
+    # Inside Docker, EMAIL_HOST must be the compose service name
+    # 'partyhause-mailpit', not 'localhost' (which resolves to the container
+    # itself).
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'partyhause-mailpit')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '1025'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'
+    DEFAULT_FROM_EMAIL = 'PartyHause <dev@partyhause.local>'
+    SERVER_EMAIL = 'PartyHause <dev@partyhause.local>'
+
+# Base URL used for links in verification / password-reset / invitation email.
+# Must be the publicly reachable frontend (e.g. https://partyhause.uk), not
+# localhost, or real users cannot open the links.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
 
 REST_FRAMEWORK = {
     # No default authentication: views use SessionAuthMixin to enforce the

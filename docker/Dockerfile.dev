@@ -1,21 +1,14 @@
-FROM node:24-slim
+FROM nginx:alpine
 
 WORKDIR /app
 
-# Workspace manifests must exist before npm ci so the workspace: protocol dep
-# (@partyhause/agentic-harness) resolves.
-COPY package.json package-lock.json ./
-COPY packages ./packages
-RUN npm ci --legacy-peer-deps
+# Pre-built Vite PWA bundle copied from host (built with `npm run build:web`).
+COPY dist/ /usr/share/nginx/html
 
-COPY . .
+# Serve PWA via nginx on port 80 (compose maps host 5174 -> container 80).
+# Proxy /api/* to Django API container on compose network.
+COPY docker/nginx.dev.conf /etc/nginx/conf.d/default.conf
 
-# Workspace link for bare '@partyhause/core' imports.
-RUN mkdir -p node_modules/@partyhause && ln -sfn ../../packages/core node_modules/@partyhause/core
+EXPOSE 80
 
-EXPOSE 5173
-
-# Vite dev server; VITE_API_PROXY_TARGET is injected at runtime by compose
-# (http://partyhause-django:8001) so /api proxies to Django on the same
-# Docker network.
-CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]
+CMD ["nginx", "-g", "daemon off;"]

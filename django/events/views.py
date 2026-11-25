@@ -62,6 +62,9 @@ def serialize_event(event, access):
         'host_id': str(event.host_id),
         'created_at': event.created_at.isoformat(),
         'updated_at': event.updated_at.isoformat(),
+        'external_source': event.external_source,
+        'external_event_id': event.external_event_id,
+        'external_metadata': event.external_metadata,
     }
     can_edit = access.can_edit() if access else False
     if can_edit:
@@ -84,6 +87,12 @@ class IndexEventsView(APIView):
 
         # List user's hosted events
         events = Event.objects.filter(host_id=user.id)
+
+        # Add externally sourced events imported by this user (privacy-scoped).
+        events = events | Event.objects.filter(
+            imported_by=user,
+            external_source__isnull=False,
+        ).exclude(external_source='')
 
         # Add guest events
         if user.email:

@@ -186,7 +186,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
             <Text style={styles.ctaIcon}>🎉</Text>
           </View>
           <Text style={styles.ctaTitle}>Ready to throw something unforgettable?</Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={onGetStarted}>
+          <TouchableOpacity style={styles.ctaButton} onPress={() => onGetStarted('create_event')}>
             <Text style={styles.ctaButtonText}>Start your event</Text>
           </TouchableOpacity>
         </View>

@@ -122,7 +122,7 @@ export const PartyPlateSelection: React.FC<PartyPlateSelectionProps> = ({
               <ArrowLeft className="w-6 h-6 text-red-600" />
             </div>
             <h3 className="text-lg font-medium text-gray-900">Failed to load templates</h3>
-            <p className="text-gray-600">{error.message}</p>
+            <p className="text-gray-600">{error instanceof Error ? error.message : String(error)}</p>
             <Button onClick={() => window.location.reload()} className="mt-4">
               Try again
             </Button>
