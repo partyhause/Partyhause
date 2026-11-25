@@ -25,7 +25,7 @@
 #   Build & deploy (identical to the deploy job, using the combined image):
 #     9. az acr build --file Dockerfile.combined   (web + API in one image)
 #    10. az containerapp update                     (SHA-tagged revision)
-#    11. Health checks: /api/health and / on the container FQDN
+#    11. Health checks: /api/health/ and / on the container FQDN
 #
 # SECRETS / ENV REQUIRED
 #   DATABASE_URL                — optional; without it step 3 is skipped (CI
@@ -45,10 +45,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SUBSCRIPTION="${AZURE_SUBSCRIPTION:-45bc20c4-efcb-4bd4-9c70-ee1dcf271880}"
+SUBSCRIPTION="${AZURE_SUBSCRIPTION:-4dec0cc6-78c7-434c-b6c7-3ed2e8075d62}"
 RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-partyhause-prod}"
 APP_NAME="${AZURE_APP_NAME:-ca-app-partyhause-combined}"
-ACR_NAME="${AZURE_ACR_NAME:-acrpartyhausek2xoe7s452aja}"
+ACR_NAME="${AZURE_ACR_NAME:-acrpartyhausejvt4gqrth7cuc}"
 # The API keeps its container FQDN in CORS_ALLOWED_ORIGINS so the app stays
 # reachable from a URL that is guaranteed to exist even if a custom-domain
 # binding is ever removed.

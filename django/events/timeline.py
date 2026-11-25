@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.utils import timezone
 
 class TimelineBlock(models.Model):
@@ -22,7 +22,7 @@ class TimelineBlock(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True, null=True)
-    responsible_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='timeline_blocks')
+    responsible_user = models.ForeignKey(django_settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='timeline_blocks')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

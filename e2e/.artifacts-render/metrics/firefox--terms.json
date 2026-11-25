@@ -1,0 +1,54 @@
+{
+  "engine": "firefox",
+  "surface": "terms",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedAssets": [],
+  "documentWidth": 1280,
+  "viewportWidth": 1280,
+  "bodyHeight": 2725,
+  "overflowingElements": [],
+  "landmarks": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 229
+    },
+    "main": {
+      "x": 250,
+      "y": 229,
+      "width": 780,
+      "height": 2394
+    },
+    "footer": {
+      "x": 250,
+      "y": 2623,
+      "width": 780,
+      "height": 102
+    },
+    "nav": {
+      "x": 274,
+      "y": 2661,
+      "width": 732,
+      "height": 24
+    },
+    "h1": {
+      "x": 250,
+      "y": 85,
+      "width": 780,
+      "height": 64
+    }
+  },
+  "cssSupport": {
+    "flex gap": true,
+    "grid gap": true,
+    "aspect-ratio": true,
+    "backdrop-filter": true,
+    ":has()": true,
+    "inset shorthand": true,
+    "color-mix": true,
+    "dvh unit": true,
+    "text-wrap balance": true
+  }
+}

@@ -4,7 +4,7 @@ from django.conf import settings
 
 
 class EventTemplate(models.Model):
-    """Mirrors Prisma `templates` table — managed=False, Prisma is source of truth."""
+    """Mirrors Prisma `templates` table — managed by Django migrations."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     author = models.ForeignKey(
@@ -31,7 +31,7 @@ class EventTemplate(models.Model):
 
     class Meta:
         db_table = 'templates'
-        managed = False
+        managed = True
         indexes = [
             models.Index(fields=['category']),
             models.Index(fields=['price_tier']),
@@ -40,7 +40,7 @@ class EventTemplate(models.Model):
 
 
 class TemplateUsage(models.Model):
-    """Mirrors Prisma `template_usage` table — managed=False."""
+    """Mirrors Prisma `template_usage` table — managed by Django migrations."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     template = models.ForeignKey(
@@ -60,7 +60,7 @@ class TemplateUsage(models.Model):
 
     class Meta:
         db_table = 'template_usage'
-        managed = False
+        managed = True
         indexes = [
             models.Index(fields=['template_id']),
             models.Index(fields=['user_id']),

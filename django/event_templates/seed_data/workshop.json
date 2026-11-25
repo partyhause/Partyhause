@@ -1,0 +1,19 @@
+{
+  "name": "Workshop",
+  "slug": "workshop",
+  "description": "Hands-on learning session with materials and instruction.",
+  "category": "workshop",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "workshop",
+    "includes_materials": true,
+    "includes_instructor": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

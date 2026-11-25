@@ -88,6 +88,35 @@ class IndexStickiesView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def post(self, request):
+        try:
+            event_id = request.data.get('event_id')
+            if not event_id:
+                return Response({'error': 'event_id required'}, status=status.HTTP_400_BAD_REQUEST)
+            event = Event.objects.filter(id=event_id).first()
+            if not event:
+                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+            user = request.user if request.user.is_authenticated else None
+            access = get_event_access(event, user)
+            if not can_edit_event(access):
+                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+            sticky = PartyBoardSticky.objects.create(
+                event_id=event_id,
+                session_id=request.data.get('session_id'),
+                type=request.data.get('type', 'note'),
+                position_x=request.data.get('position_x', 0),
+                position_y=request.data.get('position_y', 0),
+                width=request.data.get('width', 200),
+                height=request.data.get('height', 200),
+                rotation=request.data.get('rotation'),
+                category=request.data.get('category'),
+                data=request.data.get('data', {}),
+                creator_id=user.id if user else None,
+            )
+            return Response({'id': str(sticky.id)}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CreateStickyView(APIView):
     permission_classes = [AllowAny]

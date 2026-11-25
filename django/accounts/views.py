@@ -14,6 +14,8 @@ from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
 from django.template.loader import render_to_string
 import secrets
+import logging
+
 from django.utils import timezone
 from .serializers import (
     SignupSerializer,
@@ -27,13 +29,33 @@ from .serializers import (
 )
 from .authentication import sign_token
 from .session_auth import SessionAuthMixin, _SessionAuthStop
+from django.conf import settings
+
 signer = TimestampSigner()
 User = get_user_model()
 
 
-def _token_response(user):
+def _frontend_link(path: str) -> str:
+    """Build a publicly reachable frontend URL for email links.
+
+    FRONTEND_URL (e.g. https://partyhause.uk) must be used instead of a
+    hardcoded localhost, or real users cannot open verify/reset links.
+    """
+    base = getattr(settings, 'FRONTEND_URL', '') or 'http://localhost:5173'
+    base = base.rstrip('/')
+    path = path if path.startswith('/') else '/' + path
+    return base + path
+
+
+def _token_response(user, request=None):
     """Return a JWT token response matching the frontend's expectations."""
     token = sign_token(user)
+    if request is not None:
+        # Store JWT in Django session so authenticated requests can be
+        # recognised even when the client sends no Authorization header.
+        request.session['auth_token'] = token
+        request.session['auth_user_id'] = str(user.id)
+        request.session.save()
     return Response({
         'token': token,
         'user': {
@@ -59,22 +81,42 @@ class SignupView(APIView):
                 invite_token = request.data.get('invite_token') or ''
                 if invite_token and user.email_verified:
                     # Invited signup: auto-verified, no verification email needed
-                    return _token_response(user)
+                    return _token_response(user, request)
                 # Non-invited sign-up: require verification
                 new_token = secrets.token_urlsafe(32)
                 user.verification_token = new_token
                 user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
                 user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
                 try:
-                    send_mail(
+                    _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                    if not _domain:
+                        _protocol, _domain = 'https', _protocol
+                    html_message = render_to_string(
+                        'emails/verification_email.html',
+                        {
+                            'user': user,
+                            'token': new_token,
+                            'email': user.email,
+                            'protocol': _protocol,
+                            'domain': _domain,
+                        },
+                    )
+                    msg = EmailMessage(
                         'Verify your PartyHause email',
-                        f'Your verification code is: {new_token}',
+                        html_message,
                         settings.DEFAULT_FROM_EMAIL,
                         [user.email],
-                        fail_silently=False,
                     )
+                    msg.content_subtype = 'html'
+                    msg.send(fail_silently=False)
                 except Exception as e:
-                    print(f'SIGNUP EMAIL ERROR: {e}')
+                    # Log delivery failure but do not fail signup: the user can
+                    # resend the verification link. Previously this was silently
+                    # swallowed, hiding a dead email pipeline.
+                    logger = logging.getLogger(__name__)
+                    logger.error(
+                        'Signup verification email failed: %s', e
+                    )
                 # Do not issue a session token for unverified sign-ups
                 return Response({'user': {'id': str(user.id), 'email': user.email, 'name': user.name, 'email_verified': user.email_verified}, 'message': 'Check your email for a verification link.'}, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -91,16 +133,28 @@ class VerifyEmailView(APIView):
         try:
             token = serializer.validated_data['token']
             user = User.objects.filter(verification_token=token).first()
+            if not user:
+                return Response({"error": "Invalid verification link"}, status=status.HTTP_400_BAD_REQUEST)
             expires = user.verification_token_expires
             if timezone.is_naive(expires):
                 expires = timezone.make_aware(expires)
-            if not user or expires < timezone.now():
+            if expires < timezone.now():
                 return Response({"error": "Invalid verification link"}, status=status.HTTP_400_BAD_REQUEST)
             user.email_verified = True
             user.verification_token = None
             user.verification_token_expires = None
             user.save(update_fields=['email_verified', 'verification_token', 'verification_token_expires', 'updated_at'])
-            return _token_response(user)
+            # Store JWT in Django session so the session cookie authenticates
+            # the browser on redirect to /auth. Do NOT return the token in the
+            # body — the user signs in normally (no token handed to the user).
+            request.session['auth_token'] = sign_token(user)
+            request.session['auth_user_id'] = str(user.id)
+            request.session.save()
+            return Response({
+                'success': True,
+                'message': 'Email verified successfully. Please sign in.',
+                'redirect': '/auth',
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -124,15 +178,33 @@ class ResendVerificationView(APIView):
             user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
             user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
             try:
-                send_mail(
-                    'Verify your PartyHause email',
-                    f'Your verification code is: {new_token}',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
-            except Exception:
-                pass
+                    _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                    if not _domain:
+                        _protocol, _domain = 'https', _protocol
+                    html_message = render_to_string(
+                        'emails/verification_email.html',
+                        {
+                            'user': user,
+                            'token': new_token,
+                            'email': email,
+                            'protocol': _protocol,
+                            'domain': _domain,
+                        },
+                    )
+                    msg = EmailMessage(
+                        'Verify your PartyHause email',
+                        html_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                    )
+                    msg.content_subtype = 'html'
+                    msg.send(fail_silently=False)
+            except Exception as e:
+                # Log delivery failure but keep a uniform response to avoid
+                # account enumeration. Previously the failure was swallowed
+                # entirely, so resends appeared to succeed while no mail was sent.
+                logger = logging.getLogger(__name__)
+                logger.error('Resend verification email failed: %s', e)
             return Response({"message": "Verification email resent"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -156,8 +228,7 @@ class LoginView(APIView):
                 return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
             if not user.email_verified:
                 return Response({"error": "Email not verified", "needs_email_verification": True}, status=status.HTTP_403_FORBIDDEN)
-            return _token_response(user)
-            return _token_response(user)
+            return _token_response(user, request)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -183,8 +254,7 @@ class RoleUpdateView(SessionAuthMixin, APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.update(request.user, serializer.validated_data)
         # Re-issue a token so the client picks up the new role immediately
-        return _token_response(request.user)
-
+        return _token_response(request.user, request)
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
@@ -204,14 +274,17 @@ class ForgotPasswordView(APIView):
             user.reset_token_expires = timezone.now() + timezone.timedelta(hours=24)
             user.save(update_fields=['reset_token', 'reset_token_expires', 'updated_at'])
             try:
+                _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                if not _domain:
+                    _protocol, _domain = 'https', _protocol
                 html_message = render_to_string(
                     'emails/password_reset_email.html',
                     {
                         'user': user,
                         'token': new_token,
                         'email': email,
-                        'protocol': 'http',
-                        'domain': 'localhost:5173',
+                        'protocol': _protocol,
+                        'domain': _domain,
                     },
                 )
                 msg = EmailMessage(
@@ -222,8 +295,12 @@ class ForgotPasswordView(APIView):
                 )
                 msg.content_subtype = 'html'
                 msg.send(fail_silently=False)
-            except Exception:
-                pass
+            except Exception as e:
+                # Log delivery failure but keep a uniform response to avoid
+                # account enumeration. Previously the failure was swallowed
+                # entirely, so resets appeared to succeed while no mail was sent.
+                logger = logging.getLogger(__name__)
+                logger.error('Forgot-password email failed: %s', e)
             return Response({"message": "Password reset email sent"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -254,14 +331,14 @@ class ResetPasswordView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class LogoutView(SessionAuthMixin, APIView):
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        try:
-            self._verify_token()
-        except _SessionAuthStop as e:
-            return e.args[0]
-        request.user.token_version += 1
-        request.user.save(update_fields=['token_version', 'updated_at'])
+        if getattr(request, 'user', None) and request.user.is_authenticated:
+            request.user.token_version += 1
+            request.user.save(update_fields=['token_version', 'updated_at'])
+        request.session.flush()
         return Response({"message": "Logged out"}, status=status.HTTP_200_OK)
 
 
