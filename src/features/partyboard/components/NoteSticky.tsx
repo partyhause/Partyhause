@@ -25,12 +25,12 @@ export const NoteSticky: React.FC<NoteStickyProps> = ({
   });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: transform ? CSS.Translate.toString(transform) : '',
     position: 'absolute' as const,
-    left: sticky.position.x,
-    top: sticky.position.y,
-    width: sticky.size.width,
-    height: sticky.size.height,
+    left: `${sticky.position?.x ?? 100}px`,
+    top: `${sticky.position?.y ?? 100}px`,
+    width: `${sticky.size?.width ?? 200}px`,
+    height: `${sticky.size?.height ?? 200}px`,
     zIndex: isDragging ? 1000 : sticky.z_index,
     rotate: `${sticky.rotation || 0}deg`,
   };
