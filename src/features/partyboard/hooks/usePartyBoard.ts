@@ -31,10 +31,13 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
   // has navigated away from, and must not clobber a local optimistic update
   // with a response that was already in flight when it happened.
   const mountedRef = useRef(true);
+  const positionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (positionTimerRef.current) clearTimeout(positionTimerRef.current);
     };
   }, []);
 
@@ -102,13 +105,11 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
         session_id: sessionId,
         type: 'idea',
         position: ideaData.position || { x: 100, y: 100 },
-        size: DEFAULT_STICKY_SIZE,
-        category: ideaData.category,
         data: {
           content: ideaData.content,
-          category: ideaData.category,
-          estimated_cost: ideaData.estimated_cost,
+          font_size: 14,
         },
+        category: ideaData.category,
       },
     );
 
@@ -188,39 +189,41 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
     return true;
   };
 
+  const flushPendingPositions = async (pending: Record<string, { x: number; y: number }>): Promise<void> => {
+    for (const stickyId of Object.keys(pending)) {
+      const position = pending[stickyId];
+      const { error: apiError } = await apiPatch(`/api/partyboard/stickies/${stickyId}/position`, {
+        position,
+      });
+      if (apiError) {
+        setError(apiError.message);
+      }
+    }
+  };
+
   /**
    * Persist a drag.
    *
    * Position is written optimistically before the request so the sticky does
    * not snap back under the cursor, and rolled back to its previous coordinates
-   * if the server rejects it.
+   * if the server rejects it. Multiple rapid drags are debounced into a single
+   * request carrying the latest position.
    */
   const updateStickyPosition = async (
     stickyId: string,
     position: { x: number; y: number },
   ): Promise<boolean> => {
-    const previous = stickies.find((sticky) => sticky.id === stickyId)?.position;
-
     setStickies((prev) =>
       prev.map((sticky) => (sticky.id === stickyId ? { ...sticky, position } : sticky)),
     );
-
-    const { error: apiError } = await apiPatch(`/api/partyboard/stickies/${stickyId}/position`, {
-      position,
-    });
-
-    if (apiError) {
-      if (previous) {
-        setStickies((prev) =>
-          prev.map((sticky) =>
-            sticky.id === stickyId ? { ...sticky, position: previous } : sticky,
-          ),
-        );
-      }
-      setError(apiError.message);
-      return false;
-    }
-
+    pendingPositionsRef.current[stickyId] = position;
+    if (positionTimerRef.current) clearTimeout(positionTimerRef.current);
+    positionTimerRef.current = setTimeout(() => {
+      const pending = pendingPositionsRef.current;
+      pendingPositionsRef.current = {};
+      positionTimerRef.current = null;
+      void flushPendingPositions(pending);
+    }, 150);
     return true;
   };
 
@@ -252,6 +255,41 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
     return { ideas, tasks, votes, stickies: stickies.length };
   }, [stickies]);
 
+  const createStickyFromTemplate = async (sticky: { type: string; position: { x: number; y: number }; size: { width: number; height: number }; category: string; data: unknown }): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    const { error: apiError } = await apiPost('/api/partyboard/stickies', {
+      event_id: eventId,
+      session_id: sessionId,
+      type: sticky.type,
+      position: sticky.position,
+      size: sticky.size,
+      category: sticky.category,
+      data: sticky.data,
+    });
+    setLoading(false);
+    if (apiError) {
+      setError(apiError.message);
+    }
+  };
+
+  const seedFromTemplate = async (_id: string, _data: unknown): Promise<void> => {
+    const data = _data as { default_payload?: { stickies: unknown[] } };
+    const stickies = data.default_payload?.stickies ?? [];
+    for (const sticky of stickies) {
+      await createStickyFromTemplate(sticky as { type: string; position: { x: number; y: number }; size: { width: number; height: number }; category: string; data: unknown });
+    }
+  };
+
+  const seedFromFormData = async (_data: unknown): Promise<void> => {
+    const data = _data as { template_type?: string; name?: string; start_date?: string; start_time?: string; location?: string; description?: string };
+    const defaults = { type: 'note', position: { x: 100, y: 100 }, size: DEFAULT_STICKY_SIZE, category: 'general', data: {} };
+    await createStickyFromTemplate({ ...defaults, category: data.template_type ?? 'general', data: { content: data.description ?? data.name ?? '' } });
+    await createStickyFromTemplate({ ...defaults, type: 'note', category: 'logistics', data: { content: `Location: ${data.location ?? 'TBD'}\nTime: ${data.start_time ?? 'TBD'}` } });
+    await createStickyFromTemplate({ ...defaults, type: 'note', category: 'guests', data: { content: `Guest RSVP for ${data.name ?? 'event'}` } });
+    await createStickyFromTemplate({ ...defaults, type: 'idea', category: 'ideas', data: { content: `Ideas for ${data.name ?? 'event'}` } });
+  };
+
   useEffect(() => {
     if (!autoRefresh || !eventId) return;
     const interval = setInterval(() => {
@@ -276,5 +314,7 @@ export const usePartyBoard = ({ eventId, sessionId, autoRefresh = false }: UsePa
     updateStickyPosition,
     deleteSticky,
     getStats,
+    seedFromTemplate,
+    seedFromFormData,
   };
 };

@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
 import { PartyPlateSelection } from '@/components/templates/EventTemplateSelection';
+import type { EventTemplate } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
 import AIEventAssistant from '@/features/ai-assistant/AIEventAssistant';
 import InviteTemplateSelection from '@/components/invites/InviteTemplateSelection';
@@ -27,14 +28,6 @@ import { ProgressStepper, CompactProgressBar, Step } from '@/components/ui/progr
 import { FlowTip } from '@/components/ui/flow-tip';
 import { useSavePartyPlate } from '@/features/templates/hooks/useSavePartyPlate'
 
-interface EventTemplate {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  category: string;
-}
 
 
 export const EventCreation = () => {
@@ -893,7 +886,7 @@ export const EventCreation = () => {
 
             {/* Template-Specific Form */}
             <TemplateFormRouter
-              templateId={selectedTemplate.id}
+              templateId={selectedTemplate.category}
               templateName={selectedTemplate.name}
               initialData={templateData}
               onChange={handleTemplateDataChange}

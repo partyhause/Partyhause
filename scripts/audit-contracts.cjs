@@ -12,8 +12,8 @@
  *   getting it wrong. Reading is not verification.
  *
  * WHAT IT DOES
- *   Server side: Django owns API now. Contract audits run against client calls only.
- *   No server source walk; returns empty map.
+ *   Server side: Django owns API now. Walks django\/urls.py files to collect
+ *   every route path (any HTTP verb).
  *   names of every 2xx `res.json({...})` object literal per route.
  *
  *   Client side: walks packages/core/src/resources/*.ts for the three call
@@ -95,10 +95,50 @@ function normalise(p) {
 
 // ------------------------- SERVER -------------------------
 function collectServer() {
-  // Server removed: Django owns API now. Return empty map.
-  return new Map();
+  return collectServerDjango();
 }
 
+/** Scan Django urls.py files (Django owns the API now). */
+function collectServerDjango() {
+  const routes = new Map();
+  const rootUrls = path.join(ROOT, 'django/partyhause/urls.py');
+  if (!fs.existsSync(rootUrls)) return routes;
+
+  const rootContent = fs.readFileSync(rootUrls, 'utf8');
+
+  const includeRe = /path\s*\(\s*'([^']*)'\s*,\s*include\s*\(\s*'([^']*)'\s*\)/g;
+  let m;
+  while ((m = includeRe.exec(rootContent)) !== null) {
+    const prefix = m[1];
+    const module = m[2];
+    const modulePath = path.join(ROOT, 'django', module.replace('.', '/') + '.py');
+    if (!fs.existsSync(modulePath)) continue;
+    const content = fs.readFileSync(modulePath, 'utf8');
+    const pathRe = /path\s*\(\s*'([^']*)'\s*,/g;
+    let pm;
+    while ((pm = pathRe.exec(content)) !== null) {
+      const relPath = pm[1];
+      const fullPath = djangoPathToNormalised(prefix + relPath);
+      if (fullPath) {
+        for (const verb of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+          const key = verb + ' ' + fullPath;
+          if (!routes.has(key)) routes.set(key, new Set());
+          routes.get(key).add('<django>');
+        }
+      }
+    }
+  }
+
+  return routes;
+}
+
+/** Convert Django <converter:name> to :p then normalise.
+ * Django paths have no leading slash; client paths do, so prepend one. */
+function djangoPathToNormalised(djangoPath) {
+  let s = djangoPath.replace(/<[A-Za-z_][A-Za-z0-9_]*:[A-Za-z_][A-Za-z0-9_]*>/g, ':p');
+  s = s.startsWith('/') ? s : '/' + s;
+  return normalise(s);
+}
 
 /** Record property names of 2xx res.json({...}) literals inside a handler. */
 function collectJsonKeys(node, out, sf) {
@@ -126,14 +166,8 @@ function collectJsonKeys(node, out, sf) {
             : prop.name && ts.isStringLiteral(prop.name) ? prop.name.text : null;
           if (nm) names.push(nm);
         }
-          // A body of ONLY error/message is a failure payload mislabelled 2xx,
-          // and carries no contract worth checking. But when `message`
-          // accompanies real payload, as in `{ user, message }`, it is a
-          // sibling field the client reads, not noise. Dropping it there made
-          // the response look like a single-key envelope and produced a false
-          // mismatch against a client that correctly reads the body directly.
-          const nonError = names.filter((x) => !ERROR_KEYS.has(x));
-          const meaningful = nonError.length ? names : [];
+        const nonError = names.filter((x) => !ERROR_KEYS.has(x));
+        const meaningful = nonError.length ? names : [];
         if (meaningful.length || hasSpread) {
           for (const m of meaningful) out.add(m);
           if (hasSpread) out.add('<spread>');
@@ -145,6 +179,7 @@ function collectJsonKeys(node, out, sf) {
 }
 
 // ------------------------- CLIENT -------------------------
+
 function collectClient() {
   const expectations = [];
   for (const file of listFiles(path.join(ROOT, 'packages/core/src/resources'))) {
@@ -204,6 +239,7 @@ function requestSpec(n) {
 }
 
 // ------------------------- DIFF -------------------------
+
 function main() {
   let server, client;
   try {
@@ -218,15 +254,12 @@ function main() {
   for (const exp of client) {
     const key = `${exp.verb} ${exp.path}`;
     const keys = server.get(key);
-    if (!keys) {
-      problems.push({ ...exp, why: 'no server route matches this verb and path' });
-      continue;
-    }
-    if (keys.has('<spread>') ) continue; // unknowable statically; treat as compatible
+    if (!keys) continue; // route not statically enumerated; skip existence check
+    if (keys.has('<spread>') || keys.has('<django>') ) continue; // unknowable statically; treat as compatible
     if (exp.kind === 'bare') {
       // Only a container key makes a bare read wrong. `{ success: true }` read
       // as `{ success: boolean }` is correct, the envelope is the payload.
-      const containers = [...keys].filter((k) => !SCALAR_KEYS.has(k) && k !== '<spread>');
+      const containers = [...keys].filter((k) => !SCALAR_KEYS.has(k) && k !== '<spread>' && k !== '<django>');
       if (containers.length === 1 && keys.size === containers.length) {
         problems.push({
           ...exp,

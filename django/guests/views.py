@@ -144,6 +144,16 @@ class CreateGuestView(APIView):
                 user_id=data.get('user_id')
             )
 
+            # Send the invitation email (ACS primary, Resend fallback).
+            try:
+                from guests.email_service import GuestInvitationService
+                GuestInvitationService(event).send_invitation(guest)
+            except Exception as exc:  # noqa: BLE001
+                import logging
+                logging.getLogger(__name__).error(
+                    'Invitation email failed for %s: %s', data.get('email'), exc
+                )
+
             return Response({
                 'id': str(guest.id),
                 'name': guest.name,

@@ -14,6 +14,8 @@ from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
 from django.template.loader import render_to_string
 import secrets
+import logging
+
 from django.utils import timezone
 from .serializers import (
     SignupSerializer,
@@ -27,8 +29,22 @@ from .serializers import (
 )
 from .authentication import sign_token
 from .session_auth import SessionAuthMixin, _SessionAuthStop
+from django.conf import settings
+
 signer = TimestampSigner()
 User = get_user_model()
+
+
+def _frontend_link(path: str) -> str:
+    """Build a publicly reachable frontend URL for email links.
+
+    FRONTEND_URL (e.g. https://partyhause.uk) must be used instead of a
+    hardcoded localhost, or real users cannot open verify/reset links.
+    """
+    base = getattr(settings, 'FRONTEND_URL', '') or 'http://localhost:5173'
+    base = base.rstrip('/')
+    path = path if path.startswith('/') else '/' + path
+    return base + path
 
 
 def _token_response(user, request=None):
@@ -72,14 +88,17 @@ class SignupView(APIView):
                 user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
                 user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
                 try:
+                    _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                    if not _domain:
+                        _protocol, _domain = 'https', _protocol
                     html_message = render_to_string(
                         'emails/verification_email.html',
                         {
                             'user': user,
                             'token': new_token,
                             'email': user.email,
-                            'protocol': 'http',
-                            'domain': 'localhost:5173',
+                            'protocol': _protocol,
+                            'domain': _domain,
                         },
                     )
                     msg = EmailMessage(
@@ -91,7 +110,13 @@ class SignupView(APIView):
                     msg.content_subtype = 'html'
                     msg.send(fail_silently=False)
                 except Exception as e:
-                    print(f'SIGNUP EMAIL ERROR: {e}')
+                    # Log delivery failure but do not fail signup: the user can
+                    # resend the verification link. Previously this was silently
+                    # swallowed, hiding a dead email pipeline.
+                    logger = logging.getLogger(__name__)
+                    logger.error(
+                        'Signup verification email failed: %s', e
+                    )
                 # Do not issue a session token for unverified sign-ups
                 return Response({'user': {'id': str(user.id), 'email': user.email, 'name': user.name, 'email_verified': user.email_verified}, 'message': 'Check your email for a verification link.'}, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -153,14 +178,17 @@ class ResendVerificationView(APIView):
             user.verification_token_expires = timezone.now() + timezone.timedelta(hours=24)
             user.save(update_fields=['verification_token', 'verification_token_expires', 'updated_at'])
             try:
+                    _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                    if not _domain:
+                        _protocol, _domain = 'https', _protocol
                     html_message = render_to_string(
                         'emails/verification_email.html',
                         {
                             'user': user,
                             'token': new_token,
                             'email': email,
-                            'protocol': 'http',
-                            'domain': 'localhost:5173',
+                            'protocol': _protocol,
+                            'domain': _domain,
                         },
                     )
                     msg = EmailMessage(
@@ -171,8 +199,12 @@ class ResendVerificationView(APIView):
                     )
                     msg.content_subtype = 'html'
                     msg.send(fail_silently=False)
-            except Exception:
-                pass
+            except Exception as e:
+                # Log delivery failure but keep a uniform response to avoid
+                # account enumeration. Previously the failure was swallowed
+                # entirely, so resends appeared to succeed while no mail was sent.
+                logger = logging.getLogger(__name__)
+                logger.error('Resend verification email failed: %s', e)
             return Response({"message": "Verification email resent"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -242,14 +274,17 @@ class ForgotPasswordView(APIView):
             user.reset_token_expires = timezone.now() + timezone.timedelta(hours=24)
             user.save(update_fields=['reset_token', 'reset_token_expires', 'updated_at'])
             try:
+                _protocol, _, _domain = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').partition('://')
+                if not _domain:
+                    _protocol, _domain = 'https', _protocol
                 html_message = render_to_string(
                     'emails/password_reset_email.html',
                     {
                         'user': user,
                         'token': new_token,
                         'email': email,
-                        'protocol': 'http',
-                        'domain': 'localhost:5173',
+                        'protocol': _protocol,
+                        'domain': _domain,
                     },
                 )
                 msg = EmailMessage(
@@ -260,8 +295,12 @@ class ForgotPasswordView(APIView):
                 )
                 msg.content_subtype = 'html'
                 msg.send(fail_silently=False)
-            except Exception:
-                pass
+            except Exception as e:
+                # Log delivery failure but keep a uniform response to avoid
+                # account enumeration. Previously the failure was swallowed
+                # entirely, so resets appeared to succeed while no mail was sent.
+                logger = logging.getLogger(__name__)
+                logger.error('Forgot-password email failed: %s', e)
             return Response({"message": "Password reset email sent"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
