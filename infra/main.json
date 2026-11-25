@@ -1125,7 +1125,7 @@
                       },
                       {
                         "name": "PORT",
-                        "value": "3001"
+                        "value": "8001"
                       },
                       {
                         "name": "CORS_ALLOWED_ORIGINS",

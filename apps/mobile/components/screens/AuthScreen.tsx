@@ -14,21 +14,18 @@ interface AuthScreenProps {
   onAuthSuccess: () => void;
   /**
    * An invitation token, when this screen is being shown to answer one.
-   *
-   * Changes signup from a two-inbox-trip flow into one. The server matches the
-   * token to an unexpired invitation for the address being registered and, on
-   * a match, verifies the address and returns a session, because the token was
-   * delivered to that address in the first place. Undefined everywhere else,
-   * and an unmatched token simply falls back to the ordinary confirmation
-   * flow rather than failing the signup.
    */
   inviteToken?: string;
+  /**
+   * Intent that brought the user to auth. Used for welcome copy.
+   */
+  intent?: 'create_event' | 'join_event' | 'explore_features';
 }
 
 /** Matches the server's rule (server/routes/auth.ts). */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: AuthScreenProps) => {
+export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken, intent = 'explore_features' }: AuthScreenProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,6 +58,20 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
   /** Set when login answers 403 EMAIL_NOT_VERIFIED, so we offer a resend first. */
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
+
+  const getWelcomeMessage = () => {
+    if (isLogin) {
+      return 'Sign in to continue';
+    }
+    switch (intent) {
+      case 'create_event':
+        return 'Create your account to start planning your perfect event';
+      case 'join_event':
+        return 'Create your account to respond to your invitation';
+      default:
+        return 'Create your account to get started';
+    }
+  };
 
   /**
    * Request a password-reset link.
@@ -302,13 +313,13 @@ export const AuthScreen = ({ onBackToLanding, onAuthSuccess, inviteToken }: Auth
 
         <View style={styles.header}>
           <View style={styles.logoIcon}>
-            <Image source={require('../../assets/images/icon.png')} style={styles.logoImage} resizeMode="contain" />
+            <Image source={require('../../assets/images/logo-pastel-house.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={styles.title}>
             {isLogin ? 'Welcome Back!' : 'Join PartyHause'}
           </Text>
           <Text style={styles.subtitle}>
-            {isLogin ? 'Sign in to continue' : 'Create your account to get started'}
+            {getWelcomeMessage()}
           </Text>
         </View>
 

@@ -78,10 +78,9 @@ export function useOnboardingState() {
 
   const query = useQuery<OnboardingState | null, Error>({
     queryKey: ONBOARDING_QUERY_KEY,
-    // Only meaningful for a signed-in caller; the endpoint requires auth.
     enabled: Boolean(user),
-    // Nothing but a claim or a skip changes this, and both invalidate below.
-    staleTime: Infinity,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await apiGet<OnboardingState>('/api/users/me/onboarding');

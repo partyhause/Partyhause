@@ -40,23 +40,3 @@ export async function fetchOnboardingGate(): Promise<OnboardingGate | null> {
     blockedByPaywall: data.flow.blocked_by_paywall,
   };
 }
-
-/**
- * Persist onboarding answers collected per-screen.
- *
- * Each screen calls this with its partial answer payload rather than
- * accumulating until the end: a failed save never blocks the journey
- * because dedicated API calls (updateProfile, setUsername, startTrial)
- * handle real persistence. This function exists solely to give every
- * step route a single import rather than inline object literals.
- *
- * The payload shape mirrors the onboardingAnswers contract but only the
- * fields the server actually stores are persisted; the rest are handled
- * by the screen‑specific API calls below.
- */
-export function saveOnboardingData(data: any): void {
-  // No-op: each screen already persists via its own API call.
-  // (updateProfile for location/display_name/username, setUsername for handle,
-  //  startTrial for completed). The server onboardingAnswers contract
-  //  only stores organiser_type + completed; everything else is research.
-}

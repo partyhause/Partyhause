@@ -29,18 +29,17 @@ answer `P1010: User was denied access`, which reads like a permissions problem
 and is not one.
 
 ```bash
-# 2. The API, with its log on disk. NODE_ENV=test is required, see below.
-NODE_ENV=test \
+# 2. The API (Django), with its log on disk.
 DATABASE_URL="postgresql://$USER@localhost:5432/partyhause_e2e?schema=public" \
 JWT_SECRET="e2e-jwt-secret-at-least-32-characters-long" \
 INVITATION_TOKEN_SECRET="e2e-invitation-secret-not-the-jwt-one-32ch" \
-npx tsx server/index.ts 2>&1 | tee /tmp/e2e-api.log
+cd django && python manage.py runserver 127.0.0.1:8001 2>&1 | tee /tmp/e2e-api.log
 ```
 
 ```bash
 # 3. The web app, and the suite.
-npm run dev            # :5173, proxies /api to :3001
-npm run test:e2e
+npm run dev            # :5173, proxies /api to :8001
+E2E_API_URL=http://localhost:8001 npm run test:e2e
 ```
 
 `npm run test:e2e:headed` runs the same thing with a visible browser, which is
@@ -49,29 +48,28 @@ the faster way to understand a failure than reading a trace.
 ## Why NODE_ENV=test, and why a log file
 
 There is no mail provider in local development, so there is no inbox to read a
-verification link out of. `server/routes/auth.ts` prints those links to stdout
-when `NODE_ENV` is not `production`, and `e2e/support.ts` reads them back out
+verification link out of. Django prints those links to stdout, and `e2e/support.ts` reads them back out
 of the log. That is the same mechanism the database-backed scripts in
 `scripts/e2e-*.mjs` already use.
 
 `NODE_ENV=test` rather than `development` matters for a second reason:
 `server/dev-api.ts` sets `AUTH_BYPASS=true`, which admits unauthenticated
 requests as a synthetic dev user. Every authorization assertion in this suite
-would then pass for the wrong reason. Start `server/index.ts` directly, as
+would then pass for the wrong reason. Start Django directly, as
 above, not `npm run dev:api`.
 
 The log path defaults to `/tmp/e2e-api.log` and is overridable with
 `E2E_API_LOG`. If a test fails with *"No verify-email link for ... in
-/tmp/e2e-api.log"*, the API was almost certainly started without `NODE_ENV=test`
-or without `tee`.
+/tmp/e2e-api.log"*, the API was almost certainly started without `tee`.
 
 ## Environment
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `E2E_BASE_URL` | `http://localhost:5173` | Where the web app is served |
-| `E2E_API_URL` | `http://localhost:3001` | Where the API answers |
+| `E2E_API_URL` | `http://localhost:8001` | Where the API answers |
 | `E2E_API_LOG` | `/tmp/e2e-api.log` | File the API's stdout is tee'd to |
+
 
 ## The files
 

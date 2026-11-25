@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePartyStore } from '@/store/usePartyStore';
 import { eventService } from '@/lib/events';
 import { uploadImage, validateImageFile } from '@/lib/image-utils';
+import { apiPost } from '@/lib/api-client';
+import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PastelCard } from '@/components/ui/PastelCard';
 import { ArrowLeft, Sparkles, ChevronRight, PartyPopper, Send, Check, Users } from 'lucide-react';
-import { EventTemplateSelection } from '@/components/templates/EventTemplateSelection';
+import { PartyPlateSelection } from '@/components/templates/EventTemplateSelection';
+import type { EventTemplate } from '@/components/templates/EventTemplateSelection';
 import TemplateFormRouter from '@/components/templates/forms/TemplateFormRouter';
-import AIEventAssistant from '@/components/templates/AIEventAssistant';
+import AIEventAssistant from '@/features/ai-assistant/AIEventAssistant';
 import InviteTemplateSelection from '@/components/invites/InviteTemplateSelection';
 import InviteCustomization from '@/components/invites/InviteCustomization';
 import { InviteTemplate, CustomInviteData } from '@/types/invites';
@@ -23,15 +26,8 @@ import { TimelineBlock } from '@/features/timeline/types';
 import { timelineService } from '@/lib/timeline';
 import { ProgressStepper, CompactProgressBar, Step } from '@/components/ui/progress-stepper';
 import { FlowTip } from '@/components/ui/flow-tip';
+import { useSavePartyPlate } from '@/features/templates/hooks/useSavePartyPlate'
 
-interface EventTemplate {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  category: string;
-}
 
 
 export const EventCreation = () => {
@@ -51,7 +47,7 @@ export const EventCreation = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLocationTip, setShowLocationTip] = useState(false);
   const [showPlaylistTip, setShowPlaylistTip] = useState(false);
-  const [step, setStep] = useState<'ai-assistant' | 'template' | 'details' | 'form' | 'timeline' | 'invite' | 'invite-template' | 'invite-customize' | 'curate'>('ai-assistant');
+  const [step, setStep] = useState<'party-plate' | 'template' | 'ai-assistant' | 'details' | 'form' | 'timeline' | 'invite-template' | 'invite-upload' | 'invite-customize' | 'curate'>('party-plate');
   const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   const [templateData, setTemplateData] = useState<Record<string, any>>({});
   const [selectedInviteTemplate, setSelectedInviteTemplate] = useState<InviteTemplate | null>(null);
@@ -67,7 +63,7 @@ export const EventCreation = () => {
 
   // Define the event creation flow steps
   const EVENT_CREATION_STEPS: Step[] = [
-    { id: 'ai-assistant', label: 'AI Planner', description: 'Chat with AI to plan' },
+    { id: 'party-plate', label: 'PartyPlates', description: 'Pick a ready-made template' },
     { id: 'template', label: 'Choose Template', description: 'Pick your event type' },
     { id: 'details', label: 'Event Details', description: 'Fill in information' },
     { id: 'form', label: 'Basic Info', description: 'Date, time, location' },
@@ -100,6 +96,10 @@ export const EventCreation = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await createEventAndContinue();
+  };
+
+  const createEventAndContinue = async () => {
     if (!user?.id) {
       setError('You must be logged in to create an event.');
       return;
@@ -152,6 +152,7 @@ export const EventCreation = () => {
       setIsSubmitting(false);
     }
   };
+  const { save: saveAsPartyPlate, isSaving: isSavingPlate } = useSavePartyPlate()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -175,14 +176,23 @@ export const EventCreation = () => {
     setTemplateData({});
     setStep('template');
   };
-
-  const proceedToEventForm = () => {
+  const proceedToEventForm = async () => {
     if (!formData.description.trim()) {
       setDescriptionError('Please add a short event description before continuing.');
       return;
     }
     setDescriptionError(null);
     setCompletedSteps(prev => [...new Set([...prev, 'details'])]);
+
+    // If the AI assistant already extracted the basics (name, date, time, location)
+    // there is no reason to make the user retype them in the manual form — just
+    // create the event now and move to the timeline step.
+    if (formData.name.trim() && formData.start_date && formData.start_time && formData.location.trim()) {
+      setCompletedSteps(prev => [...new Set([...prev, 'form'])]);
+      await createEventAndContinue();
+      return;
+    }
+
     setStep('form');
   };
 
@@ -388,7 +398,7 @@ export const EventCreation = () => {
     );
   }
 
-  if (step === 'invite') {
+  if (step === 'invite-upload') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
         <PastelCard variant="peach" className="max-w-lg w-full">
@@ -666,8 +676,11 @@ export const EventCreation = () => {
                 if (data.formData) {
                   setTemplateData(data.formData);
                 }
-                setCompletedSteps(['ai-assistant']);
-                setStep('template');
+                // If the AI already selected a template, skip the redundant
+                // template-selection screen and go straight to details so the
+                // user doesn't re-choose what the planner already picked.
+                setCompletedSteps(data.templateId ? ['party-plate', 'template'] : ['party-plate']);
+                setStep(data.templateId ? 'details' : 'template');
               }}
               onBack={() => {
                 // Skip AI and go straight to manual template selection
@@ -679,7 +692,69 @@ export const EventCreation = () => {
       </div>
     );
   }
-
+  // PartyPlate Selection Step
+  if (step === 'party-plate') {
+    return (
+      <div className="min-h-screen relative">
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-block mb-4"
+              >
+                <Sparkles className="w-12 h-12 text-orange-500 mx-auto" />
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-4xl font-bold text-gray-900 mb-4"
+              >
+                Choose Your Event Template
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-gray-800 font-medium max-w-2xl mx-auto"
+              >
+                Start with a pre-designed template that matches your event type. We'll customize the details for you!
+              </motion.p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <PartyPlateSelection
+                onSelectTemplate={handleTemplateSelect}
+              />
+            </motion.div>
+            {/* Skip Option */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-center mt-8"
+            >
+              <button
+                onClick={() => {
+                  setCompletedSteps(prev => [...new Set([...prev, 'party-plate'])]);
+                  setStep('template');
+                }}
+                className="btn-glass px-6 py-3"
+              >
+                Skip templates and create from scratch
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Template Selection Step
   if (step === 'template') {
     return (
@@ -690,7 +765,7 @@ export const EventCreation = () => {
             {/* Back Button */}
             <div className="mb-6 flex items-center justify-between">
               <button
-                onClick={() => setStep('ai-assistant')}
+                onClick={() => setStep('party-plate')}
                 className="icon-btn-liquid"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -758,7 +833,7 @@ export const EventCreation = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <EventTemplateSelection onSelectTemplate={handleTemplateSelect} />
+              <PartyPlateSelection onSelectTemplate={handleTemplateSelect} />
             </motion.div>
 
             {/* Skip Option */}
@@ -811,7 +886,7 @@ export const EventCreation = () => {
 
             {/* Template-Specific Form */}
             <TemplateFormRouter
-              templateId={selectedTemplate.id}
+              templateId={selectedTemplate.category}
               templateName={selectedTemplate.name}
               initialData={templateData}
               onChange={handleTemplateDataChange}
@@ -1070,6 +1145,15 @@ export const EventCreation = () => {
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Back to Dashboard
                     </Button>
+                    <button
+                      type="button"
+                      onClick={() => void saveAsPartyPlate(formData)}
+                      disabled={isSavingPlate || isSubmitting}
+                      className="flex-1 btn-liquid-metal disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Save as PartyPlate
+                    </button>
                     <button
                       type="submit"
                       disabled={isSubmitting || !formData.name || !formData.start_date || !formData.start_time || !formData.end_time || !formData.location || (formData.event_type === 'multi_day' && !formData.end_date)}

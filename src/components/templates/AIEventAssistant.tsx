@@ -479,8 +479,8 @@ export default function AIEventAssistant({
               </motion.div>
             )}
           </div>
-        </ScrollArea>
-      </Card>
+        </div>
+      </PastelCard>
 
       {/* A failed turn has to be visible. Without this the spinner simply stops
           and the user retypes the same message into the same failure. */}

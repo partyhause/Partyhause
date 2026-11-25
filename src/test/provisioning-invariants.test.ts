@@ -34,22 +34,28 @@ describe('provisioning must not delete out-of-band live state', () => {
     expect(kv).toContain("name: 'add'");
   });
 
-  it('the vault resource itself declares no inline accessPolicies array', () => {
+  it('the vault resource declares no inline accessPolicies ENTRIES', () => {
     const kv = source('infra/modules/keyvault.bicep');
     const start = kv.indexOf("resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01'");
     const end = kv.indexOf("resource deployerAccess");
     expect(start, 'vault resource not found').toBeGreaterThan(-1);
     expect(end, 'deployer policy resource not found').toBeGreaterThan(start);
-    // Comment lines are stripped before matching: the vault block carries
-    // explanatory comments about the child resource, and the invariant is
-    // about declarations, not prose. An inline `accessPolicies` property still
-    // matches and still fails.
+    // Comment lines are stripped before matching: the invariant is about
+    // declarations, not prose. The Azure RP rejects a fresh-vault PUT that
+    // omits the accessPolicies property entirely ("The parameter
+    // accessPolicies is not specified"), so the module declares an EMPTY
+    // array on create. An empty array replaces nothing — the danger this
+    // invariant guards against is ENTRIES on the inline array, which would
+    // PUT-replace the out-of-band policies the child resource merges.
     const vaultBlock = kv
       .slice(start, end)
       .split('\n')
       .filter((line) => !line.trim().startsWith('//'))
       .join('\n');
-    expect(vaultBlock).not.toMatch(/accessPolicies/);
+    const arrayBodies = vaultBlock.match(/accessPolicies\s*=\s*\[([^\]]*)\]/g) ?? [];
+    for (const body of arrayBodies) {
+      expect(body.replace(/accessPolicies\s*=\s*\[/, '').trim(), 'inline accessPolicies array must be empty; grants go through the child resource').toBe('');
+    }
   });
 
   it('the web pubsub template holds its deny-by-default network ACLs', () => {

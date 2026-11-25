@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import sanitize from 'sanitize-html';
 import { useToast } from '@/hooks/use-toast';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api-client';
 import { usePartyStore } from '@/store/usePartyStore';
@@ -32,6 +31,8 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { Mail, Plus, Loader2 } from 'lucide-react';
+import sanitizeHtml from 'sanitize-html';
+const sanitize = (sanitizeHtml as any).default || sanitizeHtml;
 
 // Strict allowlist sanitizer for template previews. The previous regex-based
 // strip (<script> only) was trivially bypassed with event-handler attributes
@@ -444,5 +445,5 @@ export const TemplateManager: React.FC = () => {
     </PageShell>
   );
 };
-
 export default TemplateManager;
+

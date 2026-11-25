@@ -43,7 +43,7 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL
   || `postgresql://${process.env.USER}@localhost:5432/partyhause_dev?schema=public`;
 process.env.JWT_SECRET = 'e2e-auth-journey-secret-long-enough-for-prod-check';
-// Independent of JWT_SECRET, which server/lib/invitation-token.ts enforces.
+// Independent of JWT_SECRET, which django/invitation-token enforces.
 process.env.INVITATION_TOKEN_SECRET =
   process.env.INVITATION_TOKEN_SECRET
   || 'e2e-auth-journey-invitation-secret-distinct-from-jwt';
@@ -123,8 +123,9 @@ console.log = (...args) => {
   realLog(...args);
 };
 
-await import(new URL('../server/index.ts', import.meta.url).href);
-await new Promise((resolve) => setTimeout(resolve, 1500));
+// The API (Django) is started separately by the operator (npm run dev:all or
+// docker compose), not booted here. This script only makes HTTP requests to it.
+await new Promise((resolve) => setTimeout(resolve, 500));
 
 // ---------------------------------------------------------------------------
 // HTTP helpers

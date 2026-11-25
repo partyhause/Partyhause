@@ -1,0 +1,33 @@
+# Migration runner for Django.
+#
+# WHY THIS IMAGE EXISTS
+#   Migrations were run by hand from a laptop against the production database,
+#   punching permanent firewall holes for one-off tasks. Run from inside Azure
+#   instead: AllowAllAzureServices covers it, and the migration takes the same
+#   network path as the API.
+#
+# WHAT IT RUNS
+#   docker run --rm -e DATABASE_URL=... partyhause-migrate \
+#     python manage.py migrate
+#
+# No CMD that mutates anything by default.
+
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=partyhause.settings
+
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libpq5 openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY django/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY django/ ./django/
+WORKDIR /app/django
+
+CMD ["python", "-e", "print('Supply a command: python manage.py migrate')"]

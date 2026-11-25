@@ -73,8 +73,8 @@ const LANDING_ARCHETYPES = [
 ];
 
 export interface LandingScreenProps {
-  onGetStarted: () => void;
-  onSignIn: () => void;
+  onGetStarted: (intent: 'create_event') => void;
+  onSignIn: (intent: 'join_event') => void;
 }
 
 const SECTION_HEADING = {
@@ -102,7 +102,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
 
           <View style={styles.heroContentWrap}>
             <View style={styles.heroIconWrap}>
-              <Image source={require('../../assets/images/icon.png')} style={styles.heroIcon} resizeMode="contain" />
+              <Image source={require('../../assets/images/logo-pastel-house.png')} style={styles.heroIcon} resizeMode="contain" />
             </View>
             <Text style={styles.heroBadge}>PLAN. PARTY. PERFECT.</Text>
             <Text style={styles.heroTitle}>
@@ -113,10 +113,10 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
               Guest list, invites, RSVPs, running order and who owes what. PartyHause keeps all of it in one place so the night belongs to you too.
             </Text>
             <View style={styles.heroActions}>
-              <TouchableOpacity style={styles.primaryButton} onPress={onGetStarted}>
+              <TouchableOpacity style={styles.primaryButton} onPress={() => onGetStarted('create_event')}>
                 <Text style={styles.primaryButtonText}>Create your event</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton} onPress={onSignIn}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => onSignIn('join_event')}>
                 <Text style={styles.secondaryButtonText}>I have an invite</Text>
               </TouchableOpacity>
             </View>
@@ -186,7 +186,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
             <Text style={styles.ctaIcon}>🎉</Text>
           </View>
           <Text style={styles.ctaTitle}>Ready to throw something unforgettable?</Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={onGetStarted}>
+          <TouchableOpacity style={styles.ctaButton} onPress={() => onGetStarted('create_event')}>
             <Text style={styles.ctaButtonText}>Start your event</Text>
           </TouchableOpacity>
         </View>

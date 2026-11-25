@@ -1,6 +1,7 @@
 node_modules
 **/node_modules
 dist
+!dist
 dev-dist
 .git
 .github
@@ -21,6 +22,7 @@ packages/core/dist
 bun.lockb
 netlify
 LICENSE
+
 # `scripts` was excluded here. Dockerfile.migrate copies it, because
 # enroll-production-migrations.cjs and production-migration-preflight.cjs are
 # the production path for adopting the migration history, and an excluded
