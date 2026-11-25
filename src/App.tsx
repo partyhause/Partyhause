@@ -27,7 +27,6 @@ const GuestViewRoute = () => {
   return <GuestView guestId={guestId ?? ''} />;
 };
 
-const TemplateManager = lazy(() => import("@/components/TemplateManager"));
 const JoinEventPage = lazy(() => import("@/components/JoinEventPage").then(m => ({ default: m.JoinEventPage })));
 const RoleSelection = lazy(() => import("@/components/RoleSelection").then(m => ({ default: m.RoleSelection })));
 const Logout = lazy(() => import("@/components/Logout"));
@@ -35,7 +34,10 @@ const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
 const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const EventTemplatesPage = lazy(() => import("@/pages/EventTemplatesPage"));
+const InviteTemplatesPage = lazy(() => import("@/pages/InviteTemplatesPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const AIPlannerChat = lazy(() => import("@/pages/AIPlannerChat"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
 const VerifyEmailPage = lazy(() => import("@/pages/VerifyEmailPage"));
@@ -83,7 +85,9 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.SETTINGS} element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PRIVACY_SETTINGS} element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
-                <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><TemplateManager /></ProtectedRoute>} />
+                <Route path={ROUTES.EVENT_TEMPLATES} element={<ProtectedRoute><EventTemplatesPage /></ProtectedRoute>} />
+                <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
+                <Route path={ROUTES.INVITE_TEMPLATES} element={<ProtectedRoute><InviteTemplatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
                 <Route path={ROUTES.EXPLORE} element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />

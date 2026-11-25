@@ -1,15 +1,36 @@
-from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth.models import AnonymousUser
-from django.http import JsonResponse
 import jwt
 from django.conf import settings
 from accounts.models import User
+import logging
+logger = logging.getLogger(__name__)
 
 
-class JWTAuthenticationMiddleware(MiddlewareMixin):
+class CsrfExemptMiddleware:
     """
-    Parse the HS256 JWT from the Authorization header and attach the user to
-    the request, mirroring the Express auth middleware contract:
+    Exempt /api/* from CSRF. This is a JWT-based API: the bearer token IS the
+    credential, and session cookies are only a fallback transport. Requiring
+    a CSRF cookie breaks stateless API clients and mobile.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith('/api/'):
+            request._dont_enforce_csrf_checks = True
+        return self.get_response(request)
+from django.contrib.auth.models import AnonymousUser
+import jwt
+from django.conf import settings
+from accounts.models import User
+import logging
+logger = logging.getLogger(__name__)
+
+
+def _set_user_from_token(request):
+    """Parse the HS256 JWT from the Authorization header and attach the user
+    to the request, mirroring the Express auth middleware contract:
 
     - valid token                   -> request.user set, proceed
     - missing/invalid/expired token -> request.user stays AnonymousUser
@@ -19,40 +40,67 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
     returns 401/403 as appropriate. This middleware only maps the bearer token
     to a Django user so DRF views and `request.user.is_authenticated` work.
     """
-
-    def process_request(self, request):
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not auth_header.startswith('Bearer '):
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    logger.debug(f'JWT middleware: auth_header present={bool(auth_header)}')
+    if not auth_header.startswith('Bearer '):
+        # Fall back to token stored in Django session (set at login/signup)
+        token = request.session.get('auth_token')
+        if token:
+            logger.debug('JWT middleware: no Bearer header, using session token')
+            auth_header = f'Bearer {token}'
+        else:
             request.user = AnonymousUser()
-            return None
+            logger.debug('JWT middleware: no Bearer header or session token, set AnonymousUser')
+            return
 
-        token = auth_header.split(' ', 1)[1]
-        try:
-            payload = jwt.decode(
-                token,
-                settings.SECRET_KEY,
-                algorithms=['HS256'],
-            )
-        except jwt.ExpiredSignatureError:
-            request.user = AnonymousUser()
-            return None
-        except jwt.InvalidTokenError:
-            request.user = AnonymousUser()
-            return None
+    token = auth_header.split(' ', 1)[1]
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=['HS256'],
+        )
+    except jwt.ExpiredSignatureError as e:
+        logger.debug(f'JWT middleware: expired token: {e}')
+        request.user = AnonymousUser()
+        return
+    except jwt.InvalidTokenError as e:
+        logger.debug(f'JWT middleware: invalid token: {e}')
+        request.user = AnonymousUser()
+        return
 
-        user_id = payload.get('sub')
-        if not user_id:
-            request.user = AnonymousUser()
-            return None
+    user_id = payload.get('sub')
+    if not user_id:
+        request.user = AnonymousUser()
+        logger.debug('JWT middleware: no sub in payload')
+        return
 
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            request.user = AnonymousUser()
-            return None
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        request.user = AnonymousUser()
+        logger.debug(f'JWT middleware: user {user_id} not found')
+        return
 
-        request.user = user
-        return None
+    request.user = user
+    logger.debug(f'JWT middleware: set user {user.id} ({user.email})')
+
+
+class JWTAuthenticationMiddleware:
+    """
+    Uses __call__ style so it runs AFTER django's AuthenticationMiddleware
+    (which is also __call__ style). This lets us override request.user with
+    the JWT-decoded user rather than having AuthenticationMiddleware wipe us
+    back to AnonymousUser.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        _set_user_from_token(request)
+        response = self.get_response(request)
+        return response
 
 
 class EventPermissionMiddleware:

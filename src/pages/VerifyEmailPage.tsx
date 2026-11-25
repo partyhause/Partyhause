@@ -9,6 +9,7 @@ import { CheckCircle2, XCircle, Loader2, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { authService } from '@/lib/auth';
+import { ROUTES } from '@/routes';
 
 type VerifyState =
   | { phase: 'verifying' }
@@ -39,6 +40,10 @@ export default function VerifyEmailPage() {
     authService.verifyEmail(email, token).then((result) => {
       if (result.success) {
         setState({ phase: 'success', message: result.message ?? 'Email verified successfully' });
+        // Session cookie is set by the server; navigate to sign-in page so the
+        // user authenticates with their own credentials. No token is handed
+        // out in the body, so the link itself never exposes a bearer token.
+        setTimeout(() => navigate(ROUTES.AUTH), 1200);
       } else {
         setState({ phase: 'error', message: result.error ?? 'Verification failed' });
       }

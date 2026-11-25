@@ -21,8 +21,9 @@ set -u
 
 LOG_FILE="${API_LOG_FILE:-/tmp/ph-api.log}"
 
+cd /app/django
+
 # ---- API sidecar -----------------------------------------------------------
-# gunicorn runs the Django WSGI app on localhost:8001.
 gunicorn partyhause.wsgi:application \
   --bind 127.0.0.1:8001 --workers 2 --threads 4 --timeout 120 \
   >"$LOG_FILE" 2>&1 &

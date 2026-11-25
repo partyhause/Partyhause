@@ -11,8 +11,8 @@
 //   - Combined Container App (nginx PWA + Django API sidecar, one origin)
 //
 // Auth (Microsoft Entra External ID / Azure AD B2C) is configured out-of-band at
-// the tenant level — see MIGRATION_STATUS.md. The API container receives the
-// B2C tenant/client/audience ids as env vars to validate JWTs.
+// the tenant level. The API container receives the B2C tenant/client/audience
+// ids as env vars to validate JWTs.
 
 targetScope = 'subscription'
 

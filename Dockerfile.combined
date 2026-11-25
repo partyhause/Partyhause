@@ -1,18 +1,26 @@
-FROM node:24-slim AS webbuilder
+# --- Build stage: web (identical to Dockerfile's builder) ---
+FROM node:22.22.0-slim AS webbuilder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-# --legacy-peer-deps is required, not defensive. The lockfile is written with
-# that flag; bare `npm ci` rejects it with a picomatch conflict.
-RUN npm ci --legacy-peer-deps
+# --legacy-peer-deps is required, not defensive. The lockfile is written by a
+# resolver running with that flag, and bare `npm install` recomputes an ideal
+# tree that disagrees with it, then refuses to install. See Dockerfile for the
+# full note; the guard lives in src/test/install-paths.test.ts.
+RUN npm install --legacy-peer-deps --legacy-workspace-protocols
 
 COPY . .
 
 # Build the shared core package first (required by src/lib/api-client.ts)
 RUN npm run build --workspace=packages/core
 
-# Vite inlines VITE_* env vars at BUILD time. VITE_API_URL left EMPTY: nginx
-# proxies /api/* to the Django sidecar over localhost, same-origin.
+# Vite inlines VITE_* env vars at BUILD time, so they must be supplied as
+# build args here (not runtime env vars). For the combined image VITE_API_URL
+# is normally left EMPTY: nginx proxies /api/* to the API sidecar over
+# localhost, so the browser sends same-origin relative requests and no CORS
+# configuration is consulted at all (src/lib/apiBase.ts:9-12 documents the
+# empty-base contract). Set VITE_API_URL only when pointing the bundle at a
+# remote API.
 ARG VITE_API_URL
 ARG VITE_APP_NAME=PartyHause
 ARG VITE_APP_URL
@@ -32,40 +40,105 @@ RUN sed -i '/"extends": "expo/d' tsconfig.json || true
 # Build the Vite PWA
 RUN npm run build:web
 
-# --- Runtime stage: nginx front door + Django API sidecar ---
-FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DJANGO_SETTINGS_MODULE=partyhause.settings
-
+# --- Build stage: API runtime (identical to Dockerfile.api's runtime) ---
+FROM node:22.22.0-slim AS apibuilder
 WORKDIR /app
 
-# nginx + tini (PID 1 reaps sidecar, forwards signals), openssl + ca-certs
-# for sslmode=require against PostgreSQL, curl for the entrypoint readiness gate.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends nginx tini curl openssl ca-certificates \
+# See Dockerfile: the lockfile is written with --legacy-peer-deps and bare
+# `npm install` rejects it with a picomatch conflict that looks like corruption.
+# Both stages of this image need the flag.
+COPY package.json package-lock.json ./
+RUN npm install --legacy-peer-deps --legacy-workspace-protocols
+
+COPY . .
+
+# Build the shared core package (required by server routes)
+RUN npm run build --workspace=packages/core
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# --- Runtime stage: nginx front door + Express API sidecar ---
+# One container serves frontend and backend on one origin. nginx owns port 80
+# (the Container App ingress targetPort) and serves the static bundle with the
+# full cache policy in nginx.conf, unchanged. It also proxies /api/* to the
+# Express process listening on localhost:3001 in the same network namespace,
+# so the browser never makes a cross-origin request and CORS_ALLOWED_ORIGINS
+# stops mattering for the web app entirely.
+#
+# The prior topology was two Container Apps joined only by a VITE_API_URL baked
+# into the bundle plus a CORS allowlist; one deploy moved the API and every
+# client had to be rebuilt to follow it. Here one revision update moves both.
+FROM node:22.22.0-slim
+WORKDIR /app
+
+# nginx, tini (PID 1 reaps the sidecar and forwards signals), and OpenSSL plus
+# ca-certificates for sslmode=require against Azure PostgreSQL. tini is in the
+# Debian repos; Alpine's nginx would need a different package set, and the API
+# runtime above is already node:22-slim.
+#
+# Pipeline-Depth 0: apt's default pipelining against deb.debian.org (a Fastly
+# CDN) intermittently corrupts fetched .debs here — the file size matches the
+# manifest but the SHA256 does not, on a different package each run, and the
+# build dies with "Hash Sum mismatch". Standalone `apt-get download` of the
+# same package is byte-identical every time; the fault only appears when many
+# requests share a connection. Disabling pipelining forces one request per
+# file and the install passes. No-Cache stops apt reusing a corrupted response
+# that a retry would otherwise hit.
+RUN echo 'Acquire::http::Pipeline-Depth "0"; Acquire::http::No-Cache true;' \
+      > /etc/apt/apt.conf.d/99nocache \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends nginx tini openssl ca-certificates curl python3 python3-pip python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
-COPY django/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# tsx runs the TypeScript server directly (package.json "server" script does
+# the same); it is a devDependency, so --omit=dev drops it and the runtime
+# image must install it itself. Dockerfile.api carries the same line.
+RUN npm install -g tsx@4.22.4
 
+# Copy Node server code (TypeScript routes + lib + middleware)
+COPY server/ ./server/
+
+# Copy Prisma schema and generated client
+COPY prisma/ ./prisma/
+COPY prisma.config.ts ./
+COPY --from=apibuilder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=apibuilder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy built shared core package (required by server routes)
+COPY --from=apibuilder /app/packages/core ./packages/core
+
+# Create symlink for workspace package resolution
+RUN mkdir -p node_modules/@partyhause && ln -sf ../../packages/core node_modules/@partyhause/core
+
+# Copy template data (used by seed and event-templates route)
+COPY server/data/ ./server/data/
+
+# ===== Python / Django API sidecar =====
+# entrypoint.sh runs `cd /app/django && gunicorn partyhause.wsgi:application`
+# on :8001; nginx proxies /api/* to it. Install Python, Django deps, and copy
+# the Django project into the runtime image so /api/* has an upstream.
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY django/requirements.txt ./django/requirements.txt
+RUN pip install --no-cache-dir -r django/requirements.txt
 COPY django/ ./django/
-WORKDIR /app/django
 
-# Collect static once so whitenoise/gunicorn serve without FS hits at runtime.
-RUN python manage.py collectstatic --noinput 2>/dev/null || true
-
-WORKDIR /app
+# Entrypoint that starts the API sidecar and supervises nginx
+COPY docker/entrypoint.sh docker/entrypoint.sh
 
 # Static bundle from the web builder
 COPY --from=webbuilder /app/dist /usr/share/nginx/html
 
-# Full cache policy plus the /api proxy to the Django sidecar on localhost:8001.
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Full cache policy plus the /api proxy. See nginx.conf for the reasoning.
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Debian's nginx ships sites-enabled/default (demo server block, default_server
-# on port 80). It wins over conf.d, so remove it.
+# Debian's nginx ships sites-enabled/default, a demo server block carrying
+# `default_server` on port 80 and `server_name _`. It wins over the conf.d
+# server (nginx logs "conflicting server name" and ignores ours), so every
+# request is answered from /var/www/html with the distro's default page and
+# none of the cache policy applies. The Alpine base of Dockerfile had no
+# such file, which is why this only bites the combined image.
 RUN rm -f /etc/nginx/sites-enabled/default
 
 # Fail the build rather than ship a container that will not start.
@@ -73,10 +146,8 @@ RUN nginx -t
 
 EXPOSE 80
 
-# Entrypoint starts the Django sidecar, waits for /api/health, then runs nginx.
-COPY docker/entrypoint.sh docker/entrypoint.sh
-RUN chmod +x docker/entrypoint.sh
-
-# tini is PID 1: reaps the sidecar, forwards SIGTERM to both processes.
+# tini is PID 1: it runs nginx in the foreground and reaps the node sidecar,
+# so a crashed API does not leave a zombie and SIGTERM reaches both processes.
+# The sidecar itself is started by docker/entrypoint.sh alongside nginx.
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["docker/entrypoint.sh"]

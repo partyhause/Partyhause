@@ -49,7 +49,7 @@ export const eventService = {
   // Update an event
   updateEvent: async (id: string, updates: Partial<Event>): Promise<Event | null> => {
     try {
-      const { data, error } = await apiPut<{ event?: any; success?: boolean }>(`/api/events/${id}`, updates);
+      const { data, error } = await apiPut<{ event?: any; success?: boolean }>(`/api/events/${id}/update/`, updates);
       if (error) throw error;
       const updated = data?.event;
       return updated ? normalizeEvent(updated) : null;

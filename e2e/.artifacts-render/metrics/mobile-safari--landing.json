@@ -1,0 +1,36 @@
+{
+  "engine": "mobile-safari",
+  "surface": "landing",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedAssets": [],
+  "documentWidth": 390,
+  "viewportWidth": 390,
+  "bodyHeight": 857,
+  "overflowingElements": [],
+  "landmarks": {
+    "h1": {
+      "x": 98,
+      "y": 128,
+      "width": 195,
+      "height": 40
+    },
+    "button": {
+      "x": 24,
+      "y": 64,
+      "width": 141,
+      "height": 40
+    }
+  },
+  "cssSupport": {
+    "flex gap": true,
+    "grid gap": true,
+    "aspect-ratio": true,
+    "backdrop-filter": true,
+    ":has()": true,
+    "inset shorthand": true,
+    "color-mix": true,
+    "dvh unit": true,
+    "text-wrap balance": true
+  }
+}

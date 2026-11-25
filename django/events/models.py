@@ -1,11 +1,11 @@
 import uuid
 from django.db import models
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.utils import timezone
 
 class Event(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_events', db_column='host_id')
+    host = models.ForeignKey(django_settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_events', db_column='host_id')
     name = models.CharField(max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -35,6 +35,15 @@ class Event(models.Model):
     external_event_id = models.CharField(max_length=255, blank=True, null=True)
     external_source = models.CharField(max_length=100, blank=True, null=True)
     external_metadata = models.JSONField(blank=True, null=True)
+    # The user who imported this external event (null for natively created events).
+    imported_by = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='imported_events',
+        db_column='imported_by_id',
+        null=True,
+        blank=True,
+    )
     place_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -45,8 +54,15 @@ class Event(models.Model):
             models.Index(fields=['host']),
             models.Index(fields=['status']),
             models.Index(fields=['start_date', 'end_date']),
+            models.Index(fields=['imported_by']),
         ]
-
+        constraints = [
+            models.UniqueConstraint(
+                fields=['imported_by', 'external_source', 'external_event_id'],
+                name='unique_external_event_per_user',
+                condition=models.Q(imported_by__isnull=False),
+            )
+        ]
     def publish(self):
         if not self.name or not self.start_date or not self.location:
             raise ValueError("Event name, start date, and location are required for publishing")
@@ -88,7 +104,7 @@ class Event(models.Model):
 class EventCoHost(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='co_hosts', db_column='event_id')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='co_hosted_events', db_column='user_id')
+    user = models.ForeignKey(django_settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='co_hosted_events', db_column='user_id')
     role = models.CharField(max_length=50, default='co-host')
     permissions = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
