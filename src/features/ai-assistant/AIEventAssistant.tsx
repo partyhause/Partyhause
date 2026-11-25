@@ -6,7 +6,7 @@ import { PastelCard } from '@/components/ui/PastelCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Sparkles, 
   Send, 
