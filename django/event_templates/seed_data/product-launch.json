@@ -1,0 +1,19 @@
+{
+  "name": "Product Launch",
+  "slug": "product-launch",
+  "description": "Unveil your new product with a professional launch event.",
+  "category": "product-launch",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "product-launch",
+    "includes_demo": true,
+    "includes_press": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

@@ -4,10 +4,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 # --legacy-peer-deps is required, not defensive. The lockfile is written by a
-# resolver running with that flag, and bare `npm ci` recomputes an ideal tree
-# that disagrees with it, then refuses to install. See Dockerfile for the full
-# note; the guard lives in src/test/install-paths.test.ts.
-RUN npm ci --legacy-peer-deps
+# resolver running with that flag, and bare `npm install` recomputes an ideal
+# tree that disagrees with it, then refuses to install. See Dockerfile for the
+# full note; the guard lives in src/test/install-paths.test.ts.
+RUN npm install --legacy-peer-deps --legacy-workspace-protocols
 
 COPY . .
 
@@ -45,10 +45,10 @@ FROM node:22.22.0-slim AS apibuilder
 WORKDIR /app
 
 # See Dockerfile: the lockfile is written with --legacy-peer-deps and bare
-# `npm ci` rejects it with a picomatch conflict that looks like corruption.
+# `npm install` rejects it with a picomatch conflict that looks like corruption.
 # Both stages of this image need the flag.
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps --legacy-workspace-protocols
 
 COPY . .
 
@@ -88,7 +88,7 @@ WORKDIR /app
 RUN echo 'Acquire::http::Pipeline-Depth "0"; Acquire::http::No-Cache true;' \
       > /etc/apt/apt.conf.d/99nocache \
   && apt-get update \
-  && apt-get install -y --no-install-recommends nginx tini openssl ca-certificates curl \
+  && apt-get install -y --no-install-recommends nginx tini openssl ca-certificates curl python3 python3-pip python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 # tsx runs the TypeScript server directly (package.json "server" script does
@@ -96,10 +96,7 @@ RUN echo 'Acquire::http::Pipeline-Depth "0"; Acquire::http::No-Cache true;' \
 # image must install it itself. Dockerfile.api carries the same line.
 RUN npm install -g tsx@4.22.4
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --legacy-peer-deps
-
-# Copy server code (TypeScript routes + lib + middleware)
+# Copy Node server code (TypeScript routes + lib + middleware)
 COPY server/ ./server/
 
 # Copy Prisma schema and generated client
@@ -117,6 +114,16 @@ RUN mkdir -p node_modules/@partyhause && ln -sf ../../packages/core node_modules
 # Copy template data (used by seed and event-templates route)
 COPY server/data/ ./server/data/
 
+# ===== Python / Django API sidecar =====
+# entrypoint.sh runs `cd /app/django && gunicorn partyhause.wsgi:application`
+# on :8001; nginx proxies /api/* to it. Install Python, Django deps, and copy
+# the Django project into the runtime image so /api/* has an upstream.
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY django/requirements.txt ./django/requirements.txt
+RUN pip install --no-cache-dir -r django/requirements.txt
+COPY django/ ./django/
+
 # Entrypoint that starts the API sidecar and supervises nginx
 COPY docker/entrypoint.sh docker/entrypoint.sh
 
@@ -124,7 +131,7 @@ COPY docker/entrypoint.sh docker/entrypoint.sh
 COPY --from=webbuilder /app/dist /usr/share/nginx/html
 
 # Full cache policy plus the /api proxy. See nginx.conf for the reasoning.
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Debian's nginx ships sites-enabled/default, a demo server block carrying
 # `default_server` on port 80 and `server_name _`. It wins over the conf.d

@@ -12,7 +12,8 @@ import { LandingScreen } from "@/components/screens/LandingScreen";
 type AppMode = "landing" | "loading" | "auth" | "username_picker" | "dashboard";
 
 export default function HomeScreen() {
-  const [appMode, setAppMode] = useState<AppMode>("landing");
+  const [appMode, setAppMode] = useState<AppMode>("loading");
+  const [authIntent, setAuthIntent] = useState<'create_event' | 'join_event' | 'explore_features' | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
@@ -79,22 +80,12 @@ export default function HomeScreen() {
   );
 
   const handleSignOut = async () => {
-    // Clears the local session even if the network call fails, so a user can
-    // always sign out while offline.
-    await api.auth.signOut();
-    setUserId(null);
-    setUserEmail(null);
-    setAppMode("landing");
+    void (async () => {
+      await api.auth.signOut();
+    })();
+    setAppMode("auth");
   };
 
-  if (appMode === "landing") {
-    return (
-      <LandingScreen
-        onGetStarted={() => { setAppMode("loading"); void checkAuth(); }}
-        onSignIn={() => { setAppMode("auth"); }}
-      />
-    );
-  }
 
   if (appMode === "loading") {
     return (
@@ -105,16 +96,7 @@ export default function HomeScreen() {
   }
 
   if (appMode === "auth") {
-    return (
-      <AuthScreen
-        onBackToLanding={() => setAppMode("landing")}
-        // Re-running checkAuth rather than setting the mode directly: the
-        // dashboard renders `userId!`, and the previous handler switched mode
-        // without ever populating userId or userEmail, so it would have passed
-        // null into a non-null assertion.
-        onAuthSuccess={() => { void checkAuth(); }}
-      />
-    );
+    return <Redirect href="/(auth)/landing" />;
   }
 
   if (appMode === "username_picker" && onboarding) {

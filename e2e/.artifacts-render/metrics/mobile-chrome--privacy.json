@@ -1,0 +1,54 @@
+{
+  "engine": "mobile-chrome",
+  "surface": "privacy",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedAssets": [],
+  "documentWidth": 412,
+  "viewportWidth": 412,
+  "bodyHeight": 5864,
+  "overflowingElements": [],
+  "landmarks": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 412,
+      "height": 228
+    },
+    "main": {
+      "x": 0,
+      "y": 228,
+      "width": 412,
+      "height": 5534
+    },
+    "footer": {
+      "x": 0,
+      "y": 5763,
+      "width": 412,
+      "height": 102
+    },
+    "nav": {
+      "x": 24,
+      "y": 5800,
+      "width": 364,
+      "height": 24
+    },
+    "h1": {
+      "x": 24,
+      "y": 85,
+      "width": 364,
+      "height": 37
+    }
+  },
+  "cssSupport": {
+    "flex gap": true,
+    "grid gap": true,
+    "aspect-ratio": true,
+    "backdrop-filter": true,
+    ":has()": true,
+    "inset shorthand": true,
+    "color-mix": true,
+    "dvh unit": true,
+    "text-wrap balance": true
+  }
+}

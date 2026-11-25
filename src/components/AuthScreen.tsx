@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { usePartyStore } from '@/store/usePartyStore';
 import { BrandMark } from '@/components/BrandMark';
@@ -44,8 +45,14 @@ export const AuthScreen = ({
   // Add conditional motion component logic for better compatibility
   const MotionDiv = process.env.NODE_ENV === 'test' ? 'div' : motion.div;
   const MotionH1 = process.env.NODE_ENV === 'test' ? 'h1' : motion.h1;
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<'landing' | 'auth'>(initialMode);
-    const [isLogin, setIsLogin] = useState(true);
+  const [intent, setIntent] = useState<'create_event' | 'join_event' | 'explore_features'>(() => {
+    const param = searchParams.get('intent') as 'create_event' | 'join_event' | 'explore_features' | null;
+    if (param) return param;
+    return userIntent ?? 'explore_features';
+  });
+  const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -164,10 +171,11 @@ export const AuthScreen = ({
             privacyVersion: CURRENT_PRIVACY_VERSION,
           });
           if (error) throw error;
-          if (user) {
-            alert('Please check your email to confirm your account!');
-            setIsLogin(true);
-          }
+          // Success: show verification message and switch to login
+          alert('Please check your email to confirm your account!');
+          setIsLogin(true);
+          setName('');
+
         }
       } catch (error: unknown) {
         alert(error instanceof Error ? error.message : 'An error occurred during authentication');
@@ -234,7 +242,7 @@ export const AuthScreen = ({
     };
 
     const getWelcomeMessage = () => {
-      switch (userIntent) {
+      switch (intent) {
         case 'create_event':
           return {
             title: isLogin ? "Ready to Create Something Amazing?" : "Join the Party Creators",
@@ -243,15 +251,15 @@ export const AuthScreen = ({
           };
         case 'join_event':
           return {
-            title: isLogin ? "Welcome Back!" : "You're Invited to Join!",
-            subtitle: isLogin ? "Sign in to access your events" : "Create your account to RSVP and connect",
-            benefits: ["RSVP to events", "Play interactive games", "Share and create memories"]
+            title: isLogin ? "Ready to Join the Party?" : "Join an Event",
+            subtitle: isLogin ? "Sign in to view your invitations" : "Create an account to respond to invites",
+            benefits: ["Instant event access", "RSVP management", "Guest list updates"]
           };
-        default:
+        case 'explore_features':
           return {
-            title: isLogin ? "Welcome to PartyHause" : "Join the PartyHause Family",
-            subtitle: isLogin ? "Sign in to continue your journey" : "Create your account to get started",
-            benefits: ["Smart event planning", "Social gaming platform", "Lasting connections"]
+            title: isLogin ? "Welcome Back!" : "Discover PartyHause",
+            subtitle: isLogin ? "Sign in to explore all features" : "Sign in or create an account to get started",
+            benefits: ["Event discovery", "Community features", "Premium tools"]
           };
       }
     };

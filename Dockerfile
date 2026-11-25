@@ -1,5 +1,4 @@
-# --- Build stage ---
-FROM node:22.22.0-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./

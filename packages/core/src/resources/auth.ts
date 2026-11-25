@@ -101,7 +101,7 @@ async function clearPersistedSession(transport: Transport): Promise<void> {
 export function createAuthResource(transport: Transport): AuthResource {
   return {
     async signIn(email, password) {
-      const result = await transport.request<AuthSession>('/api/auth/login', {
+      const result = await transport.request<AuthSession>('/api/accounts/login', {
         method: 'POST',
         body: { email, password },
         anonymous: true,
@@ -121,7 +121,7 @@ export function createAuthResource(transport: Transport): AuthResource {
       // and the server re-checks it resolves to exactly that address, which is
       // the same evidence a confirmation link supplies. The token is only
       // persisted when the server actually returned one.
-      const result = await transport.request<SignUpResult>('/api/auth/signup', {
+      const result = await transport.request<SignUpResult>('/api/accounts/signup', {
         method: 'POST',
         body: {
           email,
@@ -143,7 +143,7 @@ export function createAuthResource(transport: Transport): AuthResource {
     async resendVerification(email) {
       // Anonymous: a user who cannot sign in still needs to reach this.
       return transport.request<{ success: boolean; message: string }>(
-        '/api/auth/resend-verification',
+        '/api/accounts/resend-verification',
         { method: 'POST', body: { email }, anonymous: true },
       );
     },
@@ -152,7 +152,7 @@ export function createAuthResource(transport: Transport): AuthResource {
       // Give the server the current bearer token before removing it locally so
       // logout can increment the account's token epoch and revoke every device.
       try {
-        await transport.request('/api/auth/logout', { method: 'POST' });
+        await transport.request('/api/accounts/logout', { method: 'POST' });
       } finally {
         await clearPersistedSession(transport);
       }
@@ -172,11 +172,11 @@ export function createAuthResource(transport: Transport): AuthResource {
     },
 
     me() {
-      return transport.request<CurrentUser>('/api/auth/me', { method: 'GET' });
+      return transport.request<CurrentUser>('/api/accounts/me', { method: 'GET' });
     },
 
     forgotPassword(email) {
-      return transport.request<{ success: boolean; message: string }>('/api/auth/forgot-password', {
+      return transport.request<{ success: boolean; message: string }>('/api/accounts/forgot-password', {
         method: 'POST',
         body: { email },
         anonymous: true,
@@ -184,7 +184,7 @@ export function createAuthResource(transport: Transport): AuthResource {
     },
 
     resetPassword(email, token, password) {
-      return transport.request<{ success: boolean; message: string }>('/api/auth/reset-password', {
+      return transport.request<{ success: boolean; message: string }>('/api/accounts/reset-password', {
         method: 'POST',
         body: { email, token, password },
         anonymous: true,
@@ -192,7 +192,7 @@ export function createAuthResource(transport: Transport): AuthResource {
     },
 
     verifyEmail(email, token) {
-      return transport.request<{ success: boolean; message: string }>('/api/auth/verify-email', {
+      return transport.request<{ success: boolean; message: string }>('/api/accounts/verify-email', {
         method: 'POST',
         body: { email, token },
         anonymous: true,

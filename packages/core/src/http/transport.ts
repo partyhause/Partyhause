@@ -27,7 +27,7 @@ export interface ApiError {
   /**
    * Machine-readable error code, when the route sends one.
    *
-   * Only `POST /api/auth/login` sets one today: `EMAIL_NOT_VERIFIED`, on a 403
+   * Only `POST /api/accounts/login` sets one today: `EMAIL_NOT_VERIFIED`, on a 403
    * that is deliberately distinct from the 401 for bad credentials. The
    * distinction matters because the two need opposite remedies, a resend
    * versus a reset, and the client cannot tell them apart from the message
@@ -106,7 +106,17 @@ function buildUrl(
   path: string,
   query?: RequestOptions['query'],
 ): string {
-  const normalisedPath = path.startsWith('/') ? path : `/${path}`;
+  let normalisedPath = path.startsWith('/') ? path : `/${path}`;
+  // Separate any pre-existing query string so the trailing slash only
+  // lands on the path portion (e.g. /api/auth/login/, not ?eventId=xxx/).
+  let [pathPart, ...qsParts] = normalisedPath.split('?');
+  // All Django URL patterns expect a trailing slash (e.g. /api/auth/login/).
+  // APPEND_SLASH=True raises RuntimeError on POST to a non-slash URL instead
+  // of redirecting, so append one here.
+  if (pathPart.length > 1 && !pathPart.endsWith('/')) {
+    pathPart += '/';
+  }
+  normalisedPath = [pathPart, ...qsParts].join('?');
   const url = `${baseUrl.replace(/\/+$/, '')}${normalisedPath}`;
   if (!query) return url;
   const params = new URLSearchParams();

@@ -82,7 +82,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.API_TARGET || 'http://localhost:3001',
+        target: process.env.VITE_API_PROXY_TARGET || process.env.API_TARGET || 'http://localhost:8001',
         changeOrigin: true,
         configure: (proxy, _options) => {
           // Return JSON (not HTML) when the local API server is unreachable.

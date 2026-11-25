@@ -1,0 +1,101 @@
+# PartyHause full local dev stack: Postgres + Mailpit + Django API + Vite web.
+#
+#   docker compose up --build        (everything: API + web + db + mailpit)
+#   docker compose up --build web    (web only, needs db already running)
+#
+# Services:
+#   db        PostgreSQL 15, host port 5434 (avoids local Postgres on 5432)
+#   mailpit   SMTP :1026, UI :8026  (host 8026 to avoid clash with local Mailpit)
+#   django    Django API on :8001   (auth, events, guests, partyboard, etc.)
+#   web       nginx serving pre-built Vite PWA on :5174, proxies /api -> django:8001
+#
+# Every service has a healthcheck and restart=unless-stopped so a crashed
+# container is detected and restarted automatically.
+
+services:
+  partyhause-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: partyhause
+      POSTGRES_PASSWORD: partyhause
+      POSTGRES_DB: partyhause
+    ports:
+      - "5434:5432"
+    volumes:
+      - partyhause-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U partyhause -d partyhause"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  partyhause-mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1026:1025"
+      - "8026:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8025/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  partyhause-django:
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.api
+    ports:
+      - "8001:8001"
+    environment:
+      DJANGO_SETTINGS_MODULE: partyhause.settings
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql://partyhause:partyhause@partyhause-db:5432/partyhause
+      SECRET_KEY: django-insecure-jidxkb_uou^v=*y26$$zha_-=rtg0d9!n9cd5)-_wxg$$3!8ze^$$
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,partyhause-django"
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY}
+      # Email: Azure Communication Services (primary) + Resend fallback.
+      # When ACS_CONNECTION_STRING + ACS_SENDER_ADDRESS are unset, the Django
+      # settings fall back to the local Mailpit catcher (no real delivery).
+      ACS_CONNECTION_STRING: ${ACS_CONNECTION_STRING}
+      ACS_SENDER_ADDRESS: ${ACS_SENDER_ADDRESS}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      # Publicly reachable frontend URL for links in email
+      # (verification, password reset, invitations).
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    depends_on:
+      partyhause-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8001/api/health/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  partyhause-web:
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.dev
+    ports:
+      - "5174:80"
+    environment:
+      VITE_API_PROXY_TARGET: http://partyhause-django:8001
+    depends_on:
+      partyhause-django:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  partyhause-db-data:

@@ -50,11 +50,11 @@ export const IdeaSticky: React.FC<IdeaStickyProps> = ({
 
   const style = {
     position: 'absolute' as const,
-    left: `${sticky.position.x}px`,
-    top: `${sticky.position.y}px`,
-    width: `${sticky.size.width}px`,
-    height: `${sticky.size.height}px`,
-    transform: CSS.Translate.toString(transform),
+    left: `${sticky.position?.x ?? 100}px`,
+    top: `${sticky.position?.y ?? 100}px`,
+    width: `${sticky.size?.width ?? 200}px`,
+    height: `${sticky.size?.height ?? 200}px`,
+    transform: transform ? CSS.Translate.toString(transform) : '',
     zIndex: isDragging ? 1000 : sticky.z_index || 1,
     opacity: isDragging ? 0.5 : 1,
   };

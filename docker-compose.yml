@@ -1,72 +1,104 @@
-# PartyHause local dev stack: Postgres + Mailpit + API + web.
+# PartyHause full local dev stack: Postgres + Mailpit + Django API + Vite web.
 #
-#   docker compose up --build
+#   docker compose up --build        (everything: API + web + db + mailpit)
+#   docker compose up --build web    (web only, needs db already running)
 #
-#   web      http://localhost:5173   (proxies /api to the api service)
-#   api      http://localhost:3001/api/health
-#   mail UI  http://localhost:8025   (Mailpit; every dev email lands here)
-#   db       localhost:5433          (host 5433, so it cannot clash with a local
-#                                    Postgres already on 5432)
+# Services:
+#   db        PostgreSQL 15, host port 5434 (avoids local Postgres on 5432)
+#   mailpit   SMTP :1025, UI :8026  (host 8026 to avoid clash with local Mailpit)
+#   django    Django API on :8001   (auth, events, guests, partyboard, etc.)
+#   web       Vite dev server on :5173, proxies /api -> django:8001
 #
-# The API runs prisma generate + migrate deploy before starting, so a fresh db
-# is migrated on first boot. JWT_SECRET, INVITATION_TOKEN_SECRET and AUTH_BYPASS
-# are dev-defaulted by server/dev-api.ts, which is what `npm run dev:api` runs.
+# Every service has a healthcheck and restart=unless-stopped so a crashed
+# container is detected and restarted automatically.
 
 services:
-  db:
+  partyhause-db:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: partyhause
       POSTGRES_PASSWORD: partyhause
       POSTGRES_DB: partyhause
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
-      - ph-db-data:/var/lib/postgresql/data
+      - partyhause-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U partyhause -d partyhause"]
       interval: 5s
       timeout: 3s
       retries: 12
+      start_period: 10s
+    restart: unless-stopped
 
-  mailpit:
+  partyhause-mailpit:
     image: axllent/mailpit
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1026:1025"
+      - "8026:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8025/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
 
-  api:
+  partyhause-django:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: Dockerfile.api
     ports:
-      - "3001:3001"
+      - "8001:8001"
     environment:
-      PORT: "3001"
-      NODE_ENV: development
-      DATABASE_URL: postgresql://partyhause:partyhause@db:5432/partyhause
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:8080
-    command: npx prisma migrate deploy && tsx server/dev-api.ts
+      DJANGO_SETTINGS_MODULE: partyhause.settings
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql://partyhause:partyhause@partyhause-db:5432/partyhause
+      SECRET_KEY: django-insecure-jidxkb_uou^v=*y26$zha_-=rtg0d9!n9cd5)-_wxg$3!8ze^$
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,partyhause-django"
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      EMAIL_HOST: partyhause-mailpit
+      EMAIL_PORT: "1025"
+      EMAIL_HOST_USER: ""
+      EMAIL_HOST_PASSWORD: ""
+      EMAIL_USE_TLS: "False"
+      DEFAULT_FROM_EMAIL: "PartyHause <dev@partyhause.local>"
     depends_on:
-      db:
+      partyhause-db:
         condition: service_healthy
-      mailpit:
-        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8001/api/health/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
 
-  web:
+  partyhause-web:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile.dev
     ports:
-      - "8080:80"
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - partyhause-web-node-modules:/app/node_modules
     environment:
-      VITE_API_URL: http://localhost:3001
-      VITE_APP_NAME: PartyHause
-      VITE_APP_URL: http://localhost:8080
+      VITE_API_PROXY_TARGET: http://partyhause-django:8001
+      VITE_API_URL: ""
+      WEB_PORT: "5173"
+    command: sh -c "npm ci --legacy-peer-deps && npx vite --host 0.0.0.0 --port 5173"
     depends_on:
-      - api
+      partyhause-django:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const http=require('http');http.get('http://127.0.0.1:5173/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
-  ph-db-data:
+  partyhause-db-data:
+  partyhause-web-node-modules:
