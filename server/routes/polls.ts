@@ -356,7 +356,7 @@ router.post('/:id/vote', async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: 'Poll has ended' });
     }
 
-    // Every submitted option must belong to THIS poll — otherwise cross-poll
+    // Every submitted option must belong to THIS poll - otherwise cross-poll
     // option ids create vote rows that inflate total_votes while appearing
     // under no option.
     const validOptionIds = new Set(poll.options.map((o) => o.id));

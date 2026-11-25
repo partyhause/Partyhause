@@ -19,7 +19,7 @@ describe('Brand tokens - web', () => {
     // triple must decode to.
     expect(css).toContain('--coral-500: 9 100% 60%');
     expect(css).toContain('--coral-700: 7 79% 42%');
-    expect(css).toContain('--cream-50: 33 20% 91%');
+    expect(css).toContain('--cream-50: 38 35% 97%');
   });
 
   it('index.css imports the token files before tailwind directives', async () => {

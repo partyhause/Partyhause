@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 
 import { MvpError, type MvpHttpResponse } from './mvp-contract';
+import { isUniqueViolation } from './db-errors';
 
 const COMMAND_TTL_MS = 24 * 60 * 60 * 1_000;
 
@@ -55,7 +56,7 @@ function uniqueConstraintError(target: string, message: string): MvpError {
 }
 
 function isUniqueConflict(error: unknown): boolean {
-  return errorCode(error) === 'P2002' || errorCode(error) === '23505';
+  return isUniqueViolation(error);
 }
 
 function storedResponse<T>(value: Prisma.JsonValue | null): MvpHttpResponse<T> {

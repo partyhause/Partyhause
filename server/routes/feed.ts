@@ -58,7 +58,7 @@ router.get('/crew', requireAuth, async (req: AuthenticatedRequest, res: Response
 
     // Cursor-based pagination via Prisma's native cursor: the page window is
     // strictly chronological (published_at desc, id desc as tiebreak) and the
-    // cursor is the LAST FETCHED (oldest) row of the window — NOT the last
+    // cursor is the LAST FETCHED (oldest) row of the window - NOT the last
     // rank-sorted row. Ranking reorders posts only WITHIN each page.
     // The previous design (window = 3x limit, cursor = last ranked item)
     // silently skipped up to two-thirds of candidates on every scroll and
@@ -122,7 +122,7 @@ router.get('/crew', requireAuth, async (req: AuthenticatedRequest, res: Response
 
     const hasMore = posts.length > limit;
     const pagePosts = hasMore ? posts.slice(0, limit) : posts;
-    // Chronological floor of this window — the correct next-page cursor.
+    // Chronological floor of this window - the correct next-page cursor.
     const windowFloorId = pagePosts[pagePosts.length - 1].id;
 
     // Get user's content interactions for personalization
@@ -262,7 +262,7 @@ router.get('/crew', requireAuth, async (req: AuthenticatedRequest, res: Response
     }));
 
     // NOTE: posts are NOT marked seen at delivery. The client reports real
-    // impressions via POST /api/feed/seen (IntersectionObserver) — marking at
+    // impressions via POST /api/feed/seen (IntersectionObserver) - marking at
     // delivery penalized posts the user never scrolled to (0.3x on the next
     // refresh) purely for having been included in an API response.
 
@@ -371,7 +371,7 @@ async function visiblePost(postId: string, userId: string) {
   return connected ? post : null;
 }
 
-/** POST /api/feed/posts/:id/like — idempotent like. */
+/** POST /api/feed/posts/:id/like - idempotent like. */
 router.post('/posts/:id/like', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -406,7 +406,7 @@ router.post('/posts/:id/like', requireAuth, async (req: AuthenticatedRequest, re
   }
 });
 
-/** DELETE /api/feed/posts/:id/like — idempotent unlike. */
+/** DELETE /api/feed/posts/:id/like - idempotent unlike. */
 router.delete('/posts/:id/like', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -440,7 +440,7 @@ router.delete('/posts/:id/like', requireAuth, async (req: AuthenticatedRequest, 
   }
 });
 
-/** GET /api/feed/posts/:id/comments — oldest first, cursor paginated. */
+/** GET /api/feed/posts/:id/comments - oldest first, cursor paginated. */
 router.get('/posts/:id/comments', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const post = await visiblePost(req.params.id, req.user!.id);
@@ -470,7 +470,7 @@ router.get('/posts/:id/comments', requireAuth, async (req: AuthenticatedRequest,
   }
 });
 
-/** POST /api/feed/posts/:id/comments — add a comment or a reply. */
+/** POST /api/feed/posts/:id/comments - add a comment or a reply. */
 router.post('/posts/:id/comments', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
@@ -525,7 +525,7 @@ router.post('/posts/:id/comments', requireAuth, async (req: AuthenticatedRequest
   }
 });
 
-/** POST /api/feed/posts/:id/share — record a share. */
+/** POST /api/feed/posts/:id/share - record a share. */
 router.post('/posts/:id/share', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;

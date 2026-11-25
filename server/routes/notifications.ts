@@ -1,9 +1,9 @@
-// server/routes/notifications.ts — in-app notification center.
+// server/routes/notifications.ts - in-app notification center.
 //
 // Notification rows are created by other routes (partycrew joins/requests,
 // etc.). This route lets the signed-in user read them, see the unread count
 // for the bell badge, and mark them read. All endpoints are scoped to the
-// caller — a user can only ever see or mutate their own notifications.
+// caller - a user can only ever see or mutate their own notifications.
 
 import { Router, type Response } from 'express';
 import { prisma } from '../lib/prisma';
@@ -45,7 +45,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
-// GET /api/notifications/unread-count — bell badge.
+// GET /api/notifications/unread-count - bell badge.
 router.get('/unread-count', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const count = await prisma.notification.count({

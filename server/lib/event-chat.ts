@@ -1,18 +1,18 @@
-// server/lib/event-chat.ts — multi-turn conversational event planning.
+// server/lib/event-chat.ts - multi-turn conversational event planning.
 //
 // Contract per turn: the client sends the full message history; the server
 // returns { reply, extracted, complete, source }:
-//   reply     — the assistant's next utterance. Hard rules: answers the
+//   reply     - the assistant's next utterance. Hard rules: answers the
 //               user's actual question first, carries no filler, asks at
 //               most ONE question, never re-asks for known details.
-//   extracted — the structured event state as understood after this turn
+//   extracted - the structured event state as understood after this turn
 //               (same shape as one-shot extraction), so the UI can render
 //               live detail chips and prefill forms at any point.
-//   complete  — true once the planning-critical core (template, date,
+//   complete  - true once the planning-critical core (template, date,
 //               guest count) is known.
-//   source    — 'llm' (Azure OpenAI / OpenAI) or 'heuristic' fallback.
+//   source    - 'llm' (Azure OpenAI / OpenAI) or 'heuristic' fallback.
 //
-// The LLM path re-reads the WHOLE conversation every turn — semantic state
+// The LLM path re-reads the WHOLE conversation every turn - semantic state
 // lives in the transcript, not in server session state, which keeps the
 // endpoint stateless and horizontally scalable. The fallback path runs the
 // deterministic extractor over the concatenated user turns and drives the
@@ -47,7 +47,7 @@ const LLM_TIMEOUT_MS = 15000;
 const MAX_REPLY_CHARS = 1200;
 
 // ---------------------------------------------------------------------------
-// Filler guard — deterministic, applied to EVERY llm reply.
+// Filler guard - deterministic, applied to EVERY llm reply.
 // ---------------------------------------------------------------------------
 
 const FILLER_OPENINGS =
@@ -152,10 +152,10 @@ export function runFallbackTurn(messages: ChatMessage[], referenceDate = new Dat
   if (known) {
     sentences.push(`So far I have: ${known}.`);
   } else if (!askedOpenQuestion) {
-    sentences.push('Tell me about the event you are planning — type, date, guests, venue, budget.');
+    sentences.push('Tell me about the event you are planning - type, date, guests, venue, budget.');
   }
   if (complete) {
-    sentences.push('That covers the essentials — use "Apply details" to prefill your event, or keep refining.');
+    sentences.push('That covers the essentials - use "Apply details" to prefill your event, or keep refining.');
   } else if (missing && known) {
     sentences.push(missing.question);
   }
@@ -196,17 +196,17 @@ function buildSystemPrompt(referenceDate: Date): string {
 
 TODAY'S DATE: ${referenceDate.toISOString().slice(0, 10)}
 
-ABSOLUTE RULES — every reply:
+ABSOLUTE RULES - every reply:
 1. If the user asked a question, your FIRST sentence answers that exact question, specifically and truthfully. Never deflect a question you can answer.
 2. Zero filler. Never open with "Great question", "Sure", "Absolutely", "I'd be happy to", or any pleasantry. Every sentence must carry information the user did not already have.
 3. If the user's message is unrelated to event planning, answer it truthfully in one or two sentences if you can, then connect back to the event in one sentence. Do not pretend it was about the event.
 4. Track every detail stated across the WHOLE conversation. Never re-ask for something already provided. When the user corrects a detail ("actually make it 40 guests"), the newest statement wins.
-5. Ask at most ONE question per reply — for the most planning-critical missing detail, in this order: event type, date, guest count, location, budget. If nothing critical is missing, do not ask anything; suggest one concrete next step instead.
+5. Ask at most ONE question per reply - for the most planning-critical missing detail, in this order: event type, date, guest count, location, budget. If nothing critical is missing, do not ask anything; suggest one concrete next step instead.
 6. Be concrete and brief: 1-4 sentences. Give real recommendations with reasoning when asked (e.g. actual catering quantities, realistic budget splits), not generic advice.
 
 TEMPLATE IDS (pick the closest for extracted.templateId): ${KNOWN_TEMPLATE_IDS.join(', ')}
 
-OUTPUT — respond with ONLY this JSON object, no markdown fences:
+OUTPUT - respond with ONLY this JSON object, no markdown fences:
 {"reply": "<your reply following the rules>", "extracted": {"templateId": <id or null>, "eventName": <string or null>, "eventDate": <"YYYY-MM-DD" or null>, "eventTime": <"HH:MM" 24h or null>, "location": <string or null>, "expectedGuests": <int or null>, "budget": <number USD or null>, "theme": <string or null>, "specialRequests": <string or null>, "confidence": <0..1 certainty in templateId or null>}, "complete": <true when templateId+eventDate+expectedGuests are all known>}
 extracted must reflect EVERYTHING known after this turn (latest corrections win). Never invent details the user did not state.`;
 }

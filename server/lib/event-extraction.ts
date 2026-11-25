@@ -1,4 +1,4 @@
-// server/lib/event-extraction.ts — semantic event-detail extraction.
+// server/lib/event-extraction.ts - semantic event-detail extraction.
 //
 // Replaces the previous keyword/substring matcher in routes/ai.ts, which had
 // no semantic capability at all: it defaulted to "birthday" on zero signal,
@@ -6,20 +6,20 @@
 // locations ("at 3pm" -> location "3pm").
 //
 // Pipeline (first success wins):
-//   1. LLM extraction — used only when configured via environment:
+//   1. LLM extraction - used only when configured via environment:
 //        Azure OpenAI: AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY +
 //                      AZURE_OPENAI_DEPLOYMENT (+ AZURE_OPENAI_API_VERSION)
 //        OpenAI:       OPENAI_API_KEY (+ OPENAI_MODEL, default gpt-4o-mini)
 //      Strict JSON contract, zod-validated, bounded 8s timeout. Any failure
-//      (network, timeout, malformed output) falls through to layer 2 — the
+//      (network, timeout, malformed output) falls through to layer 2 - the
 //      endpoint never depends on LLM availability.
-//   2. Deterministic semantic extraction — always available, no keys:
+//   2. Deterministic semantic extraction - always available, no keys:
 //        - chrono-node natural-language date/time parsing ("next Saturday
 //          at 7pm"), which also yields the matched text spans so date/time
 //          words are EXCLUDED from location extraction.
 //        - Weighted word-boundary lexicon scoring for template detection
 //          (multi-word phrases outweigh single words; no default-template
-//          bias — confidence 0 means "we do not know").
+//          bias - confidence 0 means "we do not know").
 //
 // The result carries `source: 'llm' | 'heuristic'` so clients and logs can
 // distinguish which layer answered.
@@ -58,7 +58,7 @@ export const KNOWN_TEMPLATE_IDS = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// Layer 2 — deterministic semantic extraction
+// Layer 2 - deterministic semantic extraction
 // ---------------------------------------------------------------------------
 
 interface WeightedKeyword {
@@ -68,7 +68,7 @@ interface WeightedKeyword {
 
 // Multi-word phrases are strong evidence (weight 3); distinctive single
 // words medium (2); generic single words weak (1). Scoring sums matched
-// weights — it does NOT divide by list length, so adding keywords never
+// weights - it does NOT divide by list length, so adding keywords never
 // penalizes a template (the old matcher's core defect).
 const TEMPLATE_LEXICON: Record<string, WeightedKeyword[]> = {
   birthday: [
@@ -174,7 +174,7 @@ function escapeRegExp(s: string): string {
 
 /**
  * Weighted word-boundary template detection.
- * Returns confidence 0 with templateId 'birthday' ONLY as a labeled guess —
+ * Returns confidence 0 with templateId 'birthday' ONLY as a labeled guess -
  * callers must treat confidence < 0.34 as "ask the user".
  */
 export function detectTemplate(text: string): { templateId: string; confidence: number } {
@@ -300,7 +300,7 @@ function maskSpans(text: string, spans: Array<{ start: number; end: number }>): 
   return masked;
 }
 
-// NOTE: deliberately does NOT include "the" — real venues are commonly
+// NOTE: deliberately does NOT include "the" - real venues are commonly
 // article-prefixed ("The Grand Ballroom").
 const LOCATION_STOPWORDS = /^(?:a|an|my|our|this|that|it|home|noon|midnight|least|most|first|best)\b/i;
 
@@ -409,6 +409,101 @@ export function extractTheme(text: string): string | undefined {
   return undefined;
 }
 
+/**
+ * One entry per phrase-derived hint, applied in order. `any` (boolean flag),
+ * `all` (every phrase must hit), `value` (set when `any` hits) and `days`
+ * (regex group 1 becomes the value) cover every branch the old switch had;
+ * the four ordered exclusivity pairs (wedding size, hackathon hours) are
+ * modelled with `stopOnHit`, because a data table with no ordering would
+ * silently change which value wins when both phrases appear.
+ */
+interface TemplateHint {
+  /** Form field written when the rule fires. */
+  field: string;
+  /** Word-bounded phrases, lowercased; any hit fires the rule. */
+  any?: string[];
+  /** Every phrase must hit for the rule to fire. */
+  all?: string[];
+  /**
+   * Value written when the rule fires. Defaults to true. A `days` rule with
+   * a capture group derives its value from the text instead: `value: -1` is
+   * the marker meaning "use parseInt(group 1)", so the conference N-day
+   * pattern stays a single declarative entry.
+   */
+  value?: unknown;
+  /** Gate: the rule fires only when this pattern matches. */
+  days?: RegExp;
+  /** Later rules writing the same field are skipped once this one fires. */
+  stopOnHit?: boolean;
+}
+
+/** Per-template phrase hints, in the order the old switch applied them. */
+const TEMPLATE_HINTS: Record<string, TemplateHint[]> = {
+  birthday: [
+    { field: 'is_milestone', days: /\b(?:milestone|30th|40th|50th|60th)\b/i, value: true },
+    { field: 'is_surprise', any: ['surprise'], value: true },
+    { field: 'bar_service', any: ['open bar', 'cocktails'], value: 'Open Bar' },
+    { field: 'meal_service', any: ['dinner'], value: 'Dinner' },
+    { field: 'activities', any: ['bounce house'], value: ['Bounce House'] },
+  ],
+  wedding: [
+    { field: 'venue_type', any: ['outdoor', 'garden'], value: 'Outdoor' },
+    { field: 'ceremony_type', any: ['church', 'religious'], value: 'Religious' },
+    { field: 'has_reception', any: ['reception'], value: true },
+    { field: 'wedding_size', any: ['intimate', 'small'], value: 'Intimate', stopOnHit: true },
+    { field: 'wedding_size', any: ['grand', 'large'], value: 'Grand' },
+  ],
+  conference: [
+    { field: 'number_of_days', days: /\b(\d+)[-\s]day\b/i, value: -1 },
+    { field: 'has_keynote', any: ['keynote'], value: true },
+    { field: 'networking_events', any: ['networking'], value: true },
+  ],
+  'product-launch': [
+    { field: 'press_media_invited', any: ['press', 'media'], value: true },
+    { field: 'vip_guests', any: ['vip', 'exclusive'], value: true },
+    { field: 'live_streaming', any: ['live stream', 'livestream'], value: true },
+  ],
+  fundraiser: [
+    { field: 'has_silent_auction', any: ['auction'], value: true },
+    { field: 'donations_accepted', any: ['donation', 'donations'], value: true },
+  ],
+  festival: [
+    { field: 'has_camping', any: ['camping'], value: true },
+    { field: 'food_vendors', any: ['food'], value: true },
+    { field: 'duration_days', any: ['weekend'], value: 2 },
+    { field: 'duration_days', days: /\b(\d+)[-\s]day\b/i, value: 2 },
+  ],
+  travel: [
+    { field: 'has_flights', any: ['flight', 'flights', 'flying'], value: true },
+    { field: 'accommodation_type', any: ['hotel'], value: 'Hotel' },
+    { field: 'trip_type', any: ['adventure', 'hiking'], value: 'Adventure' },
+  ],
+  'block-party': [
+    { field: 'permit_obtained', any: ['permit'], value: true },
+    { field: 'activities', any: ['bounce house'], value: ['Bounce House'] },
+    { field: 'food_style', any: ['potluck'], value: 'Potluck' },
+  ],
+  workshop: [
+    { field: 'skill_level', any: ['beginner', 'intro'], value: 'Beginner' },
+    { field: 'certificate_offered', any: ['certificate', 'certification'], value: true },
+    { field: 'hands_on_practice', any: ['hands-on', 'practical'], value: true },
+  ],
+  hackathon: [
+    { field: 'prizes_awards', any: ['prize', 'prizes', 'cash'], value: 'Cash Prizes' },
+    { field: 'team_size', any: ['team', 'teams'], value: '3-5 People' },
+    { field: 'duration_hours', days: /\b24[-\s]hour\b/i, value: 24, stopOnHit: true },
+    { field: 'duration_hours', days: /\b48[-\s]hour\b/i, value: 48, stopOnHit: true },
+  ],
+};
+
+// kids-birthday behaves exactly like birthday, so it shares its table.
+TEMPLATE_HINTS['kids-birthday'] = TEMPLATE_HINTS.birthday;
+
+/** True when any phrase appears as a whole word, case-insensitively. */
+function mentionsAny(text: string, phrases: string[]): boolean {
+  return phrases.some((phrase) => new RegExp(`\\b${escapeRegExp(phrase)}\\b`, 'i').test(text));
+}
+
 /** Per-template boolean/enum hints from explicit phrases (word-bounded). */
 export function generateFormData(
   templateId: string,
@@ -416,71 +511,40 @@ export function generateFormData(
   extracted: { guests?: number; budget?: number; theme?: string },
 ): Record<string, unknown> {
   const formData: Record<string, unknown> = {};
-  const has = (phrase: string) => new RegExp(`\\b${escapeRegExp(phrase)}\\b`, 'i').test(text);
 
   if (extracted.guests) formData.expected_guest_count = extracted.guests;
   if (extracted.budget) formData.budget_estimate = extracted.budget;
   if (extracted.theme) formData.theme = extracted.theme;
+  // Budget doubles as the fundraising goal on this template, mirroring the
+  // old branch where the two fields were written from the same extraction.
+  if (templateId === 'fundraiser' && extracted.budget) formData.fundraising_goal = extracted.budget;
 
-  switch (templateId) {
-    case 'birthday':
-    case 'kids-birthday':
-      if (/\b(?:milestone|30th|40th|50th|60th)\b/i.test(text)) formData.is_milestone = true;
-      if (has('surprise')) formData.is_surprise = true;
-      if (has('open bar') || has('cocktails')) formData.bar_service = 'Open Bar';
-      if (has('dinner')) formData.meal_service = 'Dinner';
-      if (has('bounce house')) formData.activities = ['Bounce House'];
-      break;
-    case 'wedding':
-      if (has('outdoor') || has('garden')) formData.venue_type = 'Outdoor';
-      if (has('church') || has('religious')) formData.ceremony_type = 'Religious';
-      if (has('reception')) formData.has_reception = true;
-      if (has('intimate') || has('small')) formData.wedding_size = 'Intimate';
-      else if (has('grand') || has('large')) formData.wedding_size = 'Grand';
-      break;
-    case 'conference': {
-      const days = text.match(/\b(\d+)[-\s]day\b/i);
-      if (days) formData.number_of_days = parseInt(days[1], 10);
-      if (has('keynote')) formData.has_keynote = true;
-      if (has('networking')) formData.networking_events = true;
-      break;
-    }
-    case 'product-launch':
-      if (has('press') || has('media')) formData.press_media_invited = true;
-      if (has('vip') || has('exclusive')) formData.vip_guests = true;
-      if (has('live stream') || has('livestream')) formData.live_streaming = true;
-      break;
-    case 'fundraiser':
-      if (has('auction')) formData.has_silent_auction = true;
-      if (has('donation') || has('donations')) formData.donations_accepted = true;
-      if (extracted.budget) formData.fundraising_goal = extracted.budget;
-      break;
-    case 'festival':
-      if (has('camping')) formData.has_camping = true;
-      if (has('food')) formData.food_vendors = true;
-      if (has('weekend') || /\b(\d+)[-\s]day\b/i.test(text)) formData.duration_days = 2;
-      break;
-    case 'travel':
-      if (has('flight') || has('flights') || has('flying')) formData.has_flights = true;
-      if (has('hotel')) formData.accommodation_type = 'Hotel';
-      if (has('adventure') || has('hiking')) formData.trip_type = 'Adventure';
-      break;
-    case 'block-party':
-      if (has('permit')) formData.permit_obtained = true;
-      if (has('bounce house')) formData.activities = ['Bounce House'];
-      if (has('potluck')) formData.food_style = 'Potluck';
-      break;
-    case 'workshop':
-      if (has('beginner') || has('intro')) formData.skill_level = 'Beginner';
-      if (has('certificate') || has('certification')) formData.certificate_offered = true;
-      if (has('hands-on') || has('practical')) formData.hands_on_practice = true;
-      break;
-    case 'hackathon':
-      if (has('prize') || has('prizes') || has('cash')) formData.prizes_awards = 'Cash Prizes';
-      if (has('team') || has('teams')) formData.team_size = '3-5 People';
-      if (/\b24[-\s]hour\b/i.test(text)) formData.duration_hours = 24;
-      else if (/\b48[-\s]hour\b/i.test(text)) formData.duration_hours = 48;
-      break;
+  const fieldsWritten = new Set<string>();
+  for (const hint of TEMPLATE_HINTS[templateId] ?? []) {
+    // `days` is a GATE (the rule fires only when the pattern matches), and
+    // `value` is the payload. The two patterns that capture a number from the
+    // text also carry the number as their value, so a single mechanism covers
+    // both "fire when phrase present" and "fire when N-day present".
+    const gateOk = hint.days ? hint.days.test(text) : true;
+    if (!gateOk) continue;
+    const fired =
+      (hint.any ? mentionsAny(text, hint.any) : false)
+      || (hint.all ? hint.all.every((phrase) => mentionsAny(text, [phrase])) : false)
+      || Boolean(hint.days);
+    if (!fired) continue;
+    // Exclusivity pairs (`stopOnHit`): an earlier rule that already wrote
+    // this field wins, mirroring the old else-if. The check sits AFTER the
+    // fire decision so "intimate fires, grand skipped" and "grand fires,
+    // intimate skipped" both read the text identically.
+    if (fieldsWritten.has(hint.field)) continue;
+    // `value: -1` marks a capture rule: the number the `days` pattern
+    // matched is the payload, not a literal -1.
+    const value =
+      hint.value === -1 && hint.days
+        ? parseInt((hint.days.exec(text) as RegExpExecArray)[1], 10)
+        : hint.value ?? true;
+    formData[hint.field] = value;
+    fieldsWritten.add(hint.field);
   }
 
   return formData;
@@ -527,7 +591,7 @@ export function extractHeuristically(userText: string, referenceDate = new Date(
 }
 
 // ---------------------------------------------------------------------------
-// Layer 1 — LLM extraction (env-gated)
+// Layer 1 - LLM extraction (env-gated)
 // ---------------------------------------------------------------------------
 
 const llmResponseSchema = z.object({
@@ -648,7 +712,7 @@ export async function callChatCompletions(
     });
 
     if (response.status === 400 && effort !== null) {
-      // Model may not support this reasoning vocabulary — retry once without.
+      // Model may not support this reasoning vocabulary - retry once without.
       // Skipped when the parameter was never sent, since the 400 then means
       // something else and a second identical request would only repeat it.
       const plain = { ...body };
@@ -723,7 +787,7 @@ export async function extractWithLlm(
     }
 
     const d = parsed.data;
-    // formData hints stay deterministic — they encode our form fields, not
+    // formData hints stay deterministic - they encode our form fields, not
     // world knowledge, and must be consistent across llm/heuristic sources.
     const formData = generateFormData(d.templateId, userText, {
       guests: d.expectedGuests ?? undefined,

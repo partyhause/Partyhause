@@ -1,4 +1,4 @@
-// server/routes/realtime.ts — Azure Web PubSub negotiate endpoint.
+// server/routes/realtime.ts - Azure Web PubSub negotiate endpoint.
 //
 // GET /api/realtime/negotiate
 //   Returns a native Web PubSub connection URL that the frontend uses with a

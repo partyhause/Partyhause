@@ -20,11 +20,8 @@ import {
   usernameChangeAvailableAt,
   validateUsername,
 } from '../lib/username';
-import {
-  validateBirthDate,
-  validateInterests,
-  validateMediaUrl,
-} from '../lib/profile-validation';
+import { validateMediaUrl } from '../lib/profile-validation';
+import { isUniqueViolationOn } from '../lib/db-errors';
 
 const router = Router();
 
@@ -43,9 +40,6 @@ const OWN_PROFILE_SELECT = {
   cover_photo_url: true,
   location: true,
   website_url: true,
-  birth_date: true,
-  interests: true,
-  marketing_opt_in: true,
   is_private: true,
   show_attending_events: true,
   show_partycrew_list: true,
@@ -85,19 +79,15 @@ const usernameClaimLimiter = rateLimit({
   message: { error: 'Too many username attempts. Try again later.' },
 });
 
-/** True when Prisma reports a unique conflict on the username namespace. */
-function isUsernameConflict(error: unknown): boolean {
-  if (!error || typeof error !== 'object' || (error as { code?: unknown }).code !== 'P2002') {
-    return false;
-  }
-  const target = (error as { meta?: { target?: unknown } }).meta?.target;
-  // A P2002 with no target cannot be attributed; the only unique columns on
-  // this table are the two username forms, so treat it as the conflict it
-  // almost certainly is rather than reporting a 500.
-  if (target === undefined || target === null) return true;
-  const fields = Array.isArray(target) ? target : [target];
-  return fields.some((field) => String(field).toLowerCase().includes('username'));
-}
+/**
+ * True when Prisma reports a unique conflict on the username namespace.
+ *
+ * The target-less case counts, per the shared helper's contract: the only
+ * unique columns on user_profiles are the two username forms, so a conflict
+ * Prisma did not attribute is still a conflict on them.
+ */
+const isUsernameConflict = (error: unknown): boolean =>
+  isUniqueViolationOn(error, 'username', true);
 
 /**
  * Handles from the candidate list that nobody holds and no hold covers.
@@ -220,8 +210,8 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
           return res.status(400).json({ error: `${key} cannot be empty` });
         }
         // website_url is rendered as a clickable link (window.open on the
-        // profile page): anything other than http(s) — javascript:, data:,
-        // vbscript: — is a stored-XSS payload, not a website.
+        // profile page): anything other than http(s) - javascript:, data:,
+        // vbscript: - is a stored-XSS payload, not a website.
         if (key === 'website_url' && trimmed.length > 0 && !/^https?:\/\//i.test(trimmed)) {
           return res.status(400).json({ error: 'website_url must start with http:// or https://' });
         }
@@ -244,30 +234,9 @@ router.put('/me/profile', requireAuth, async (req: AuthenticatedRequest, res: Re
       }
     }
 
-    // B2C identity fields for the about-you step. Birth date is a real
-    // calendar date, never the future; interests are a closed taxonomy so
+    // B2C identity fields for the about-you step. Interests are a closed taxonomy so
     // recommendations never fragment; the marketing flag is a strict boolean
     // like the privacy flags above, defaulting to opted out.
-    if ('birth_date' in body) {
-      const problem = validateBirthDate(body.birth_date);
-      if (problem) {
-        return res.status(400).json({ error: `birth_date ${problem}` });
-      }
-      data.birth_date = body.birth_date === '' ? null : new Date(`${body.birth_date}T00:00:00Z`);
-    }
-    if ('interests' in body) {
-      const problem = validateInterests(body.interests);
-      if (problem) {
-        return res.status(400).json({ error: `interests ${problem}` });
-      }
-      data.interests = body.interests as string[];
-    }
-    if ('marketing_opt_in' in body) {
-      if (typeof body.marketing_opt_in !== 'boolean') {
-        return res.status(400).json({ error: 'marketing_opt_in must be a boolean' });
-      }
-      data.marketing_opt_in = body.marketing_opt_in;
-    }
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'No updatable fields provided' });
@@ -621,7 +590,7 @@ router.get('/suggested', requireAuth, async (req: AuthenticatedRequest, res: Res
     });
 
     // Get users already following, blocked (either direction), and users
-    // with a pending outgoing request — none should be suggested.
+    // with a pending outgoing request - none should be suggested.
     const [following, blocks, pendingRequests] = await Promise.all([
       prisma.connection.findMany({
         where: { follower_id: userId },
@@ -670,8 +639,8 @@ router.get('/suggested', requireAuth, async (req: AuthenticatedRequest, res: Res
     if (followingIds.length > 0) {
       // Friends-of-friends, aggregated in ONE grouped query: candidates are
       // ranked by how many of MY follows also follow them. (The previous
-      // version took 20 arbitrary connection ROWS with no orderBy — heap
-      // order, nondeterministic — then ran a per-candidate RPC that was
+      // version took 20 arbitrary connection ROWS with no orderBy - heap
+      // order, nondeterministic - then ran a per-candidate RPC that was
       // type-incompatible with the prisma-pushed TEXT id columns.)
       const grouped = await prisma.connection.groupBy({
         by: ['following_id'],
@@ -709,7 +678,7 @@ router.get('/suggested', requireAuth, async (req: AuthenticatedRequest, res: Res
         : [];
 
       for (const profile of candidateProfiles) {
-        // "Followed by K of the people I follow" — the shared-third-party
+        // "Followed by K of the people I follow" - the shared-third-party
         // INTERSECT definition of mutual crew.
         const mutualCount = countByCandidate.get(profile.id) || 0;
         mutualCrewSuggestions.set(profile.id, {
@@ -926,7 +895,7 @@ router.get('/:id', optionalAuth, async (req: AuthenticatedRequest, res: Response
       }
     }
 
-    // A viewer the owner has blocked should not see the profile at all —
+    // A viewer the owner has blocked should not see the profile at all -
     // indistinguishable from a nonexistent account.
     if (viewerIsBlocked) {
       return res.status(404).json({ error: 'User not found' });

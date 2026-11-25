@@ -11,7 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { HardenedErrorBoundary } from '@/components/HardenedErrorBoundary';
-import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { initializeAuthStateListener } from '@/lib/auth';
 import { RoleGuard } from "@/components/RoleGuard";
 import { ROUTES } from '@/routes';
@@ -39,6 +39,19 @@ const InviteTemplatesPage = lazy(() => import("@/pages/InviteTemplatesPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const AIPlannerChat = lazy(() => import("@/pages/AIPlannerChat"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
+const JourneyEntry = lazy(() => import("@/features/onboarding/JourneyEntry").then(m => ({ default: m.JourneyEntry })));
+const JourneyWelcome = lazy(() => import("@/features/onboarding/screens/JourneyWelcome").then(m => ({ default: m.JourneyWelcome })));
+const PlannerChatStep = lazy(() => import("@/features/onboarding/screens/PlannerChatStep").then(m => ({ default: m.PlannerChatStep })));
+const OrganizerProfileStep = lazy(() => import("@/features/onboarding/screens/OrganizerProfileStep").then(m => ({ default: m.OrganizerProfileStep })));
+const WhereYouHostStep = lazy(() => import("@/features/onboarding/screens/WhereYouHostStep").then(m => ({ default: m.WhereYouHostStep })));
+const AiWorkflowStep = lazy(() => import("@/features/onboarding/screens/AiWorkflowStep").then(m => ({ default: m.AiWorkflowStep })));
+const PlanStep = lazy(() => import("@/features/onboarding/screens/PlanStep").then(m => ({ default: m.PlanStep })));
+const AssistantAutonomyStep = lazy(() => import("@/features/onboarding/screens/AssistantAutonomyStep").then(m => ({ default: m.AssistantAutonomyStep })));
+const RoleStep = lazy(() => import("@/features/onboarding/screens/RoleStep").then(m => ({ default: m.RoleStep })));
+const InterestsStep = lazy(() => import("@/features/onboarding/screens/InterestsStep").then(m => ({ default: m.InterestsStep })));
+const PermissionsStep = lazy(() => import("@/features/onboarding/screens/PermissionsStep").then(m => ({ default: m.PermissionsStep })));
+const ProfileStep = lazy(() => import("@/features/onboarding/screens/ProfileStep").then(m => ({ default: m.ProfileStep })));
+const PaymentStep = lazy(() => import("@/features/onboarding/screens/PaymentStep").then(m => ({ default: m.PaymentStep })));
 const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
 const VerifyEmailPage = lazy(() => import("@/pages/VerifyEmailPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
@@ -89,6 +102,30 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
                 <Route path={ROUTES.INVITE_TEMPLATES} element={<ProtectedRoute><InviteTemplatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path={ROUTES.PROFILE_SELF} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                {/*
+                  The journey routes. Every one is behind ProtectedRoute, so
+                  the username picker gate runs first and a handle is chosen
+                  before any research question is asked. The question screens
+                  render inside JourneyShell, whose guard redirects to the
+                  server's current step, so they cannot be walked out of
+                  order even by typing them in. Welcome and where-you-host
+                  are pauses the server does not track: they precede the
+                  server-named step and hand back to it, never replacing it.
+                */}
+                <Route path={ROUTES.ONBOARDING} element={<ProtectedRoute><JourneyEntry /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_WELCOME} element={<ProtectedRoute><JourneyWelcome /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_ROLE} element={<ProtectedRoute><RoleStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_INTERESTS} element={<ProtectedRoute><InterestsStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_ORGANIZER_PROFILE} element={<ProtectedRoute><OrganizerProfileStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_WHERE_YOU_HOST} element={<ProtectedRoute><WhereYouHostStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_PERMISSIONS} element={<ProtectedRoute><PermissionsStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_PLANNER_CHAT} element={<ProtectedRoute><PlannerChatStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_AI_WORKFLOW} element={<ProtectedRoute><AiWorkflowStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_PLAN} element={<ProtectedRoute><PlanStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_ASSISTANT_AUTONOMY} element={<ProtectedRoute><AssistantAutonomyStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_PROFILE} element={<ProtectedRoute><ProfileStep /></ProtectedRoute>} />
+                <Route path={ROUTES.ONBOARDING_PAYMENT} element={<ProtectedRoute><PaymentStep /></ProtectedRoute>} />
                 <Route path={ROUTES.FEED} element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
                 <Route path={ROUTES.EXPLORE} element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
                 <Route path={ROUTES.PARTY_CULTURE_BLOG} element={<PartyCultureBlog />} />
@@ -113,8 +150,12 @@ const JoinShell = () => (
   <HardenedErrorBoundary>
     <Suspense fallback={<PageFallback />}>
       <Routes>
-        <Route path="/join/:token" element={<JoinEventPage />} />
-        <Route path="/join/*" element={<JoinEventPage />} />
+        {/* Nested under the parent `/join/*`: child paths are relative to that
+            base, so `:token` matches /join/<token>. Absolute children
+            (`/join/:token`) do not match inside a nested <Routes> and the
+            shell silently rendered nothing. */}
+        <Route path=":token" element={<JoinEventPage />} />
+        <Route path="*" element={<JoinEventPage />} />
       </Routes>
     </Suspense>
   </HardenedErrorBoundary>

@@ -1,4 +1,4 @@
-// server/index.ts — PartyHause API server (Express + Prisma)
+// server/index.ts - PartyHause API server (Express + Prisma)
 //
 // Replaces the old server/index.js which only had /api/health and /api/send-email.
 // All data routes are now mounted from server/routes/*.ts using Prisma + Azure PostgreSQL.

@@ -14,6 +14,7 @@
 
 import { Router } from 'express';
 import { Prisma } from '@prisma/client';
+import { isUniqueViolation } from '../lib/db-errors';
 import { prisma } from '../lib/prisma';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import {
@@ -318,9 +319,7 @@ router.patch('/stickies/:id/vote', async (req: AuthenticatedRequest, res) => {
       } catch (error: unknown) {
         // P2002 is the unique constraint: another request for the same user
         // landed first. The desired end state is already true.
-        const isDuplicate =
-          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
-        if (!isDuplicate) throw error;
+        if (!isUniqueViolation(error)) throw error;
       }
     }
 
@@ -385,7 +384,7 @@ router.post('/stickies/:id/convert-to-task', async (req: AuthenticatedRequest, r
     return res.status(201).json({ task_id: task.id, status: task.status });
   } catch (error: unknown) {
     // A race on the unique sticky_id: the other request won, so read its row.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (isUniqueViolation(error)) {
       const existing = await prisma.partyBoardTask.findUnique({
         where: { sticky_id: req.params.id },
         select: { id: true, status: true },

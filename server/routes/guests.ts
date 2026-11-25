@@ -83,7 +83,7 @@ router.get('/', async (req: AuthenticatedRequest, res) => {
       const stats = {
         total: guests.length,
         // 'confirmed' is legacy vocabulary for 'accepted' (pre-unification
-        // invite joins) — count both so older rows are not invisible.
+        // invite joins) - count both so older rows are not invisible.
         accepted: guests.filter(
           (g) => g.rsvp_status === 'accepted' || g.rsvp_status === 'confirmed',
         ).length,

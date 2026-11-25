@@ -14,7 +14,7 @@ function partsUrl(): string {
  * Resolve the connection string defensively: DATABASE_URL wins only when it
  * actually parses. A raw password containing URL-reserved characters ('#'
  * cuts the string at the fragment) produced an unparseable DATABASE_URL in
- * production — every query failed while health checks stayed green. The
+ * production - every query failed while health checks stayed green. The
  * discrete POSTGRES_* parts are URL-encoded here and cannot have that
  * problem.
  */
