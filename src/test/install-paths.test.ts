@@ -89,11 +89,9 @@ describe('automated install paths', () => {
     }
   });
 
-  it('passes the flag in both Dockerfiles', () => {
-    for (const file of ['Dockerfile', 'Dockerfile.api']) {
-      for (const line of installCommands(read(file))) {
-        expect(passesFlag(line), `${file}: ${line}`).toBe(true);
-      }
+  it('passes the flag in the root Dockerfile', () => {
+    for (const line of installCommands(read('Dockerfile'))) {
+      expect(passesFlag(line), `Dockerfile: ${line}`).toBe(true);
     }
   });
 

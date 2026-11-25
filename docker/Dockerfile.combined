@@ -8,6 +8,7 @@ WORKDIR /app
 
 # nginx + tini (PID 1 reaps sidecar, forwards signals), openssl + ca-certs
 # for sslmode=require against PostgreSQL, curl for the entrypoint readiness gate.
+RUN echo 'Acquire::http::Pipeline-Depth "0";' > /etc/apt/apt.conf.d/99nopipeline
 RUN apt-get update \
   && apt-get install -y --no-install-recommends nginx tini curl openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*

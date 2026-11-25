@@ -1,18 +1,10 @@
 # azure.yaml — PartyHause Azure Container Apps deployment
-# Two services: web PWA (nginx) + API server (Express)
+# Combined service: web PWA (nginx) + Django API sidecar on one origin.
 services:
   web:
     project: .
     host: containerapp
     language: js
     docker:
-      path: ./Dockerfile
-      remoteBuild: true
-
-  api:
-    project: .
-    host: containerapp
-    language: js
-    docker:
-      path: ./Dockerfile.api
+      path: ./docker/Dockerfile.combined
       remoteBuild: true

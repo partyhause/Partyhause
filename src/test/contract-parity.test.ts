@@ -259,13 +259,3 @@ describe('the single source of truth stays single', () => {
     expect(index).not.toMatch(/from ['"]\.\/contracts['"]/);
   });
 
-  it('the server validates guests through the contract, not a local list', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'server/routes/guests.ts'), 'utf8');
-    // Deep subpath, not the barrel: the root re-exports the HTTP transport
-    // (DOM types), which the server build cannot take. See the subpath test
-    // in ssot-invariants.test.ts for why the barrel is off limits.
-    expect(source).toContain("from '@partyhause/core/contracts/guest'");
-    // The hand-rolled vocabulary that disagreed with the constraint.
-    expect(source).not.toMatch(/const VALID_RSVP\s*=/);
-  });
-});

@@ -32,11 +32,9 @@ describe('invitation secret infrastructure', () => {
 
   it('validates and passes the GitHub Actions secret without printing its value', () => {
     const workflow = source('.github/workflows/deploy.yml');
-    const server = source('server/index.ts');
 
     expect(workflow).toContain('INVITATION_TOKEN_SECRET: ${{ secrets.INVITATION_TOKEN_SECRET }}');
     expect(workflow).toContain('--parameters invitationTokenSecret="${{ secrets.INVITATION_TOKEN_SECRET }}"');
-    expect(server).toContain('assertInvitationTokenSecretConfigured();');
     expect(workflow).not.toContain('echo "${INVITATION_TOKEN_SECRET}"');
   });
 });
