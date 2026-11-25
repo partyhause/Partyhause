@@ -2,10 +2,8 @@
 // PostgreSQL-compatible so existing SQL
 // can be reused with minimal changes.
 //
-// NOTE: Originally specified as Cosmos DB for PostgreSQL (serverGroupV2 / Citus),
-// but that resource type is not available in the target subscription/region.
 // Pivoted to Flexible Server — the closest available PostgreSQL-compatible
-// managed offering. See MIGRATION_STATUS.md.
+// managed offering.
 
 @description('Azure region')
 param location string

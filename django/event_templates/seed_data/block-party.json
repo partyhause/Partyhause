@@ -1,0 +1,19 @@
+{
+  "name": "Block Party",
+  "slug": "block-party",
+  "description": "Neighborhood gathering with food, music, and games on your street.",
+  "category": "block-party",
+  "hero_image_url": null,
+  "price_tier": "free",
+  "default_payload": {
+    "event_type": "single_day",
+    "theme": "block-party",
+    "includes_food_trucks": true,
+    "includes_music": true
+  },
+  "required_fields_schema": null,
+  "featured": false,
+  "published": true,
+  "usage_count": 0,
+  "author_id": null
+}

@@ -47,7 +47,7 @@ DATABASE_URL="postgresql://localhost:5432/partyhause" npx tsx prisma/seed.ts
 
 # 4. Start everything (API, web, and Mailpit dev email catcher) in one terminal:
 npm run dev:all
-#   - API: http://localhost:3001
+#   - API: http://localhost:8001
 #   - Web: http://localhost:5173 
 #   - Mailpit UI: http://localhost:8025
 #   - Logs: /tmp/ph-*.log
@@ -55,19 +55,11 @@ npm run dev:all
 
 #### Option 2: Manual separate terminals
 ```bash
-# 1-3. (Same as above)
-
-# 4. Start the API on 3001. dev-api.ts sets AUTH_BYPASS=true for local work.
-npm run dev:api
-
-# 5. In another terminal, start the web app on 5173. It proxies /api to 3001.
-npm run dev
-
-# 6. In a third terminal, start Mailpit for dev email (optional but recommended):
-mailpit   # UI at http://localhost:8025
-
+# 4. Start the Django API on 8001: npm run dev:api
+# 5. In another terminal, start the web app on 5173. It proxies /api to 8001: npm run dev
+# 6. In a third terminal, start Mailpit for dev email (optional but recommended): mailpit   # UI at http://localhost:8025
 # 7. Verify.
-curl localhost:3001/api/health
+curl localhost:8001/api/health
 ```
 
 ### Two corrections to long-standing claims
@@ -149,14 +141,10 @@ npx prisma generate
 DATABASE_URL="postgresql://localhost:5432/partyhause" npx prisma migrate deploy
 DATABASE_URL="postgresql://localhost:5432/partyhause" npx tsx prisma/seed.ts
 
-# 4. Start the API on 3001. dev-api.ts sets AUTH_BYPASS=true for local work.
-npm run dev:api
-
-# 5. In another terminal, start the web app on 5173. It proxies /api to 3001.
-npm run dev
-
+# 4. Start the Django API on 8001: npm run dev:api
+# 5. In another terminal, start the web app on 5173. It proxies /api to 8001: npm run dev
 # 6. Verify.
-curl localhost:3001/api/health
+curl localhost:8001/api/health
 ```
 
 `AUTH_BYPASS` only works when `NODE_ENV !== 'production'`, and both conditions are required
@@ -187,11 +175,10 @@ still produce a working bundle if you bypass `build:check`.
 
 Base URL in production is the API Container App FQDN. All routes are under `/api`.
 
-`server/index.ts` mounts 26 routers behind `apiLimiter`, plus inline endpoints registered **before**
-the limiter: `GET /api/health`, `POST /api/send-email`, and the favicon and SPA fallback when
-`dist/` exists. `/api/send-email` is outside `apiLimiter` deliberately, so a mail send cannot be
-starved by ordinary API traffic; it carries its own `emailLimiter`, 20 per 5 minutes keyed on the
-authenticated user.
+Django (`manage.py runserver` locally, gunicorn in the combined Container App)
+mounts the API routers under `/api`, plus inline endpoints registered **before**
+the limiter: `GET /api/health/`, `POST /api/send-email`, and the favicon and SPA
+fallback when `dist/` exists.
 
 104 routes across 23 files.
 
@@ -412,11 +399,9 @@ That script is the gate. It finishes on
 history and `schema.prisma` cannot silently disagree.
 
 **Production has a migration history as of 2026-09-27.** The database was found empty that day -
-the stack recreation with the `k2xoe7s452aja` suffix had never migrated it, so every DB-touching
-route answered 500 and login was impossible. All nine migrations were applied with
-`prisma migrate deploy` and a `migrate diff` against `schema.prisma` reports zero drift. The
-enrollment scripts below describe the older path, kept for the case where a restored dump or a
-previously-populated database needs adopting into the history:
+the stack recreation with the `jvt4gqrth7cuc` suffix had never migrated it, so every DB-touching
+route answered 500 and login was impossible. All migrations were applied with
+`prisma migrate deploy` and a `migrate diff` against `schema.prisma` reports zero drift.
 
 ```bash
 node scripts/production-migration-preflight.cjs   # data preconditions, read only
@@ -517,64 +502,57 @@ az deployment sub create \
 
 ### Production resources
 
-The stack was **recreated with a new suffix**; every `gipkzrenusqpy` name below was verified
-nonexistent on 2026-09-24. The live resources use `k2xoe7s452aja`:
+The stack was recreated with a new suffix; every `gipkzrenusqpy` name below was verified
+nonexistent on 2026-09-24. The live resources use `jvt4gqrth7cuc`:
 
 | Resource | Name |
 |---|---|
 | Resource group | `rg-partyhause-prod` (same name) |
-| ACR | `acrpartyhausek2xoe7s452aja` |
-| Web app (PWA, live) | `ca-web-partyhause-k2xoe7s452aja` |
-| API app (Express, live) | `ca-api-partyhause-k2xoe7s452aja` |
-| Combined app (web + API, pending cutover) | `ca-app-partyhause-combined` |
-| Postgres | `psqlph-k2xoe7s452aja` (note the hyphen), in **centralus**, not eastus2 |
-| Storage | `stphk2xoe7s452aja` (plus an unrelated `stqssiweb`) |
-| Web PubSub | `wps-partyhause-k2xoe7s452aja` |
-| Key Vault | `kvphk2xoe7s452aja` |
-| Container Apps env | `cae-partyhause-k2xoe7s452aja` |
+| ACR | `acrpartyhausejvt4gqrth7cuc` |
+| Combined app (web + Django API, live) | `ca-app-partyhause-combined` |
+| Postgres | `psqlph-jvt4gqrth7cuc` (note the hyphen), in **centralus**, not eastus2 |
+| Storage | `stphjvt4gqrth7cuc` |
+| Web PubSub | `wps-partyhause-jvt4gqrth7cuc` |
+| Key Vault | `kvphjvt4gqrth7cuc` |
+| Container Apps env | `cae-partyhause-jvt4gqrth7cuc` |
 
-The live topology is two apps, `ca-web-partyhause-k2xoe7s452aja` and
-`ca-api-partyhause-k2xoe7s452aja` (verified against Azure on 2026-09-29: both
-`Running`, both on image `:9238496ae40574b71f314caeccc788680e012200`, API
-`/api/health` 200, web `/` 200). The single combined app above is declared in
-Bicep (`infra/resources.bicep`, literal name `ca-app-partyhause-combined`) and
-targeted by `scripts/deploy-full.sh`, `scripts/bind-azure-custom-domains.sh`
-and `.github/workflows/deploy.yml`, but it has never been provisioned: no
-`partyhause-combined` image has ever been pushed to ACR and `az containerapp
-show -n ca-app-partyhause-combined` returns `ResourceNotFound`. An earlier
-revision of this document claimed the combined app had been deployed since
-2026-09-27; that was the plan misstated as fact. Do not repeat it.
+The live topology is a **single combined Container App**, `ca-app-partyhause-combined`
+(verified against Azure on 2026-11-25: `Running`, on image
+`:e617fb5042ff1ea137a27fcc11267103b8f8ab0f`, API `/api/health/` 200, web `/`
+200). nginx owns port 80 and serves the static PWA bundle with the full cache
+policy in `nginx.conf`; it proxies `/api/*` to a Django (gunicorn) API sidecar on
+`127.0.0.1:8001` in the same network namespace. The two-app topology
+(`ca-web-*`, `ca-api-*`, joined by `VITE_API_URL` plus CORS) is retired — the
+combined app serves both tiers on one origin, same-origin `/api/*` requests,
+`VITE_API_URL` passed empty at build time, and CORS no longer matters for the
+web app.
 
-Cutover order, when it happens: provision (Bicep creates the combined app
-alongside the old two), build and push `partyhause-combined`, update the
-combined app to the SHA tag, verify `/` and `/api/health` on its FQDN, re-bind
-`partyhause.uk` and `www.partyhause.uk` with `npm run bind:domains`, verify
-again on the custom domain, then delete the two old apps by hand. Bicep no
-longer declares them, so a provisioning run will not remove them, and the DNS
-`www` CNAME plus the apex `A` must move to the combined app as part of the
-re-bind.
+Cutover has already happened: `ca-app-partyhause-combined` is provisioned,
+custom domains `partyhause.uk` and `www.partyhause.uk` are bound with managed
+certificates, and the image tag matches `git rev-parse HEAD` (`e617fb5`). The
+31 modified + 4 untracked files in the working tree are uncommitted and **not**
+deployed — commit or stash them before the next `deploy-full.sh` run.
 
-Container Apps env FQDNs use `orangecliff-6cf481f7`, not the old `calmtree-5b646dc8`:
-- Web (live): `https://ca-web-partyhause-k2xoe7s452aja.orangecliff-6cf481f7.eastus2.azurecontainerapps.io`
-- API (live): `https://ca-api-partyhause-k2xoe7s452aja.orangecliff-6cf481f7.eastus2.azurecontainerapps.io`
-- Combined (pending): `https://ca-app-partyhause-combined.orangecliff-6cf481f7.eastus2.azurecontainerapps.io`
-  (will serve both the static bundle and, through the nginx `/api/` proxy, the API on one origin)
+`az containerapp show -n ca-app-partyhause-combined -g rg-partyhause-prod` returns the
+live app; it is not `ResourceNotFound`. The old two-app resources are no longer
+declared in Bicep and were not removed by a provisioning run.
 
-**`partyhause.uk` serves the web app as of 2026-09-25.** The web Container App carries two custom
-hostnames with managed certificates (`partyhause.uk` and `www.partyhause.uk`, both `SniEnabled`,
-issued by DigiCert). After the combined app replaces the two-app topology, these hostnames must be
-re-bound to `ca-app-partyhause-combined` with `npm run bind:domains`
-(`scripts/bind-azure-custom-domains.sh`, updated to the live suffix and combined app name); the
-Bicep templates do not declare them. The DNS zone lives in Cloudflare (`brady`/`tani` nameservers) and the records
+Container Apps env default domain is `salmonsand-b1c1ecc2.eastus2.azurecontainerapps.io`
+(per-environment suffix, not the region):
+- Combined app (live): `https://ca-app-partyhause-combined.salmonsand-b1c1ecc2.eastus2.azurecontainerapps.io`
+
+**`partyhause.uk` serves the web app.** The combined Container App carries two custom
+hostnames with managed certificates (`partyhause.uk` and `www.partyhause.uk`, both `SniEnabled`).
+The DNS zone lives in Cloudflare (`brady`/`tani` nameservers) and the records
 are DNS-only, not proxied: the apex `A` points at the environment static IP `40.70.172.184` and
-`www` CNAMEs directly to the web FQDN. Two rules keep the managed certificate alive: the records
+`www` CNAMEs directly to the combined app FQDN. Two rules keep the managed certificate alive: the records
 must never be proxied through Cloudflare (an intermediate CNAME blocks DigiCert issuance and
 renewal), and `TXT asuid.<hostname>` must carry the app's `customDomainVerificationId`
 (`EDF7D9332018E7CF25F5A73A0F43C4EA166F5C47209663E2BB5E6DDCB920C631`). Before 2026-09-25 the apex
 served an IONOS parking page through a stale proxied AAAA record and `www` pointed at the deleted
 `gipkzrenusqpy` suffix; both were fixed imperatively and the stale records were deleted. The Bicep
-templates do not declare these custom domains, so the next `az deployment sub create` will not
-remove them, but a fresh environment will not have them either.
+templates do not declare these custom domains, so a `az deployment sub create` will not remove them,
+but a fresh environment will not have them either.
 
 **`partyhause.com` is NXDOMAIN as of 2026-09-24.** The zone is not in the Cloudflare account
 holding `partyhause.uk`; the domain is registered at Squarespace (expires 2027-09-14) with
@@ -592,12 +570,11 @@ apex TXT `ms-domain-verification` in Cloudflare held the Container App's
 `customDomainVerificationId` instead of the ACS token. The fix chain, all applied imperatively:
 the TXT corrected to `ms-domain-verification=18e7a084-b769-44be-8340-4242e5621019`, Domain then
 DKIM/DKIM2 then SPF re-verified in ACS, the MailFrom address `noreply` created, and the domain
-linked to the Communication Service `acs-partyhause-k2xoe7s452aja` (its `linkedDomains` previously
+linked to the Communication Service `acsmail-partyhause-jvt4gqrth7cuc` (its `linkedDomains` previously
 listed only `AzureManagedDomain`, which is what "sender domain has not been linked" meant at send
 time). Two sender-authentication facts that cost time: ACS exact-matches the SPF record, so the
 apex SPF had to end `-all` (`~all` fails `DnsRecordsNotMatched`; the ionos include is kept, so
-IONOS-sent mail keeps its alignment), and a domain cannot be linked to a Communication Service
-until Domain, DKIM and SPF are all Verified. The Bicep tracks the new state:
+IONOS-sent mail keeps its alignment). Until Domain, DKIM and SPF are all Verified.
 `linkCustomEmailDomain` is declared in `infra/main.bicep` and set `true` in
 `infra/main.parameters.json`, and the env ternary at `infra/resources.bicep:336-338` now resolves
 to `noreply@partyhause.uk`. The two DKIM selector CNAMEs were already correct and DNS-only
@@ -615,18 +592,21 @@ settings on the live app alone.
 
 ### Infra hazards
 
-- **AcrPull role assignment is off by default.** `manageAcrPullAssignment` defaults `false` and
-  neither app passes `true`, so a fresh environment will not be able to pull images without setting
-  it explicitly.
-- **No health probes are defined**, despite the module comment claiming otherwise.
+- **AcrPull role assignment is on by default.** `manageAcrPullAssignment` defaults `true`, so
+  the container app's system-assigned identity is granted AcrPull on the ACR at provisioning
+  time and the app can pull images without an out-of-band assignment. Set false only when the
+  assignment already exists out-of-band, to avoid RoleAssignmentExists.
+- **Health probes are defined.** The container template declares an HTTP probe on `/api/health/`
+  (port `targetPort`, initial delay 30s, period 10s, failure threshold 3) so a failed revision
+  is marked unhealthy rather than serving 502s.
 - **Storage allows public blob access** and `event-invites` is publicly readable.
 - Key Vault uses access policies, not RBAC, and the deployer policy is skipped entirely when
-  `deployerObjectId` is empty. Since 2026-09-27 the vault `kvphk2xoe7s452aja` holds all nine API
+  `deployerObjectId` is empty. Since 2026-09-27 the vault `kvphjvt4gqrth7cuc` holds all nine API
   secrets (postgres-password, database-url, storage-conn-str, webpubsub-connection-string,
   acs-connection-string, jwt-secret, invitation-token-secret, resend-api-key, azure-openai-api-key)
   and the API Container App's `secrets` array is Key Vault references resolved at run time through
   its system-assigned identity. The identity's vault policy is granted out-of-band, like AcrPull:
-  `az keyvault set-policy -n kvphk2xoe7s452aja --object-id <api-app-principalId> --secret-permissions get list`.
+  `az keyvault set-policy -n kvphjvt4gqrth7cuc --object-id <api-app-principalId> --secret-permissions get list`.
   A fresh environment will not resolve secrets until that runs; the app crash-loops rather than
   booting with missing secrets. The Bicep secrets now reference the vault (see
   `infra/resources.bicep`), `scripts/create-api-containerapp.sh` reads every value from the vault
@@ -711,40 +691,38 @@ task blob (observed on 2026-09-24 and 2026-09-27), build locally and push instea
 `--platform linux/amd64` (see the Colima hazard under Infrastructure):
 
 ```bash
-az acr login -n acrpartyhausek2xoe7s452aja
+az acr login -n acrpartyhausejvt4gqrth7cuc
 docker buildx build --platform linux/amd64 -f Dockerfile.combined \
-  -t acrpartyhausek2xoe7s452aja.azurecr.io/partyhause-combined:$SHA \
-  -t acrpartyhausek2xoe7s452aja.azurecr.io/partyhause-combined:latest \
+  -t acrpartyhausejvt4gqrth7cuc.azurecr.io/partyhause-combined:$SHA \
+  -t acrpartyhausejvt4gqrth7cuc.azurecr.io/partyhause-combined:latest \
   --build-arg VITE_API_URL="" \
   --build-arg VITE_APP_NAME="PartyHause" \
   --build-arg VITE_APP_URL="https://partyhause.uk" \
   --push .
 az containerapp update -n ca-app-partyhause-combined -g rg-partyhause-prod \
-  --image acrpartyhausek2xoe7s452aja.azurecr.io/partyhause-combined:$SHA
-```
+  --image acrpartyhausejvt4gqrth7cuc.azurecr.io/partyhause-combined:$SHA
 
 The push step fails with `failed to fetch oauth token ... EOF` when the ACR login token has
 expired (they last 3 hours); `az acr login` again and rerun the same buildx command, which
 reuses the cached layers. Omit the `VITE_ENTRA_*` build args,
 for the reason given under Auth.
 
-### Serving topology: one app, nginx front door + Express sidecar (cutover target)
 
-The target topology is **one Container App serving frontend and backend
-together on one origin**. The image (`Dockerfile.combined`, `partyhause-combined` on ACR) runs:
+The live topology is **one Container App serving frontend and backend together
+on one origin**. The image (`Dockerfile.combined`, `partyhause-combined` on ACR) runs:
 
 - **nginx** on port 80 (the ingress targetPort), serving the static bundle with the full cache
-  policy in `nginx.conf`, unchanged — and **proxying `/api/*` to the Express sidecar on
-  `localhost:3001`** in the same network namespace.
-- **Express** (`tsx server/index.ts`) as a sidecar, started by `docker/entrypoint.sh`, which
-  waits for `/api/health` (bounded at 60s) before running nginx in the foreground under `tini`.
+  policy in `nginx.conf`, unchanged — and **proxying `/api/*` to the Django (gunicorn) API sidecar
+  on `127.0.0.1:8001`** in the same network namespace.
+- **Django** (`gunicorn partyhause.wsgi:application`) as a sidecar, started by
+  `docker/entrypoint.sh`, which waits for `/api/health/` (bounded at 60s) before running nginx in
+  the foreground under `tini`.
 
 The prior topology was two apps joined only by a `VITE_API_URL` baked into the bundle plus a
 CORS allowlist; one deploy moved the API and every client needed a rebuilt web bundle to follow
 it. Here one revision update moves both tiers, the browser sends same-origin relative requests
 (`VITE_API_URL` is passed empty — `src/lib/apiBase.ts:9-12` documents the empty-base contract),
 and CORS stops mattering for the web app entirely.
-
 Four things the combined image needed beyond the two Dockerfiles it replaced:
 
 1. **`docker/entrypoint.sh` runs the server via the `tsx` CLI, not bare `node`.** The server
@@ -782,10 +760,9 @@ previous six-line inline config set no `Cache-Control` on anything, which left e
 heuristic browser caching and stranded service worker clients on a stale precache.
 Fingerprinted assets are immutable for a year; `sw.js`, `registerSW.js`, `index.html` and the
 manifest are `no-cache`; every file-serving location ends in `=404` so a missing asset cannot
-be disguised as a 200 of `index.html`. The `location ^~ /api/` block hands `/api/*` to the
-Express sidecar on `localhost:3001` — it only takes effect in the combined image, and in a
-static-only build the same paths would 502. It is registered after the `.well-known` block and
-before the SPA fallback; keep it there.
+The `location ^~ /api/` block hands `/api/*` to the Django sidecar on `localhost:8001` — it only
+takes effect in the combined image, and in a static-only build the same paths would 502. It is
+registered after the `.well-known` block and before the SPA fallback; keep it there.
 
 **`public/` must stay in the Docker build context.** It was excluded by `.dockerignore` for the
 entire life of the Azure stack, so every icon, `robots.txt`, `privacy.html`, `terms.html` and

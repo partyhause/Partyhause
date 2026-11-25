@@ -39,6 +39,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     """Authenticated user's own profile: core User fields plus nested UserProfile."""
 
     profile = UserProfileSerializer(read_only=True)
+    username = serializers.CharField(source='name', required=False, allow_blank=True, allow_null=True)
+    display_name = serializers.CharField(source='name', required=False, allow_blank=True, allow_null=True)
+    cover_photo_url = serializers.URLField(required=False, allow_blank=True, allow_null=True)
+    is_verified = serializers.BooleanField(source='email_verified', read_only=True)
+    last_active_at = serializers.DateTimeField(source='updated_at', read_only=True)
     account_type = serializers.CharField(source='profile.account_type', required=False, allow_blank=True, allow_null=True)
     bio = serializers.CharField(source='profile.bio', required=False, allow_blank=True, allow_null=True)
     avatar_url = serializers.URLField(source='profile.avatar_url', required=False, allow_blank=True, allow_null=True)
@@ -57,6 +62,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             'account_role',
             'created_at',
             'profile',
+            'username',
+            'display_name',
+            'cover_photo_url',
+            'is_verified',
+            'last_active_at',
             'account_type',
             'bio',
             'avatar_url',
@@ -65,7 +75,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'phone',
             'is_private',
         ]
-        read_only_fields = ['id', 'email', 'email_verified', 'account_role', 'created_at', 'profile']
+        read_only_fields = ['id', 'email', 'email_verified', 'account_role', 'created_at', 'profile', 'username', 'display_name', 'cover_photo_url', 'is_verified', 'last_active_at', 'bio', 'avatar_url', 'location', 'website_url', 'phone', 'is_private']
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile', {}) or {}

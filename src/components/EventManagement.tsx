@@ -25,6 +25,17 @@ export const EventManagement = () => {
   const guestLoadAttempted = useRef<Set<string>>(new Set());
   // Ref to track the last guest count for this event to avoid unnecessary re-fetches
   const lastGuestCount = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    if (currentEvent || events.length === 0 || isLoading) return;
+    // Auto-select the most recent event when arriving without context
+    // (e.g. clicking back from the QR scanner with no currentEvent set).
+    const latest = events.slice().sort((a, b) => {
+      const da = new Date(a.start_date || a.date || 0).getTime();
+      const db = new Date(b.start_date || b.date || 0).getTime();
+      return db - da;
+    })[0];
+    void setCurrentEvent(latest);
+  }, [currentEvent, events, isLoading, setCurrentEvent]);
 
   useEffect(() => {
     if (!currentEvent || isLoading) return;
@@ -56,7 +67,8 @@ export const EventManagement = () => {
     end_date: '',
     end_time: '',
     location: '',
-    description: ''
+    description: '',
+    event_type: 'single_day' as 'single_day' | 'multi_day'
   });
 
   const [isPublishing, setIsPublishing] = useState(false);
@@ -230,26 +242,38 @@ export const EventManagement = () => {
                       end_date: format(safeEnd, 'yyyy-MM-dd'),
                       end_time: format(safeEnd, 'HH:mm'),
                       location: currentEvent.location || '',
-                      description: currentEvent.description || ''
+                      description: currentEvent.description || '',
+                      event_type: currentEvent.event_type || 'single_day'
                     });
-                    setEditError(null);
                     setIsEditingDetails(true);
                   }}
                 >
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit Details
                 </button>
-              </div>
-              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    if (!currentEvent) return;
+                    if (
+                      window.confirm(
+                        `Are you sure you want to cancel "${currentEvent.name}"? This cannot be undone.`
+                      )
+                    ) {
+                      void eventService.deleteEvent(currentEvent.id).then(() => {
+                          navigate('/dashboard');
+                        })
+                        .catch(() => {
+                          // fallthrough to generic error path below
+                        });
+                    }
+                  }}
+                  className="btn-glass px-4 py-2 text-sm text-red-400 hover:text-red-300"
+                >
+                  Cancel Event
+                </button>
                 <div className="flex items-center text-gray-700">
                   <Calendar className="h-4 w-4 mr-2 text-orange-400" />
-                  <span>{format(new Date(currentEvent.start_date || currentEvent.date!), 'PPP')}</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <Clock className="h-4 w-4 mr-2 text-orange-400" />
-                  <span>{format(new Date(currentEvent.start_date || currentEvent.date!), 'p')}</span>
-                </div>
-                <div className="flex items-center text-gray-700">
+                  <span>{format(new Date(currentEvent.start_date || currentEvent.date || new Date().toISOString()), 'PPP')}</span>
                   <MapPin className="h-4 w-4 mr-2 text-orange-400" />
                   <span>{currentEvent.location}</span>
                 </div>
@@ -407,10 +431,25 @@ export const EventManagement = () => {
                 setEditError('Please provide a start date and time.');
                 return;
               }
-
               const requiresEndDate = currentEvent.event_type === 'multi_day';
               if (!editForm.end_time || (requiresEndDate && !editForm.end_date)) {
                 setEditError('Please provide an end time and end date (for multi-day events).');
+                return;
+              }
+
+              const selectedStart = new Date(`${editForm.start_date}T${editForm.start_time}:00`);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              if (selectedStart < today) {
+                setEditError('Start date and time cannot be in the past.');
+                return;
+              }
+
+              const effectiveEndDate = requiresEndDate ? editForm.end_date : editForm.start_date;
+
+              const selectedEnd = new Date(`${effectiveEndDate}T${editForm.end_time}:00`);
+              if (selectedEnd <= selectedStart) {
+                setEditError('End date/time must be after start date/time.');
                 return;
               }
 
@@ -420,7 +459,6 @@ export const EventManagement = () => {
               // Interpret the naive local datetime in the browser's timezone
               // and send a UTC instant (the API parses dates in UTC).
               const startDateTime = new Date(`${editForm.start_date}T${editForm.start_time}:00`).toISOString();
-              const effectiveEndDate = requiresEndDate ? editForm.end_date : editForm.start_date;
               const endDateTime = new Date(`${effectiveEndDate}T${editForm.end_time}:00`).toISOString();
 
               try {
@@ -428,7 +466,8 @@ export const EventManagement = () => {
                   start_date: startDateTime,
                   end_date: endDateTime,
                   location: editForm.location.trim(),
-                  description: editForm.description.trim() || null
+                  description: editForm.description.trim() || null,
+                  event_type: editForm.event_type
                 };
 
                 const updated = await eventService.updateEvent(currentEvent.id, updates);
@@ -512,14 +551,28 @@ export const EventManagement = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-location" className="text-gray-700">Location</Label>
-              <input
-                id="edit-location"
-                placeholder="Where is your event taking place?"
-                value={editForm.location}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, location: e.target.value }))}
+              <Label htmlFor="edit-event-type" className="text-gray-700">Event Type</Label>
+              <select
+                id="edit-event-type"
+                value={editForm.event_type}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, event_type: e.target.value as 'single_day' | 'multi_day' }))}
                 className="input-liquid w-full"
-              />
+              >
+                <option value="single_day">Single Day</option>
+                <option value="multi_day">Multi Day</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-location" className="text-gray-700">Location</Label>
+                <input
+                  id="edit-location"
+                  placeholder="Where is your event taking place?"
+                  value={editForm.location}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, location: e.target.value }))}
+                  className="input-liquid w-full"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

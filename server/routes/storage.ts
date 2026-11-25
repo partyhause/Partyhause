@@ -1,0 +1,290 @@
+// Express route: /api/storage
+// Image upload/delete/SAS endpoints backed by Azure Blob Storage.
+//
+// Uploads are server-side by design: the browser holds no storage
+// credential. The frontend POSTs multipart/form-data to /api/storage/upload and
+// the API uploads the file server-side to the `event-invites` container, which
+// has anonymous (public) read access so invite images can be embedded in
+// emails and rendered in the browser without a SAS token.
+
+import { Router } from 'express';
+import multer from 'multer';
+import {
+  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  SASProtocol,
+} from '@azure/storage-blob';
+import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
+import {
+  blobServiceClient,
+  publicBlobUrl,
+  sanitizeBlobPath,
+  sanitizeBlobSegment,
+  storageBlobEndpoint,
+  storageContainerName,
+} from '../lib/blob-storage';
+
+const router = Router();
+
+function storageError(error: unknown, fallback: string): { log: unknown; message: string } {
+  if (error instanceof Error) {
+    return { log: error.stack || error.message, message: error.message };
+  }
+  return { log: error, message: fallback };
+}
+
+// All storage routes require authentication.
+router.use(requireAuth);
+
+// ----- Blob-name safety ------------------------------------------------------
+
+/**
+ * Sanitize a client-supplied blob path segment: only word chars, dot, dash.
+ * Rejects traversal-ish ('..') and empty segments by returning null.
+ */
+/**
+ * Ownership check for delete/SAS: a caller may operate on a blob when
+ *   (a) the blob lives under their own user-id prefix (`<userId>/...`), or
+ *   (b) the blob follows the legacy root convention `<eventId>_invite.<ext>`
+ *       and the caller hosts that event.
+ */
+async function callerOwnsBlob(blobName: string, userId: string): Promise<boolean> {
+  const firstSegment = blobName.split('/')[0];
+  if (firstSegment === userId) return true;
+
+  // Legacy root-level names: <eventId>_invite.<ext>
+  const legacyMatch = /^([^/]+)_invite\.[A-Za-z0-9]+$/.exec(blobName);
+  if (legacyMatch) {
+    const event = await prisma.event.findUnique({
+      where: { id: legacyMatch[1] },
+      select: { host_id: true },
+    });
+    return event?.host_id === userId;
+  }
+
+  return false;
+}
+
+// ----- Multer (in-memory file upload) --------------------------------------
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max, matches client-side validation
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type: ${file.mimetype}`));
+    }
+  },
+});
+
+// ----- Routes --------------------------------------------------------------
+
+/**
+ * POST /api/storage/upload
+ * multipart/form-data:
+ *   - file:    the image file (required)
+ *   - eventId: optional event id, used to namespace the blob
+ *   - folder:  optional folder prefix (e.g. user id) for organization
+ *
+ * Returns { success: true, url: "<public blob url>", blobName: "<name>" }
+ */
+router.post(
+  '/upload',
+  upload.single('file'),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: 'No file provided' });
+      }
+
+      const eventId = (req.body.eventId as string | undefined)?.trim();
+      const folderRaw = (req.body.folder as string | undefined)?.trim();
+      const userId = req.user!.id;
+
+      // Build a unique blob name. Prefer the caller-supplied name, otherwise
+      // derive one from the original filename + timestamp.
+      const requestedNameRaw = (req.body.fileName as string | undefined)?.trim();
+
+      const requestedName = requestedNameRaw ? sanitizeBlobPath(requestedNameRaw) : null;
+      if (requestedNameRaw && !requestedName) {
+        return res.status(400).json({ success: false, error: 'Invalid fileName' });
+      }
+      const folder = folderRaw ? sanitizeBlobPath(folderRaw) : null;
+      if (folderRaw && !folder) {
+        return res.status(400).json({ success: false, error: 'Invalid folder' });
+      }
+
+      const ext =
+        sanitizeBlobSegment(file.originalname.split('.').pop()?.toLowerCase() || '') ||
+        file.mimetype.split('/')[1] ||
+        'jpg';
+
+      let blobName: string;
+      if (requestedName) {
+        blobName = requestedName;
+      } else {
+        const stamp = Date.now();
+        const rand = Math.random().toString(36).slice(2, 8);
+        const base = eventId && sanitizeBlobSegment(eventId)
+          ? `${sanitizeBlobSegment(eventId)}_invite`
+          : `invite_${stamp}_${rand}`;
+        blobName = `${base}.${ext}`;
+      }
+
+      // Namespace every upload under the CALLER's user id so one user cannot
+      // overwrite another user's blobs by guessing their fileName. A folder
+      // equal to the caller's id is collapsed (the standard client sends
+      // folder=<own user id>); any other folder nests INSIDE the caller's
+      // namespace.
+      if (folder && folder !== userId) {
+        blobName = `${userId}/${folder}/${blobName}`;
+      } else {
+        blobName = `${userId}/${blobName}`;
+      }
+
+      const containerClient = blobServiceClient().getContainerClient(
+        storageContainerName(),
+      );
+
+      // Ensure the container exists (idempotent). Public access is set at the
+      // container level via `az storage container create --public-access blob`
+      // (run during provisioning). We create it here as a safety net for
+      // local/dev environments; the access policy is left at its default.
+      await containerClient.createIfNotExists();
+
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+      await blockBlobClient.uploadData(file.buffer, {
+        blobHTTPHeaders: { blobContentType: file.mimetype },
+      });
+
+      const url = publicBlobUrl(blobName);
+      return res.json({ success: true, url, blobName });
+    } catch (error: unknown) {
+      const detail = storageError(error, 'Failed to upload image');
+      console.error('Storage upload error:', detail.log);
+      return res.status(500).json({
+        success: false,
+        error: detail.message,
+      });
+    }
+  },
+);
+
+/**
+ * DELETE /api/storage/:blobName — deletes a blob.
+ * The blobName may contain slashes (folder prefixes). It is URL-decoded by
+ * Express automatically.
+ */
+router.delete('/:blobName', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Express has already URL-decoded the param once — decoding again would
+    // corrupt names containing literal % sequences.
+    const blobName = req.params.blobName;
+    if (!blobName) {
+      return res.status(400).json({ success: false, error: 'Missing blob name' });
+    }
+
+    // Only the owner (user-namespace or legacy event-host convention) may
+    // delete a blob — previously ANY authenticated user could delete ANY
+    // blob in the container.
+    if (!(await callerOwnsBlob(blobName, req.user!.id))) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete this blob' });
+    }
+
+    const containerClient = blobServiceClient().getContainerClient(
+      storageContainerName(),
+    );
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    const exists = await blockBlobClient.exists();
+    if (!exists) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Blob not found' });
+    }
+
+    await blockBlobClient.delete();
+    return res.json({ success: true });
+  } catch (error: unknown) {
+    const detail = storageError(error, 'Failed to delete image');
+    console.error('Storage delete error:', detail.log);
+    return res.status(500).json({
+      success: false,
+      error: detail.message,
+    });
+  }
+});
+
+/**
+ * GET /api/storage/url/:blobName — returns a temporary (1 hour) SAS URL for a
+ * blob. Useful for private containers; for the public `event-invites`
+ * container the public URL is sufficient, but this endpoint is provided for
+ * future private containers.
+ */
+router.get('/url/:blobName', async (req: AuthenticatedRequest, res) => {
+  try {
+    // Express has already URL-decoded the param once.
+    const blobName = req.params.blobName;
+    if (!blobName) {
+      return res.status(400).json({ success: false, error: 'Missing blob name' });
+    }
+
+    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+    const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+
+    // For a public container we can just return the public URL.
+    if (!accountKey && !connectionString) {
+      return res.json({ success: true, url: publicBlobUrl(blobName) });
+    }
+
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT?.trim() || '';
+    const sharedKeyCredential = accountKey && accountName
+      ? new StorageSharedKeyCredential(accountName, accountKey)
+      : undefined;
+
+    if (!sharedKeyCredential) {
+      return res.json({ success: true, url: publicBlobUrl(blobName) });
+    }
+
+    const containerClient = blobServiceClient().getContainerClient(
+      storageContainerName(),
+    );
+    const blobClient = containerClient.getBlobClient(blobName);
+
+    const startsOn = new Date();
+    const expiresOn = new Date(startsOn.getTime() + 60 * 60 * 1000); // 1 hour
+
+    const sasToken = generateBlobSASQueryParameters(
+      {
+        containerName: storageContainerName(),
+        blobName,
+        permissions: BlobSASPermissions.parse('r'),
+        startsOn,
+        expiresOn,
+        protocol: SASProtocol.Https,
+      },
+      sharedKeyCredential,
+    ).toString();
+
+    const sasUrl = `${blobClient.url || `${storageBlobEndpoint()}${storageContainerName()}/${blobName}`}?${sasToken}`;
+    return res.json({ success: true, url: sasUrl, expiresOn: expiresOn.toISOString() });
+  } catch (error: unknown) {
+    const detail = storageError(error, 'Failed to generate SAS URL');
+    console.error('Storage SAS URL error:', detail.log);
+    return res.status(500).json({
+      success: false,
+      error: detail.message,
+    });
+  }
+});
+
+export default router;

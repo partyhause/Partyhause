@@ -43,9 +43,28 @@ class OnboardingView(SessionAuthMixin, APIView):
             return e.args[0]
         user = request.user
         profile = getattr(user, 'profile', None)
+        has_chosen = bool(user.name and not str(user.name).startswith('u_'))
+        username_is_generated = not has_chosen
+        show_picker = not has_chosen
+        skippable = True
+        can_change_at = None
+        suggestions = []
+        limits = {
+            'min_length': 3,
+            'max_length': 30,
+            'cooldown_days': 30,
+            'max_suggestions': 6,
+        }
         return Response({
             'username': user.name or '',
             'display_name': user.name or '',
+            'username_is_generated': username_is_generated,
+            'has_chosen_username': has_chosen,
+            'show_picker': show_picker,
+            'skippable': skippable,
+            'can_change_at': can_change_at,
+            'suggestions': suggestions,
+            'limits': limits,
             'email_verified': user.email_verified,
             'account_role': user.account_role,
             'is_private': profile.is_private if profile else False,
@@ -150,8 +169,4 @@ class UserView(SessionAuthMixin, APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({
-            'id': str(user.id),
-            'email': user.email,
-            'name': user.name,
-        })
+        return Response(ProfileSerializer(user).data)

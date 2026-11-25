@@ -25,9 +25,11 @@ urlpatterns = [
     path('api/polls/', include('polls.urls')),
     # Email logs
     path('api/email-logs/', include('email_logs.urls')),
+    # Transactional email send (invites, guest correspondence)
+    path('api/send-email/', include('sendemail.urls')),
+    # External event ingestion
+    path('api/external-events/', include('external_events.urls')),
     # Storage
-    path('api/storage/', include('storage.urls')),
-    # Realtime
     path('api/realtime/', include('realtime.urls')),
     # MVP account
     path('api/mvp/account/', include('account.urls')),
@@ -40,5 +42,7 @@ urlpatterns = [
     # RSVP
     path('api/rsvp/', include('rsvp.urls')),
     # Health
+    path('api/partyplates/', include('partyplates.urls')),
     path('api/health/', include('health.urls')),
+    path('api/ai/', include('ai_chat.urls')),
 ]
