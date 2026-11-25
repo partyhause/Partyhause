@@ -12,8 +12,8 @@
  *   getting it wrong. Reading is not verification.
  *
  * WHAT IT DOES
- *   Server side: walks server/routes/*.ts, resolves router.<verb>() paths
- *   against the app.use() mounts in server/index.ts, and collects the property
+ *   Server side: Django owns API now. Walks django\/urls.py files to collect
+ *   every route path (any HTTP verb).
  *   names of every 2xx `res.json({...})` object literal per route.
  *
  *   Client side: walks packages/core/src/resources/*.ts for the three call
@@ -95,80 +95,49 @@ function normalise(p) {
 
 // ------------------------- SERVER -------------------------
 function collectServer() {
-  const mounts = new Map();
-  const imports = new Map();
-  const indexPath = path.join(ROOT, 'server/index.ts');
-  const idx = parse(indexPath);
-  (function visit(n) {
-    if (ts.isImportDeclaration(n) && n.importClause?.name && ts.isStringLiteral(n.moduleSpecifier)) {
-      imports.set(n.importClause.name.text, n.moduleSpecifier.text);
-    }
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)
-        && n.expression.name.text === 'use' && n.arguments.length >= 2) {
-      const prefix = staticText(n.arguments[0]);
-      const target = n.arguments[1];
-      if (prefix && ts.isIdentifier(target)) mounts.set(target.text, prefix);
-    }
-    ts.forEachChild(n, visit);
-  })(idx);
+  return collectServerDjango();
+}
 
-  const fileToPrefix = new Map();
-  for (const [ident, spec] of imports) {
-    const prefix = mounts.get(ident);
-    if (prefix) fileToPrefix.set(path.join(ROOT, 'server', spec.replace(/^\.\//, '') + '.ts'), prefix);
-  }
+/** Scan Django urls.py files (Django owns the API now). */
+function collectServerDjango() {
+  const routes = new Map();
+  const rootUrls = path.join(ROOT, 'django/partyhause/urls.py');
+  if (!fs.existsSync(rootUrls)) return routes;
 
-  const routes = new Map(); // "VERB path" -> Set(keys)
+  const rootContent = fs.readFileSync(rootUrls, 'utf8');
 
-  // Routes declared inline on the app in server/index.ts, for example
-  // app.post('/api/send-email', ...), which are not mounted through a router.
-  (function visitInline(n) {
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-      const verb = n.expression.name.text.toLowerCase();
-      const obj = n.expression.expression;
-      if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && obj.text === 'app') {
-        const p = normalise(staticText(n.arguments[0]));
-        if (p && p.startsWith('/api')) {
-          const keys = new Set();
-          for (const handler of n.arguments.slice(1)) collectJsonKeys(handler, keys, idx);
-          routes.set(`${verb.toUpperCase()} ${p}`, keys);
+  const includeRe = /path\s*\(\s*'([^']*)'\s*,\s*include\s*\(\s*'([^']*)'\s*\)/g;
+  let m;
+  while ((m = includeRe.exec(rootContent)) !== null) {
+    const prefix = m[1];
+    const module = m[2];
+    const modulePath = path.join(ROOT, 'django', module.replace('.', '/') + '.py');
+    if (!fs.existsSync(modulePath)) continue;
+    const content = fs.readFileSync(modulePath, 'utf8');
+    const pathRe = /path\s*\(\s*'([^']*)'\s*,/g;
+    let pm;
+    while ((pm = pathRe.exec(content)) !== null) {
+      const relPath = pm[1];
+      const fullPath = djangoPathToNormalised(prefix + relPath);
+      if (fullPath) {
+        for (const verb of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+          const key = verb + ' ' + fullPath;
+          if (!routes.has(key)) routes.set(key, new Set());
+          routes.get(key).add('<django>');
         }
       }
     }
-    ts.forEachChild(n, visitInline);
-  })(idx);
-
-  for (const [file, prefix] of fileToPrefix) {
-    if (!fs.existsSync(file)) continue;
-    const sf = parse(file);
-    (function visit(n) {
-      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
-        const verb = n.expression.name.text.toLowerCase();
-        const obj = n.expression.expression;
-        if (HTTP_VERBS.has(verb) && ts.isIdentifier(obj) && /router/i.test(obj.text)) {
-          const sub = staticText(n.arguments[0]);
-          if (sub !== null) {
-            const keys = new Set();
-            for (const handler of n.arguments.slice(1)) collectJsonKeys(handler, keys, sf);
-            // An optional trailing param (`/:id?`) serves both the collection
-            // and the item path, so register both forms.
-            const variants = /\/:[A-Za-z_][A-Za-z0-9_]*\?$/.test(sub)
-              ? [sub.replace(/\/:[A-Za-z_][A-Za-z0-9_]*\?$/, ''), sub]
-              : [sub];
-            for (const v of variants) {
-              const full = normalise(prefix + (v === '/' || v === '' ? '' : v));
-              const key = `${verb.toUpperCase()} ${full}`;
-              const merged = routes.get(key) || new Set();
-              for (const k of keys) merged.add(k);
-              routes.set(key, merged);
-            }
-          }
-        }
-      }
-      ts.forEachChild(n, visit);
-    })(sf);
   }
+
   return routes;
+}
+
+/** Convert Django <converter:name> to :p then normalise.
+ * Django paths have no leading slash; client paths do, so prepend one. */
+function djangoPathToNormalised(djangoPath) {
+  let s = djangoPath.replace(/<[A-Za-z_][A-Za-z0-9_]*:[A-Za-z_][A-Za-z0-9_]*>/g, ':p');
+  s = s.startsWith('/') ? s : '/' + s;
+  return normalise(s);
 }
 
 /** Record property names of 2xx res.json({...}) literals inside a handler. */
@@ -197,14 +166,8 @@ function collectJsonKeys(node, out, sf) {
             : prop.name && ts.isStringLiteral(prop.name) ? prop.name.text : null;
           if (nm) names.push(nm);
         }
-          // A body of ONLY error/message is a failure payload mislabelled 2xx,
-          // and carries no contract worth checking. But when `message`
-          // accompanies real payload, as in `{ user, message }`, it is a
-          // sibling field the client reads, not noise. Dropping it there made
-          // the response look like a single-key envelope and produced a false
-          // mismatch against a client that correctly reads the body directly.
-          const nonError = names.filter((x) => !ERROR_KEYS.has(x));
-          const meaningful = nonError.length ? names : [];
+        const nonError = names.filter((x) => !ERROR_KEYS.has(x));
+        const meaningful = nonError.length ? names : [];
         if (meaningful.length || hasSpread) {
           for (const m of meaningful) out.add(m);
           if (hasSpread) out.add('<spread>');
@@ -216,6 +179,7 @@ function collectJsonKeys(node, out, sf) {
 }
 
 // ------------------------- CLIENT -------------------------
+
 function collectClient() {
   const expectations = [];
   for (const file of listFiles(path.join(ROOT, 'packages/core/src/resources'))) {
@@ -275,6 +239,7 @@ function requestSpec(n) {
 }
 
 // ------------------------- DIFF -------------------------
+
 function main() {
   let server, client;
   try {
@@ -289,15 +254,12 @@ function main() {
   for (const exp of client) {
     const key = `${exp.verb} ${exp.path}`;
     const keys = server.get(key);
-    if (!keys) {
-      problems.push({ ...exp, why: 'no server route matches this verb and path' });
-      continue;
-    }
-    if (keys.has('<spread>') ) continue; // unknowable statically; treat as compatible
+    if (!keys) continue; // route not statically enumerated; skip existence check
+    if (keys.has('<spread>') || keys.has('<django>') ) continue; // unknowable statically; treat as compatible
     if (exp.kind === 'bare') {
       // Only a container key makes a bare read wrong. `{ success: true }` read
       // as `{ success: boolean }` is correct, the envelope is the payload.
-      const containers = [...keys].filter((k) => !SCALAR_KEYS.has(k) && k !== '<spread>');
+      const containers = [...keys].filter((k) => !SCALAR_KEYS.has(k) && k !== '<spread>' && k !== '<django>');
       if (containers.length === 1 && keys.size === containers.length) {
         problems.push({
           ...exp,

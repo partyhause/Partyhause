@@ -23,7 +23,7 @@ import { expect, type APIRequestContext, type Page } from '@playwright/test';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../src/lib/legal';
 
 export const API_LOG = process.env.E2E_API_LOG ?? '/tmp/e2e-api.log';
-export const API_BASE = process.env.E2E_API_URL ?? 'http://localhost:3001';
+export const API_BASE = process.env.E2E_API_URL ?? 'http://localhost:8001';
 
 export const CONSENT = {
   ageEligible: true as const,

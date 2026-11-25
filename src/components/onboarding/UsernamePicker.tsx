@@ -73,6 +73,12 @@ export function UsernamePicker({
   const [value, setValue] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { claim, skip, isSubmitting } = useUsernameActions();
+  const limits = state.limits ?? {
+    min_length: 3,
+    max_length: 30,
+    cooldown_days: 30,
+    max_suggestions: 5,
+  };
 
   // Only offer the existing handle back as a starting value when the user
   // actually chose it. Pre-filling the assigned u_<base36> handle would put the
@@ -84,7 +90,7 @@ export function UsernamePicker({
 
   const status = useUsernameAvailability(
     value,
-    state.limits.min_length,
+    limits.min_length,
     state.has_chosen_username ? state.username : null,
   );
 
@@ -151,7 +157,7 @@ export function UsernamePicker({
             name="username"
             value={value}
             onChange={(event) =>
-              setValue(sanitizeTyping(event.target.value, state.limits.max_length))
+              setValue(sanitizeTyping(event.target.value, limits.max_length))
             }
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -166,7 +172,7 @@ export function UsernamePicker({
             autoCorrect="off"
             spellCheck={false}
             inputMode="text"
-            maxLength={state.limits.max_length}
+            maxLength={limits.max_length}
             aria-describedby="username-picker-status"
             aria-invalid={status.kind === 'unavailable' || status.kind === 'error'}
             className="w-full rounded-lg border border-input bg-background py-2.5 pl-7 pr-10 font-mono text-base text-foreground outline-none transition focus:border-transparent focus:ring-2 disabled:opacity-60"
@@ -232,9 +238,9 @@ export function UsernamePicker({
         </p>
       ) : (
         <p className="mt-4 text-xs text-muted-foreground">
-          Letters, numbers and underscores. {state.limits.min_length} to{' '}
-          {state.limits.max_length} characters. You can change it again after{' '}
-          {state.limits.cooldown_days} days.
+          {limits.min_length} to{' '}
+          {limits.max_length} characters. You can change it again after{' '}
+          {limits.cooldown_days} days.
         </p>
       )}
 

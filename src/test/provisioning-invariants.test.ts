@@ -34,32 +34,27 @@ describe('provisioning must not delete out-of-band live state', () => {
     expect(kv).toContain("name: 'add'");
   });
 
-  it('the vault resource declares no inline accessPolicies entries', () => {
+  it('the vault resource declares no inline accessPolicies ENTRIES', () => {
     const kv = source('infra/modules/keyvault.bicep');
     const start = kv.indexOf("resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01'");
-    const end = kv.indexOf('resource deployerAccess');
+    const end = kv.indexOf("resource deployerAccess");
     expect(start, 'vault resource not found').toBeGreaterThan(-1);
     expect(end, 'deployer policy resource not found').toBeGreaterThan(start);
-    // Comment lines are stripped before matching: the vault block carries
-    // explanatory comments about the child resource, and the invariant is
-    // about declarations, not prose. The Azure RP rejects a fresh-vault PUT
-    // that omits the accessPolicies property entirely ("The parameter
+    // Comment lines are stripped before matching: the invariant is about
+    // declarations, not prose. The Azure RP rejects a fresh-vault PUT that
+    // omits the accessPolicies property entirely ("The parameter
     // accessPolicies is not specified"), so the module declares an EMPTY
-    // array on create. The danger this invariant guards against is ENTRIES
-    // on the inline array: an inline PUT replaces the whole array, wiping
-    // the out-of-band policies the child resource merges in.
+    // array on create. An empty array replaces nothing — the danger this
+    // invariant guards against is ENTRIES on the inline array, which would
+    // PUT-replace the out-of-band policies the child resource merges.
     const vaultBlock = kv
       .slice(start, end)
       .split('\n')
       .filter((line) => !line.trim().startsWith('//'))
       .join('\n');
-    const arrayBodies = vaultBlock.match(/accessPolicies\s*:\s*\[([^\]]*)\]/g) ?? [];
+    const arrayBodies = vaultBlock.match(/accessPolicies\s*=\s*\[([^\]]*)\]/g) ?? [];
     for (const body of arrayBodies) {
-      const entries = body.replace(/accessPolicies\s*:\s*\[/, '').replace(/\]$/, '').trim();
-      expect(
-        entries,
-        'inline accessPolicies array must be empty; grants go through the child resource',
-      ).toBe('');
+      expect(body.replace(/accessPolicies\s*=\s*\[/, '').trim(), 'inline accessPolicies array must be empty; grants go through the child resource').toBe('');
     }
   });
 

@@ -25,7 +25,7 @@
 #   Build & deploy (identical to the deploy job, using the combined image):
 #     9. az acr build --file Dockerfile.combined   (web + API in one image)
 #    10. az containerapp update                     (SHA-tagged revision)
-#    11. Health checks: /api/health and / on the container FQDN
+#    11. Health checks: /api/health/ and / on the container FQDN
 #
 # SECRETS / ENV REQUIRED
 #   DATABASE_URL                — optional; without it step 3 is skipped (CI
@@ -36,19 +36,19 @@
 # COMBINED IMAGE / TOPOLOGY
 #   One Container App serves frontend and backend together: nginx owns port 80
 #   and serves the static bundle with the full cache policy in nginx.conf, and
-#   proxies /api/* to the Express sidecar on localhost:3001 in the same
-#   network namespace. VITE_API_URL is passed EMPTY so the bundle sends
-#   same-origin relative requests (src/lib/apiBase.ts:9-12) and no CORS
-#   configuration is consulted. One revision update moves both tiers.
+#   proxies /api/* to the Django API sidecar on localhost:8001 in the same
+#   container. VITE_API_URL is passed EMPTY so the bundle sends same-origin
+#   relative requests (src/lib/apiBase.ts:9-12) and no CORS configuration is
+#   consulted. One revision update moves both tiers.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SUBSCRIPTION="${AZURE_SUBSCRIPTION:-45bc20c4-efcb-4bd4-9c70-ee1dcf271880}"
+SUBSCRIPTION="${AZURE_SUBSCRIPTION:-4dec0cc6-78c7-434c-b6c7-3ed2e8075d62}"
 RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-partyhause-prod}"
 APP_NAME="${AZURE_APP_NAME:-ca-app-partyhause-combined}"
-ACR_NAME="${AZURE_ACR_NAME:-acrpartyhausek2xoe7s452aja}"
+ACR_NAME="${AZURE_ACR_NAME:-acrpartyhausejvt4gqrth7cuc}"
 # The API keeps its container FQDN in CORS_ALLOWED_ORIGINS so the app stays
 # reachable from a URL that is guaranteed to exist even if a custom-domain
 # binding is ever removed.
@@ -155,7 +155,7 @@ health_check() {
 }
 
 step "Health check: API"
-health_check "API" "/api/health"
+health_check "API" "/api/health/"
 
 step "Health check: Web (static shell)"
 health_check "Web" "/"
@@ -164,5 +164,6 @@ echo ""
 echo "Deployed."
 echo "  - Combined app: $BASE_URL"
 echo "  - Web (custom domain): https://$PUBLIC_DOMAIN/"
-echo "  - API health: $BASE_URL/api/health"
+echo "  - API health: $BASE_URL/api/health/"
 echo "  - Image: $ACR_NAME.azurecr.io/partyhause-combined:$IMAGE_TAG"
+

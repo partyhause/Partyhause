@@ -79,9 +79,9 @@ const tok = (u) => jwt.sign(
 );
 const T = { host: tok(host), guest: tok(guest), outsider: tok(outsider), declined: tok(declined) };
 
-// Boot the real server.
-await import(new URL('../server/index.ts', import.meta.url).href);
-await new Promise((r) => setTimeout(r, 1500));
+// The API (Django) is started separately by the operator (npm run dev:all or
+// docker compose), not booted here. This script only makes HTTP requests to it.
+await new Promise((r) => setTimeout(r, 500));
 
 const BASE = 'http://127.0.0.1:3999';
 let pass = 0, fail = 0;

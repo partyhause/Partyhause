@@ -22,7 +22,7 @@
  *   while a request retries.
  */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Loading } from '@/components/ui/loading';
 import { useOnboardingState } from '@/hooks/use-onboarding';
 import { UsernamePicker } from '@/components/onboarding/UsernamePicker';
@@ -33,6 +33,7 @@ interface OnboardingGateProps {
 
 export function OnboardingGate({ children }: OnboardingGateProps) {
   const { state, isLoading, error } = useOnboardingState();
+  const [justClaimed, setJustClaimed] = useState(false);
 
   // First load. A brief spinner here is the same one every other authenticated
   // surface already shows, so the transition does not read as a new screen.
@@ -42,10 +43,9 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
 
   // Fail open. See the header: an unreachable status endpoint must not become
   // an account lockout.
-  if (error || !state || !state.show_picker) {
+  if (error || !state || !state.show_picker || justClaimed) {
     return <>{children}</>;
   }
-
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-12">
       <UsernamePicker
@@ -57,9 +57,8 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
             : 'This is how people find you and tag you across PartyHause. Choose one to continue.'
         }
         submitLabel="Continue"
-        // The control is rendered only when the server says this account may
-        // dismiss, which is true exactly for accounts that predate the picker.
         onSkip={state.skippable ? () => undefined : undefined}
+        onDone={() => setJustClaimed(true)}
       />
     </div>
   );

@@ -72,18 +72,9 @@ const LANDING_ARCHETYPES = [
   },
 ];
 
-/**
- * Why the caller is here, shared with the web landing and AuthScreen. The
- * auth screen renders intent-specific copy, and the landing is where the
- * intent is chosen: "Create your event" is a create intent, "I have an
- * invite" is a join intent. Same vocabulary as
- * src/components/LandingPageCreative.tsx so the two clients cannot drift.
- */
-export type LandingIntent = 'create_event' | 'join_event' | 'explore_features';
-
 export interface LandingScreenProps {
-  onGetStarted: (intent: LandingIntent) => void;
-  onSignIn: (intent: LandingIntent) => void;
+  onGetStarted: (intent: 'create_event') => void;
+  onSignIn: (intent: 'join_event') => void;
 }
 
 const SECTION_HEADING = {
@@ -111,7 +102,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
 
           <View style={styles.heroContentWrap}>
             <View style={styles.heroIconWrap}>
-              <Image source={require('../../assets/images/icon.png')} style={styles.heroIcon} resizeMode="contain" />
+              <Image source={require('../../assets/images/logo-pastel-house.png')} style={styles.heroIcon} resizeMode="contain" />
             </View>
             <Text style={styles.heroBadge}>PLAN. PARTY. PERFECT.</Text>
             <Text style={styles.heroTitle}>
@@ -194,6 +185,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ onGetStarted, onSi
           <View style={styles.ctaIconWrap}>
             <Text style={styles.ctaIcon}>🎉</Text>
           </View>
+          <Text style={styles.ctaTitle}>Ready to throw something unforgettable?</Text>
           <TouchableOpacity style={styles.ctaButton} onPress={() => onGetStarted('create_event')}>
             <Text style={styles.ctaButtonText}>Start your event</Text>
           </TouchableOpacity>

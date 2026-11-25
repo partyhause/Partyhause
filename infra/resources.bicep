@@ -329,15 +329,15 @@ module app 'modules/container-app.bicep' = {
     targetPort: 80
     envVars: [
       { name: 'NODE_ENV', value: 'production' }
-      { name: 'PORT', value: '3001' }
-      // Both custom hostnames plus the app FQDN. Same-origin /api calls carry
-      // no CORS preflight, but the value is kept so a browser pointing at the
-      // raw FQDN is not refused; dropping it would make the app unusable from
-      // the only URL that is guaranteed to exist. The FQDN is built from the
-      // environment's default domain, not from the region: the Container Apps
-      // FQDN suffix (orangecliff-6cf481f7) is per-environment, and
-      // interpolating the region here produced a hostname that never existed.
-      // Comma-separated: server/index.ts splits on comma.
+      { name: 'PORT', value: '8001' }
+      // Django (gunicorn) binds to :8001 internally; nginx on port 80 proxies
+      // /api/* to it. Same-origin /api calls carry no CORS preflight, but the
+      // value is kept so a browser pointing at the raw FQDN is not refused;
+      // dropping it would make the app unusable from the only URL that is
+      // guaranteed to exist. The FQDN is built from the environment's default
+      // domain, not from the region: the Container Apps FQDN suffix
+      // (orangecliff-6cf481f7) is per-environment, and interpolating the
+      // region here produced a hostname that never existed.
       { name: 'CORS_ALLOWED_ORIGINS', value: 'https://${publicDomain},https://www.${publicDomain},https://ca-app-partyhause-combined.${cae.properties.defaultDomain}' }
       { name: 'POSTGRES_HOST', value: postgres.outputs.serverFqdn }
       { name: 'POSTGRES_PORT', value: '5432' }

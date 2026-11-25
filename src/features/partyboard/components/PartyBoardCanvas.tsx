@@ -71,7 +71,7 @@ export const PartyBoardCanvas: React.FC<PartyBoardCanvasProps> = ({
 
     if (delta.x !== 0 || delta.y !== 0) {
       const sticky = stickies.find((s) => s.id === active.id);
-      if (sticky) {
+      if (sticky?.position) {
         const newX = sticky.position.x + delta.x / canvasState.zoom;
         const newY = sticky.position.y + delta.y / canvasState.zoom;
         onUpdateStickyPosition(sticky.id, { x: newX, y: newY });

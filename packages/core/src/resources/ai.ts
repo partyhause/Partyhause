@@ -1,7 +1,7 @@
 /**
  * The conversational event planner, `/api/ai/chat`.
  *
- * WHY THIS RESOURCE DID NOT EXIST
+ * WHY THIS RESOURCE EXISTS
  *   `packages/core` covered 77 endpoints and this was not one of them, so the
  *   iOS app had no way to reach the planner. `docs/SHARED_API_CLIENT.md` records
  *   the row as `| /api/ai | yes | none | none | none |`: a server surface with
@@ -49,6 +49,22 @@ export interface AiResource {
    *          minutes (server/routes/ai.ts:22-34).
    */
   chat(messages: ChatMessage[]): Promise<ApiResponse<ChatTurnResult>>;
+
+  /**
+   * Write a planner-extracted detail to the event's partyboard.
+   *
+   * Human-in-the-loop: the AI proposes, the user confirms. The route creates
+   * a sticky note (type 'note') or a task on the board. Returns whatever the
+   * server persisted.
+   *
+   * A 402 means the AI limiter tripped; a 403 means the caller is not a
+   * participant on the event.
+   */
+  boardAction(input: {
+    eventId: string;
+    action: 'create_sticky' | 'create_task';
+    data: Record<string, unknown>;
+  }): Promise<ApiResponse<unknown>>;
 }
 
 /**
@@ -95,6 +111,14 @@ export function createAiResource(t: Transport): AiResource {
         };
       }
       return { data: result.data.data, error: null };
+    },
+    boardAction: async ({ eventId, action, data }) => {
+      const result = await t.request<{ success?: boolean }>(
+        '/api/ai/board-action',
+        { method: 'POST', body: { event_id: eventId, action, data } },
+      );
+      if (result.error) return { data: null, error: result.error };
+      return { data: result.data ?? null, error: null };
     },
   };
 }

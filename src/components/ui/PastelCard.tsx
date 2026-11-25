@@ -7,23 +7,21 @@ interface PastelCardProps {
   variant?: Variant;
   className?: string;
   children: ReactNode;
-  /**
-   * Present on several call sites (Dashboard event rows, EventCreation step
-   * cards). The component previously dropped the prop, so the cards compiled
-   * (where types allowed) but were inert: cursor-pointer with no handler.
-   */
-  onClick?: () => void;
+  /** Present on interactive cards (the dashboards render them as buttons). Absent means the card is static. */
+  onClick?: () => void | Promise<void>;
 }
 
 export function PastelCard({ variant = 'default', className, children, onClick }: PastelCardProps) {
   return (
     <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
       className={cn(
         'pastel-card',
         variant !== 'default' && `pastel-card--${variant}`,
+        onClick && 'cursor-pointer',
         className
       )}
-      onClick={onClick}
     >
       {children}
     </div>
