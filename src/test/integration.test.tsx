@@ -128,6 +128,7 @@ describe('User Creation + Event Creation Integration Tests', () => {
       setGuests: vi.fn(),
       setEvents: vi.fn(),
       setCurrentEvent: vi.fn(),
+      loadEventGuests: vi.fn(),
     };
 
     beforeEach(() => {

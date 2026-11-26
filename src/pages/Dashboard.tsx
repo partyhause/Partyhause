@@ -14,6 +14,7 @@ export default function Dashboard() {
   const events = usePartyStore((s) => s.events);
   const navigate = useNavigate();
   const setCurrentEvent = usePartyStore((s) => s.setCurrentEvent);
+  const loadEventGuests = usePartyStore((s) => s.loadEventGuests);
 
   const isCreator = user?.role === 'creator';
   const name = user?.name || user?.email || 'Guest';
@@ -21,7 +22,8 @@ export default function Dashboard() {
   const totalGuests = events.reduce((sum, e) => sum + (e.max_guests || 0), 0);
 
   const handleEventClick = async (event: typeof events[0]) => {
-    await setCurrentEvent(event);
+    setCurrentEvent(event);
+    loadEventGuests(event.id);
     navigate('/event-management');
   };
 

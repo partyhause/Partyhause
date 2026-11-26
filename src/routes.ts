@@ -16,6 +16,7 @@ export const ROUTES = {
   EVENT_TEMPLATES: '/event-templates',
   AI_PLANNER: '/ai-planner',
   PROFILE: '/profile/:id?',
+  PROFILE_SELF: '/profile',
   FEED: '/feed',
   EXPLORE: '/explore',
   PARTY_CULTURE_BLOG: '/party-culture-blog',
@@ -24,6 +25,20 @@ export const ROUTES = {
   GUEST_VIEW: '/guest-view/:guestId',
   LOGOUT: '/logout',
   CATCH_ALL: '*',
+  // Onboarding funnel routes
+  ONBOARDING: '/onboarding',
+  ONBOARDING_WELCOME: '/onboarding/welcome',
+  ONBOARDING_ROLE: '/onboarding/role',
+  ONBOARDING_INTERESTS: '/onboarding/interests',
+  ONBOARDING_ORGANIZER_PROFILE: '/onboarding/organizer-profile',
+  ONBOARDING_WHERE_YOU_HOST: '/onboarding/where-you-host',
+  ONBOARDING_PERMISSIONS: '/onboarding/permissions',
+  ONBOARDING_PLANNER_CHAT: '/onboarding/planner-chat',
+  ONBOARDING_AI_WORKFLOW: '/onboarding/ai-workflow',
+  ONBOARDING_PLAN: '/onboarding/plan',
+  ONBOARDING_ASSISTANT_AUTONOMY: '/onboarding/assistant-autonomy',
+  ONBOARDING_PROFILE: '/onboarding/profile',
+  ONBOARDING_PAYMENT: '/onboarding/payment',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

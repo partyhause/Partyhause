@@ -68,7 +68,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck & Build
+      - name: Typecheck & Build (web)
         run: npm run build:check
 
       - name: Run tests

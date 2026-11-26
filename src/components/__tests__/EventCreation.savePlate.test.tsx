@@ -57,6 +57,7 @@ vi.mock('@/store/usePartyStore', () => ({
     events: [],
     user: { id: 'u1', email: 'test@test.com', name: 'Test User' },
     setCurrentEvent: vi.fn(),
+    loadEventGuests: vi.fn(),
   }),
 }));
 

@@ -14,6 +14,7 @@ vi.mock('@/store/usePartyStore', () => ({
       { id: 'e2', name: 'New Event', start_date: '2026-11-15', date: '2026-11-15' },
     ],
     setCurrentEvent: mockSetCurrentEvent,
+    loadEventGuests: vi.fn(),
     setEvents: vi.fn(),
     guests: [],
     isLoading: false,

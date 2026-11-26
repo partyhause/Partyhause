@@ -15,24 +15,24 @@
  *   derive it differently, and the failure modes are a user nagged forever or
  *   one never asked at all.
  *
- * FAILING OPEN
- *   If the status request fails, the children render. A username picker is not
- *   worth locking somebody out of their account over, and the gate will ask
- *   again on the next load. The one thing it must not do is show a blank screen
- *   while a request retries.
- */
-
+ * ERROR HANDLING
+ *   On error, we show a retry button rather than failing open. A flaky network
+ *   must not silently bypass the username picker. The user can retry or the
+ *   error will clear on the next successful load.
+ *   */
 import { useState, type ReactNode } from 'react';
 import { Loading } from '@/components/ui/loading';
 import { useOnboardingState } from '@/hooks/use-onboarding';
 import { UsernamePicker } from '@/components/onboarding/UsernamePicker';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface OnboardingGateProps {
   children: ReactNode;
 }
 
 export function OnboardingGate({ children }: OnboardingGateProps) {
-  const { state, isLoading, error } = useOnboardingState();
+  const { state, isLoading, error, refresh } = useOnboardingState();
   const [justClaimed, setJustClaimed] = useState(false);
 
   // First load. A brief spinner here is the same one every other authenticated
@@ -41,9 +41,29 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
     return <Loading fullScreen size="lg" />;
   }
 
-  // Fail open. See the header: an unreachable status endpoint must not become
-  // an account lockout.
-  if (error || !state || !state.show_picker || justClaimed) {
+  // Error state: show retry instead of failing open. A flaky network must not
+  // silently bypass the username picker.
+  if (error) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-12">
+        <div className="text-center space-y-4 max-w-md">
+          <p className="text-lg font-medium text-foreground">Unable to load onboarding status</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button
+            variant="outline"
+            onClick={() => refresh()}
+            className="w-fit mx-auto"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fail open only for truly missing state (not errors) or when picker not needed
+  if (!state || !state.show_picker || justClaimed) {
     return <>{children}</>;
   }
   return (

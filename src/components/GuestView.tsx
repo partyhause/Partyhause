@@ -15,10 +15,7 @@ interface GuestViewProps {
 }
 
 export const GuestView = ({ guestId, eventId }: GuestViewProps) => {
-  const { events, guests, currentEvent } = usePartyStore();
-  const setGuests = usePartyStore((s) => s.setGuests);
-  const setEvents = usePartyStore((s) => s.setEvents);
-  const setCurrentEvent = usePartyStore((s) => s.setCurrentEvent);
+  const { events, guests, currentEvent, setCurrentEvent, loadEventGuests, setEvents, setGuests } = usePartyStore();
   const [showQR, setShowQR] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const triedFetch = useRef(false);
@@ -63,13 +60,9 @@ export const GuestView = ({ guestId, eventId }: GuestViewProps) => {
         }
         setEvents(merged);
 
-        // set currentEvent for the UI using the action which will also load guests
-        try {
-          await setCurrentEvent(fetchedEvent);
-        } catch (e) {
-          // fallback: call action without await
-          setCurrentEvent(fetchedEvent);
-        }
+        // set currentEvent and load guests via store actions
+        setCurrentEvent(fetchedEvent);
+        loadEventGuests(fetchedEvent.id);
       } catch (e) {
         // ignore, will show not found below
       } finally {
@@ -80,7 +73,7 @@ export const GuestView = ({ guestId, eventId }: GuestViewProps) => {
     fetchGuestAndEvent();
 
     return () => { mounted = false; };
-  }, [guest, guestId, guests, events, isFetching, setGuests, setEvents, setCurrentEvent]);
+  }, [guest, guestId, guests, events, isFetching, setGuests, setEvents, setCurrentEvent, loadEventGuests]);
 
   if (isFetching) {
     return (
