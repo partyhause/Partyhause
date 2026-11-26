@@ -290,8 +290,8 @@ else:
     # Inside Docker, EMAIL_HOST must be the compose service name
     # 'partyhause-mailpit', not 'localhost' (which resolves to the container
     # itself).
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'partyhause-mailpit')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', '127.0.0.1')
+
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '1025'))
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
@@ -323,6 +323,14 @@ AZURE_STORAGE_BLOB_ENDPOINT = (
 AZURE_STORAGE_IMAGE_CONTAINER = (
     os.environ.get('AZURE_STORAGE_IMAGE_CONTAINER') or 'event-invites'
 ).strip()
+
+# Azure Web PubSub. The connection string is provisioned by Bicep as a Key
+# Vault reference. When absent, /api/realtime/negotiate answers 503 and the
+# client falls back to polling (src/hooks/use-realtime.ts).
+WEBPUBSUB_CONNECTION_STRING = (
+    os.environ.get('WEBPUBSUB_CONNECTION_STRING') or ''
+).strip()
+WEBPUBSUB_HUB = (os.environ.get('WEBPUBSUB_HUB') or 'partyhause').strip()
 
 REST_FRAMEWORK = {
     # No default authentication: views use SessionAuthMixin to enforce the
