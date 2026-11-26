@@ -86,14 +86,23 @@ model User {
   verification_token         String?   @unique
   verification_token_expires DateTime?
   token_version              Int       @default(0)
-  account_status             String    @default("active")
+  // Django auth columns (required by django.contrib.auth ModelBackend):
+  // password is populated from password_hash at signup; last_login /
+  // date_joined track session lifecycle; is_superuser / is_staff / is_active
+  // are Django admin/auth flags. account_status ("active") is the app-level
+  // flag, distinct from Django's is_active.
+  password          String?
+  last_login        DateTime?
+  is_superuser      Boolean   @default(false)
+  is_active         Boolean   @default(true)
+  is_staff          Boolean   @default(false)
+  date_joined       DateTime  @default(now())
+  account_status    String    @default("active")
   terms_version              String?
   privacy_version            String?
   age_eligible               Boolean   @default(false)
   deletion_requested_at      DateTime?
   stripe_customer_id         String?   @unique
-
-  // Account role and card verification (migration 20261008000000
   // _account_role_and_card_verification; file lost from disk, columns live in
   // every database). account_role is the vendor-side role, distinct from
   // user_profiles.account_type; the API route for it was removed (server/
@@ -832,11 +841,11 @@ model TemplateUsage {
 
 // ============================================================================
 // PARTYCREW SOCIAL NETWORK
-// ============================================================================
 
 // User profiles (20251101)
 model UserProfile {
   id              String  @id // references auth.users(id) ON DELETE CASCADE
+  user_id         String? // Django auth OneToOne FK: user_profiles.user_id -> users(id)
   username        String  @unique
   display_name    String
   bio             String?
