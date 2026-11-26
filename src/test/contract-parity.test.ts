@@ -258,4 +258,5 @@ describe('the single source of truth stays single', () => {
     const index = fs.readFileSync(path.join(ROOT, 'packages/core/src/index.ts'), 'utf8');
     expect(index).not.toMatch(/from ['"]\.\/contracts['"]/);
   });
+});
 
