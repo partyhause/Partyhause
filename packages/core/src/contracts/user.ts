@@ -125,7 +125,7 @@ export const userProfileUpdate = z
     message: 'No updatable fields provided',
   });
 
-/** `GET /api/accounts/me`. */
+/** `GET /api/auth/me`. */
 export const currentUser = z.object({
   id: identifier,
   email: z.string(),

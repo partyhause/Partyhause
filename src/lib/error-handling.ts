@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Custom error classes
 export class AppError extends Error {
   public readonly code: string;
@@ -166,5 +168,4 @@ export const useAsyncError = () => {
   }, []);
 };
 
-// React import for the hook
-import React from 'react';
+// React import for the hook (moved to top)

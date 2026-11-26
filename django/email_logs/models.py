@@ -13,13 +13,32 @@ class EmailLog(models.Model):
         null=True,
         blank=True,
     )
+    guest = models.ForeignKey(
+        'guests.Guest',
+        on_delete=models.SET_NULL,
+        related_name='email_logs',
+        db_column='guest_id',
+        null=True,
+        blank=True,
+    )
     recipient = models.EmailField()
     subject = models.CharField(max_length=255)
+    email_type = models.CharField(max_length=50, default='invitation')
     status = models.CharField(max_length=20, default='pending')
     provider = models.CharField(max_length=50, default='acs')
     provider_message_id = models.CharField(max_length=255, blank=True, null=True)
+    resend_email_id = models.CharField(max_length=255, blank=True, null=True)
+    template_id = models.UUIDField(blank=True, null=True)
+    template_body = models.TextField(blank=True, null=True)
     sent_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(blank=True, null=True)
+    opened_at = models.DateTimeField(blank=True, null=True)
+    clicked_at = models.DateTimeField(blank=True, null=True)
+    bounced_at = models.DateTimeField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
+    webhook_data = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'email_logs'

@@ -79,3 +79,15 @@ jobs:
 
       - name: Export iOS bundle
         run: npm run build:ios:export
+
+      - name: Django - check
+        run: |
+          cd django
+          python3 -m pip install -r requirements.txt
+          python3 manage.py check
+
+      - name: Django - migrations
+        run: |
+          cd django
+          python3 manage.py makemigrations --check --dry-run
+          python3 manage.py migrate --plan

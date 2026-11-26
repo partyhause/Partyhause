@@ -119,7 +119,7 @@ az acr build \
   --registry "$ACR_NAME" \
   --image partyhause-combined:latest \
   --image "partyhause-combined:$IMAGE_TAG" \
-  --file Dockerfile.combined \
+  --file docker/Dockerfile.combined \
   --build-arg VITE_API_URL="" \
   --build-arg VITE_APP_NAME="PartyHause" \
   --build-arg "VITE_APP_URL=https://$PUBLIC_DOMAIN" \

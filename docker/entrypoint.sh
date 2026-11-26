@@ -23,6 +23,9 @@ LOG_FILE="${API_LOG_FILE:-/tmp/ph-api.log}"
 
 cd /app/django
 
+# ---- Run migrations under advisory lock ------------------------------------
+python3 manage.py migrate_safe
+
 # ---- API sidecar -----------------------------------------------------------
 gunicorn partyhause.wsgi:application \
   --bind 127.0.0.1:8001 --workers 2 --threads 4 --timeout 120 \

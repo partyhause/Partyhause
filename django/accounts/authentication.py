@@ -1,4 +1,4 @@
-import uuid
+
 
 import jwt
 from datetime import datetime, timedelta
@@ -8,7 +8,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 User = get_user_model()
-SECRET = settings.SECRET_KEY
+SECRET = settings.JWT_SECRET
 ALGORITHM = 'HS256'
 # Match Express JWT_EXPIRES_IN default of 7d so sessions don't expire prematurely.
 EXPIRY = timedelta(days=7)
@@ -55,11 +55,6 @@ class JWTAuthentication(BaseAuthentication):
         except jwt.InvalidTokenError:
             raise AuthenticationFailed('Invalid token')
         user_id = payload.get('sub')
-        token_version = payload.get('token_version', 0)
-        try:
-            user_id = uuid.UUID(user_id)
-        except (ValueError, AttributeError, TypeError):
-            raise AuthenticationFailed('Invalid token')
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:

@@ -3,14 +3,18 @@ import jwt
 from django.conf import settings
 from accounts.models import User
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class CsrfExemptMiddleware:
     """
-    Exempt /api/* from CSRF. This is a JWT-based API: the bearer token IS the
-    credential, and session cookies are only a fallback transport. Requiring
-    a CSRF cookie breaks stateless API clients and mobile.
+    Exempt /api/* from CSRF.
+
+    This is a bearer-token API: the Authorization header IS the credential,
+    and it is not attached automatically by a browser. Session-cookie
+    authentication was removed from the middleware and from SessionAuthMixin,
+    so a cross-site request cannot ride an ambient cookie.
     """
 
     def __init__(self, get_response):
@@ -20,70 +24,62 @@ class CsrfExemptMiddleware:
         if request.path.startswith('/api/'):
             request._dont_enforce_csrf_checks = True
         return self.get_response(request)
-from django.contrib.auth.models import AnonymousUser
-import jwt
-from django.conf import settings
-from accounts.models import User
-import logging
-logger = logging.getLogger(__name__)
 
 
 def _set_user_from_token(request):
     """Parse the HS256 JWT from the Authorization header and attach the user
-    to the request, mirroring the Express auth middleware contract:
+    to the request.
 
-    - valid token                   -> request.user set, proceed
-    - missing/invalid/expired token -> request.user stays AnonymousUser
+    - valid, unrevoked, active token -> request.user set, proceed
+    - missing/invalid/expired/revoked/inactive token -> AnonymousUser
 
-    SessionAuthMixin (used by /api/auth/me/, RSVP, etc.) performs its own
-    stricter verification (token_version, email_verified, account_status) and
-    returns 401/403 as appropriate. This middleware only maps the bearer token
-    to a Django user so DRF views and `request.user.is_authenticated` work.
+    SessionAuthMixin performs the stricter contract (401 for an invalid token,
+    403 for an unverified address) for views that need it. This middleware
+    exists so `request.user.is_authenticated` is meaningful for the views that
+    read it directly; it still enforces revocation and account status, because
+    a token whose `token_version` is stale must not authenticate anything.
     """
     auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    logger.debug(f'JWT middleware: auth_header present={bool(auth_header)}')
+    logger.debug('JWT middleware: auth_header present=%s', bool(auth_header))
     if not auth_header.startswith('Bearer '):
-        # Fall back to token stored in Django session (set at login/signup)
-        token = request.session.get('auth_token')
-        if token:
-            logger.debug('JWT middleware: no Bearer header, using session token')
-            auth_header = f'Bearer {token}'
-        else:
-            request.user = AnonymousUser()
-            logger.debug('JWT middleware: no Bearer header or session token, set AnonymousUser')
-            return
+        request.user = AnonymousUser()
+        return
 
     token = auth_header.split(' ', 1)[1]
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=['HS256'],
-        )
-    except jwt.ExpiredSignatureError as e:
-        logger.debug(f'JWT middleware: expired token: {e}')
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=['HS256'])
+    except jwt.ExpiredSignatureError as exc:
+        logger.debug('JWT middleware: expired token: %s', exc)
         request.user = AnonymousUser()
         return
-    except jwt.InvalidTokenError as e:
-        logger.debug(f'JWT middleware: invalid token: {e}')
+    except jwt.InvalidTokenError as exc:
+        logger.debug('JWT middleware: invalid token: %s', exc)
         request.user = AnonymousUser()
         return
 
     user_id = payload.get('sub')
     if not user_id:
         request.user = AnonymousUser()
-        logger.debug('JWT middleware: no sub in payload')
         return
 
     try:
         user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValueError, TypeError):
         request.user = AnonymousUser()
-        logger.debug(f'JWT middleware: user {user_id} not found')
+        return
+
+    if getattr(user, 'token_version', 0) != payload.get('token_version', 0):
+        logger.debug('JWT middleware: token revoked for user %s', user.id)
+        request.user = AnonymousUser()
+        return
+    if user.account_status != 'active':
+        logger.debug('JWT middleware: account not active for user %s', user.id)
+        request.user = AnonymousUser()
         return
 
     request.user = user
-    logger.debug(f'JWT middleware: set user {user.id} ({user.email})')
+    request._email_verified = user.email_verified and payload.get('email_verified') is True
+    logger.debug('JWT middleware: set user %s (%s)', user.id, user.email)
 
 
 class JWTAuthenticationMiddleware:
@@ -99,8 +95,7 @@ class JWTAuthenticationMiddleware:
 
     def __call__(self, request):
         _set_user_from_token(request)
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
 
 class EventPermissionMiddleware:
@@ -121,7 +116,7 @@ class AuthBypassMiddleware:
 
 class SlashTolerantMiddleware:
     """
-    Make Django API endpoints accept both /path and /path/
+    Make Django API endpoints accept both /path and /path/.
     Rewrite POST/PUT/PATCH/DELETE to the slash variant before URL resolution.
     """
 

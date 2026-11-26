@@ -1,45 +1,73 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+import uuid
+from datetime import datetime
+
 from django.utils import timezone
-from .models import Event
-from accounts.models import User
+from django.utils.dateparse import parse_date, parse_datetime
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.session_auth import SessionAuthMixin
 from guests.models import Guest
-from accounts.session_auth import SessionAuthMixin, _SessionAuthStop
+
+from .models import Event, EventCoHost
+
+ALLOWED_STATUSES = {'draft', 'published', 'cancelled', 'completed', 'archived'}
+EDITOR_ROLES = {'host', 'co-host', 'editor', 'organizer'}
 
 
 class EventAccess:
-    """Replicate Express getEventAccess logic"""
+    """What a viewer may do with an event.
+
+    Co-hosts were previously ignored, so an event shared with a co-host was
+    readable only by its owner. The role check is the same one the guest and
+    invitation endpoints use.
+    """
 
     def __init__(self, event, user):
         self.event = event
         self.user = user
         if not event:
             self.exists = False
+            self.is_host = False
+            self.is_co_host = False
+            self.is_guest = False
+            self.is_public = False
+            self.host_id = None
             return
 
-        self.is_host = str(event.host_id) == str(user.id) if user else False
-        self.is_public = event.is_public or event.privacy == 'public'
+        authenticated = bool(user and getattr(user, 'is_authenticated', False))
+        self.is_host = authenticated and str(event.host_id) == str(user.id)
+        self.is_public = bool(event.is_public or event.privacy == 'public')
 
-        # Check if user is guest via email match
+        self.is_co_host = False
+        self.co_host_role = None
+        if authenticated and not self.is_host:
+            co_host = EventCoHost.objects.filter(event=event, user=user).first()
+            if co_host is not None:
+                self.is_co_host = True
+                self.co_host_role = co_host.role
+
         is_guest = False
-        if user and user.email:
-            try:
-                guest = Guest.objects.filter(event=event, email__iexact=user.email).first()
-                is_guest = guest is not None
-            except Exception:
-                pass
-
+        if authenticated and user.email:
+            is_guest = Guest.objects.filter(event=event, email__iexact=user.email).exists()
+            if not is_guest:
+                is_guest = Guest.objects.filter(event=event, user_id=user.id).exists()
         self.is_guest = is_guest
         self.exists = True
         self.host_id = event.host_id
 
     def can_read(self):
-        return self.exists and (self.is_public or self.is_host or self.is_guest)
+        return self.exists and (
+            self.is_public or self.is_host or self.is_co_host or self.is_guest
+        )
 
     def can_edit(self):
-        return self.exists and self.is_host
+        if not self.exists:
+            return False
+        if self.is_host:
+            return True
+        return self.is_co_host and self.co_host_role in EDITOR_ROLES
 
     def can_delete(self):
         return self.exists and self.is_host
@@ -53,272 +81,317 @@ def serialize_event(event, access):
         'description': event.description,
         'start_date': event.start_date.isoformat() if event.start_date else None,
         'end_date': event.end_date.isoformat() if event.end_date else None,
+        'event_date': event.event_date.isoformat() if event.event_date else None,
+        'event_type': event.event_type,
         'location': event.location,
         'location_name': event.location_name,
+        'location_address': event.location_address,
         'privacy': event.privacy,
         'status': event.status,
         'max_guests': event.max_guests,
         'is_public': event.is_public,
         'host_id': str(event.host_id),
+        'revision': event.revision,
         'created_at': event.created_at.isoformat(),
         'updated_at': event.updated_at.isoformat(),
         'external_source': event.external_source,
         'external_event_id': event.external_event_id,
         'external_metadata': event.external_metadata,
-    }
-    can_edit = access.can_edit() if access else False
-    if can_edit:
-        base['capabilities'] = {
-            'can_edit': can_edit,
+        'capabilities': {
+            'can_edit': access.can_edit() if access else False,
             'can_delete': access.can_delete() if access else False,
-            'can_view_insights': True
-        }
+            'can_view_insights': access.can_edit() if access else False,
+        },
+    }
     return base
 
 
-class IndexEventsView(APIView):
-    """GET /api/events/ — List events user can see"""
-    permission_classes = [AllowAny]
+def _parse_datetime(value, field):
+    if value in (None, ''):
+        return None, None
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        parsed = parse_datetime(str(value))
+        if parsed is None:
+            date_only = parse_date(str(value))
+            if date_only is not None:
+                parsed = datetime.combine(date_only, datetime.min.time())
+    if parsed is None:
+        return None, f'{field} is not a valid ISO-8601 datetime'
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed)
+    return parsed, None
+
+
+def _event_uuid(value):
+    try:
+        return uuid.UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+def _create_event(request):
+    data = request.data
+    name = (data.get('name') or data.get('title') or '').strip()
+    start_raw = data.get('start_date') or data.get('startDate') or data.get('date')
+    end_raw = data.get('end_date') or data.get('endDate') or start_raw
+
+    start_date, error = _parse_datetime(start_raw, 'start_date')
+    if error:
+        return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+    end_date, error = _parse_datetime(end_raw, 'end_date')
+    if error:
+        return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not name or start_date is None:
+        return Response(
+            {'error': 'name and start_date are required'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        max_guests = int(data.get('max_guests') or data.get('maxGuests') or 50)
+    except (TypeError, ValueError):
+        return Response({'error': 'max_guests must be a number'}, status=status.HTTP_400_BAD_REQUEST)
+
+    event = Event.objects.create(
+        host_id=request.user.id,
+        name=name,
+        title=data.get('title') or name,
+        description=data.get('description'),
+        start_date=start_date,
+        end_date=end_date or start_date,
+        event_date=start_date,
+        location=data.get('location'),
+        location_name=data.get('location_name') or data.get('locationName'),
+        location_address=data.get('location_address') or data.get('locationAddress'),
+        privacy=data.get('privacy', 'private'),
+        status=data.get('status', 'draft'),
+        max_guests=max_guests,
+        is_public=bool(data.get('is_public') or data.get('isPublic')),
+        template_type=data.get('template_type') or data.get('templateType'),
+        template_data=data.get('template_data') or data.get('templateData') or {},
+    )
+    return Response(
+        {
+            'event': serialize_event(event, EventAccess(event, request.user)),
+            'success': True,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+def _update_event(request, event):
+    data = request.data
+
+    for source, target in (
+        ('name', 'name'),
+        ('title', 'title'),
+        ('description', 'description'),
+        ('location', 'location'),
+        ('location_name', 'location_name'),
+        ('locationName', 'location_name'),
+        ('location_address', 'location_address'),
+        ('locationAddress', 'location_address'),
+        ('privacy', 'privacy'),
+    ):
+        if source in data:
+            setattr(event, target, data[source])
+
+    if 'max_guests' in data or 'maxGuests' in data:
+        try:
+            event.max_guests = int(data.get('max_guests') or data.get('maxGuests'))
+        except (TypeError, ValueError):
+            return Response({'error': 'max_guests must be a number'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if 'is_public' in data or 'isPublic' in data:
+        event.is_public = bool(data.get('is_public') if 'is_public' in data else data.get('isPublic'))
+
+    for source, target in (
+        ('start_date', 'start_date'),
+        ('startDate', 'start_date'),
+        ('end_date', 'end_date'),
+        ('endDate', 'end_date'),
+        ('event_date', 'event_date'),
+        ('eventDate', 'event_date'),
+    ):
+        if source in data:
+            parsed, error = _parse_datetime(data[source], source)
+            if error:
+                return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+            if parsed is not None:
+                setattr(event, target, parsed)
+
+    requested_status = data.get('status')
+    if requested_status is not None:
+        if requested_status not in ALLOWED_STATUSES:
+            return Response(
+                {'error': f"status must be one of {sorted(ALLOWED_STATUSES)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if requested_status == 'published' and event.status != 'published':
+            event.revision += 1
+            event.save()
+            try:
+                event.publish()
+            except ValueError as exc:
+                return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        elif requested_status == 'cancelled' and event.status != 'cancelled':
+            event.cancel()
+        else:
+            event.status = requested_status
+            event.revision += 1
+            event.save()
+    else:
+        event.revision += 1
+        event.save()
+
+    event.refresh_from_db()
+    return Response(
+        {
+            'event': serialize_event(event, EventAccess(event, request.user)),
+            'success': True,
+        }
+    )
+
+
+class IndexEventsView(SessionAuthMixin, APIView):
+    """GET/POST /api/events/ — list the caller's events or create one."""
 
     def get(self, request):
-        user = request.user if request.user.is_authenticated else None
-        if not user:
-            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # List user's hosted events
+        user = request.user
         events = Event.objects.filter(host_id=user.id)
 
-        # Add externally sourced events imported by this user (privacy-scoped).
         events = events | Event.objects.filter(
             imported_by=user,
             external_source__isnull=False,
         ).exclude(external_source='')
 
-        # Add guest events
+        events = events | Event.objects.filter(co_hosts__user=user)
+
         if user.email:
-            from guests.models import Guest as GuestModel
-            guest_event_ids = GuestModel.objects.filter(email__iexact=user.email).values_list('event_id', flat=True)
+            guest_event_ids = Guest.objects.filter(
+                email__iexact=user.email
+            ).values_list('event_id', flat=True)
             events = events | Event.objects.filter(id__in=guest_event_ids)
 
         events = events.distinct().order_by('start_date')
-
-        data = []
-        for e in events:
-            ea = EventAccess(e, user)
-            data.append(serialize_event(e, ea))
-
+        data = [
+            serialize_event(event, EventAccess(event, user))
+            for event in events
+        ]
         return Response({'events': data, 'count': len(data)})
 
     def post(self, request):
-        """POST /api/events/ — Create event"""
-        if not request.user or not request.user.is_authenticated:
-            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-        try:
-            data = request.data
-            event = Event.objects.create(
-                host_id=request.user.id,
-                name=data.get('name'),
-                title=data.get('title') or data.get('name'),
-                description=data.get('description'),
-                start_date=data.get('start_date'),
-                end_date=data.get('end_date'),
-                location=data.get('location'),
-                location_name=data.get('location_name'),
-                privacy=data.get('privacy', 'private'),
-                status=data.get('status', 'draft'),
-                max_guests=data.get('max_guests', 50),
-                is_public=data.get('is_public', False),
-                template_type=data.get('template_type'),
-                template_data=data.get('template_data', {}),
-                timeline_blocks=data.get('timeline_blocks', []),
-            )
-            return Response({'id': str(event.id), 'status': 'created'}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return _create_event(request)
 
-class GetEventView(APIView):
-    """GET /api/events/:id — Get single event"""
-    permission_classes = [AllowAny]
+
+class CreateEventView(SessionAuthMixin, APIView):
+    """POST /api/events/create/ — create an event."""
+
+    def post(self, request):
+        return _create_event(request)
+
+
+class GetEventView(SessionAuthMixin, APIView):
+    """GET/PUT/DELETE /api/events/:id/."""
+
+    ALLOW_ANONYMOUS = True
 
     def get(self, request, event_id):
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            access = EventAccess(event, request.user)
-            if not access.can_read():
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_read():
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Get stats
+        response = {'event': serialize_event(event, access)}
+        if access.can_edit():
             guests = Guest.objects.filter(event=event)
-            stats = {
+            response['stats'] = {
                 'total_guests': guests.count(),
-                'guests_accepted': guests.filter(rsvp_status__in=['accepted', 'confirmed']).count(),
+                'guests_accepted': guests.filter(
+                    rsvp_status__in=['accepted', 'confirmed']
+                ).count(),
                 'guests_declined': guests.filter(rsvp_status='declined').count(),
                 'guests_pending': guests.filter(rsvp_status='pending').count(),
                 'guests_checked_in': guests.filter(checked_in=True).count(),
             }
-
-            serialised = serialize_event(event, {'can_view_insights': access.can_edit()})
-
-            response = {'event': serialised}
-            if serialised.get('capabilities', {}).get('can_edit'):
-                response['stats'] = stats
-
-            return Response(response)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def delete(self, request, event_id):
-        """DELETE /api/events/:id — Delete event (host only)"""
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            access = EventAccess(event, request.user)
-            if not access.can_delete():
-                return Response({'error': 'Only the host can delete this event'}, status=status.HTTP_403_FORBIDDEN)
-
-            event.delete()
-            return Response({'status': 'deleted'}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-class CreateEventView(SessionAuthMixin, APIView):
-    """POST /api/events/ — Create event"""
-    REQUIRES_VERIFIED = True
-
-    def post(self, request):
-        try:
-            self._verify_token()
-        except _SessionAuthStop as e:
-            return e.args[0]
-        try:
-            data = request.data
-            event = Event.objects.create(
-                host_id=request.user.id,
-                name=data.get('name'),
-                title=data.get('title') or data.get('name'),
-                description=data.get('description'),
-                start_date=data.get('start_date'),
-                end_date=data.get('end_date'),
-                location=data.get('location'),
-                location_name=data.get('location_name'),
-                privacy=data.get('privacy', 'private'),
-                status=data.get('status', 'draft'),
-                max_guests=data.get('max_guests', 50),
-                is_public=data.get('is_public', False),
-                template_type=data.get('template_type'),
-                template_data=data.get('template_data', {}),
-            )
-            return Response({'id': str(event.id), 'status': 'created'}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UpdateEventView(APIView):
-    """PUT /api/events/:id — Update event"""
-    permission_classes = [AllowAny]
+        return Response(response)
 
     def put(self, request, event_id):
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            access = EventAccess(event, request.user)
-            if not access.can_edit():
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            data = request.data
-            for field in ['name', 'title', 'description', 'location', 'location_name', 'privacy', 'status', 'max_guests', 'is_public']:
-                if field in data:
-                    setattr(event, field, data[field])
-            event.save()
-            return Response({'id': str(event.id), 'status': 'updated'})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class DeleteEventView(APIView):
-    """DELETE /api/events/:id — Delete event"""
-    permission_classes = [AllowAny]
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_edit():
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        return _update_event(request, event)
 
     def delete(self, request, event_id):
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            access = EventAccess(event, request.user)
-            if not access.can_delete():
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            event.delete()
-            return Response({'status': 'deleted'})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_delete():
+            return Response(
+                {'error': 'Only the host can delete this event'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        event.delete()
+        return Response({'status': 'deleted'})
 
 
-class PublishEventView(APIView):
-    """POST /api/events/:id/publish — Publish event"""
-    permission_classes = [AllowAny]
+class UpdateEventView(SessionAuthMixin, APIView):
+    """PUT /api/events/:id/update/ — update an event."""
 
-    def post(self, request, event_id):
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            access = EventAccess(event, request.user)
-            if not access.can_edit():
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            # Validation
-            if not event.name or not event.start_date or not event.location:
-                return Response({'error': 'Name, start date, and location required'}, status=status.HTTP_400_BAD_REQUEST)
-
-            if event.start_date <= timezone.now():
-                return Response({'error': 'Cannot publish past event'}, status=status.HTTP_400_BAD_REQUEST)
-
-            event.status = 'published'
-            event.published_at = timezone.now()
-            event.save()
-
-            return Response({'id': str(event.id), 'status': event.status})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, event_id):
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_edit():
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        return _update_event(request, event)
 
 
-class TimelineCreateView(SessionAuthMixin, APIView):
-    """POST /api/events/:id/timeline — Create a timeline block"""
-    REQUIRES_VERIFIED = True
+class DeleteEventView(SessionAuthMixin, APIView):
+    """DELETE /api/events/:id/delete/ — delete an event (host only)."""
+
+    def delete(self, request, event_id):
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_delete():
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        event.delete()
+        return Response({'status': 'deleted'})
+
+
+class PublishEventView(SessionAuthMixin, APIView):
+    """POST /api/events/:id/publish/ — publish a draft."""
 
     def post(self, request, event_id):
-        try:
-            self._verify_token()
-        except _SessionAuthStop as e:
-            return e.args[0]
-        try:
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+        event = Event.objects.filter(id=event_id).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        access = EventAccess(event, request.user)
+        if not access.can_edit():
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-            access = EventAccess(event, request.user)
-            if not access.can_edit():
-                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            event.publish()
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Extract timeline block data from request
-            data = request.data
-            block = {
-                "label": data.get("label"),
-                "start_time": data.get("startTime"),
-                "duration": data.get("duration"),
+        return Response(
+            {
+                'event': serialize_event(event, access),
+                'id': str(event.id),
+                'status': event.status,
             }
-            return Response({"block": block, "event_id": str(event.id)}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        )

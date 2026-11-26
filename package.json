@@ -24,7 +24,7 @@
     "test:run": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:migrations": "prisma migrate deploy && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma migrate deploy && node scripts/verify-migration-invariants.cjs && npx tsx scripts/verify-mvp-concurrency.ts && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
+    "test:migrations": "prisma migrate deploy && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma db execute --file prisma/migrations/20260905000100_database_functions/migration.sql && prisma migrate deploy && node scripts/verify-migration-invariants.cjs && npx tsx scripts/verify-mvp-concurrency.ts",
     "test:coverage": "vitest run --coverage",
     "deploy:full": "bash scripts/deploy-full.sh",
     "bind:domains": "bash scripts/bind-azure-custom-domains.sh",

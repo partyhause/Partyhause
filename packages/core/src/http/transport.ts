@@ -27,7 +27,7 @@ export interface ApiError {
   /**
    * Machine-readable error code, when the route sends one.
    *
-   * Only `POST /api/accounts/login` sets one today: `EMAIL_NOT_VERIFIED`, on a 403
+   * Only `POST /api/auth/login` sets one today: `EMAIL_NOT_VERIFIED`, on a 403
    * that is deliberately distinct from the 401 for bad credentials. The
    * distinction matters because the two need opposite remedies, a resend
    * versus a reset, and the client cannot tell them apart from the message
