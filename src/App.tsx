@@ -90,8 +90,6 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.AUTH} element={!user ? <AuthScreen initialMode="auth" userIntent={userIntent} /> : <Navigate to={ROUTES.DASHBOARD} replace />} />
                 <Route path={ROUTES.AUTH_VERIFY_EMAIL} element={<VerifyEmailPage />} />
                 <Route path={ROUTES.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
-                <Route path={ROUTES.JOIN_TOKEN} element={<JoinEventPage />} />
-                <Route path={ROUTES.JOIN_WILDCARD} element={<JoinEventPage />} />
                 <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path={ROUTES.CREATE_EVENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventCreation /></RoleGuard></ProtectedRoute>} />
                 <Route path={ROUTES.EVENT_MANAGEMENT} element={<ProtectedRoute><RoleGuard allowedRoles={['creator']}><EventManagement /></RoleGuard></ProtectedRoute>} />
@@ -101,6 +99,7 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.EVENT_TEMPLATES} element={<ProtectedRoute><EventTemplatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.AI_PLANNER} element={<ProtectedRoute><AIPlannerChat /></ProtectedRoute>} />
                 <Route path={ROUTES.INVITE_TEMPLATES} element={<ProtectedRoute><InviteTemplatesPage /></ProtectedRoute>} />
+                <Route path={ROUTES.TEMPLATES} element={<ProtectedRoute><EventTemplatesPage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path={ROUTES.PROFILE_SELF} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 {/*
@@ -133,7 +132,7 @@ const AuthenticatedShell = () => {
                 <Route path={ROUTES.ROLE_SELECTION} element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
                 <Route path={ROUTES.GUEST_VIEW} element={<GuestViewRoute />} />
                 <Route path={ROUTES.LOGOUT} element={<Logout />} />
-                <Route path={ROUTES.CATCH_ALL} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+                <Route path={ROUTES.CATCH_ALL} element={<Navigate to={ROUTES.HOME} replace />} />
               </Routes>
             </Suspense>
           </div>

@@ -29,7 +29,7 @@ export function SuccessCelebration({
   const { width, height } = useWindowSize();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-pink-50 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-background to-pink-50 p-4 relative overflow-hidden">
       {/* Confetti */}
       {showConfetti && (
         <Confetti
@@ -51,7 +51,7 @@ export function SuccessCelebration({
         }}
         className="max-w-2xl w-full"
       >
-        <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm">
+        <Card className="border-0 shadow-2xl bg-background/90 backdrop-blur-sm">
           <CardContent className="pt-12 pb-8 px-8">
             {/* Success Icon */}
             <motion.div
@@ -66,8 +66,8 @@ export function SuccessCelebration({
               className="flex justify-center mb-6"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full blur-xl opacity-50 animate-pulse" />
-                <div className="relative w-24 h-24 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary via-pink-400 to-pink-400 rounded-full blur-xl opacity-50 animate-pulse" />
+                <div className="relative w-24 h-24 bg-gradient-to-br from-primary to-pink-500 rounded-full flex items-center justify-center">
                   <PastelIcon icon={PartyPopper} tone="coral" className="w-12 h-12 text-white" />
                 </div>
               </div>
@@ -78,7 +78,7 @@ export function SuccessCelebration({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent"
+              className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-pink-600 bg-clip-text text-transparent"
             >
               {title}
             </motion.h1>
@@ -88,7 +88,7 @@ export function SuccessCelebration({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="text-xl text-gray-600 text-center mb-8"
+              className="text-xl text-muted-foreground text-center mb-8"
             >
               {message}
             </motion.p>
@@ -107,12 +107,12 @@ export function SuccessCelebration({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.7 + index * 0.1 }}
-                    className="flex flex-col items-center p-4 bg-gradient-to-br from-orange-50 to-pink-50 rounded-lg"
+                    className="flex flex-col items-center p-4 bg-gradient-to-br from-primary/10 to-pink-50 rounded-lg"
                   >
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-2 shadow-md">
+                    <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mb-2 shadow-md">
                       {achievement.icon}
                     </div>
-                    <p className="text-sm font-medium text-gray-700 text-center">
+                    <p className="text-sm font-medium text-foreground text-center">
                       {achievement.label}
                     </p>
                   </motion.div>
@@ -130,7 +130,7 @@ export function SuccessCelebration({
               <Button
                 onClick={onContinue}
                 size="lg"
-                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-primary to-pink-500 hover:from-primary/90 hover:to-pink-600 text-primary-foreground font-bold px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {continueLabel}
                 <PastelIcon icon={Sparkles} tone="periwinkle" className="ml-2 w-5 h-5" />
@@ -145,7 +145,7 @@ export function SuccessCelebration({
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 bg-orange-400 rounded-full"
+            className="absolute w-2 h-2 bg-primary/60 rounded-full"
             initial={{
               x: Math.random() * window.innerWidth,
               y: window.innerHeight + 50,
