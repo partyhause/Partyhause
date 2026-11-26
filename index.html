@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="referrer" content="no-referrer" />
+    
+    <!-- Preconnect and DNS prefetch for origin -->
+    <link rel="preconnect" href="https://partyhause.com" crossorigin="anonymous" />
+    <link rel="dns-prefetch" href="https://partyhause.com" />
+    
     <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png" />
@@ -25,6 +30,15 @@
     <title>PartyHause - Create Unforgettable Events</title>
     <meta name="description" content="Create unforgettable events with friends. Manage guest lists, send invitations, track RSVPs, and create lasting memories." />
     <meta name="author" content="PartyHause" />
+    
+    <!-- Content Security Policy for main document -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" />
+    
+    <!-- Referrer Policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- Permissions Policy -->
+    <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()" />
 
     <!--
       og:image and twitter:image are absolute and point at a PNG.

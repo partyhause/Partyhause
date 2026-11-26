@@ -16,7 +16,7 @@
     "build:web": "npx vite build",
     "build:mobile": "node ./scripts/build-mobile-pwa.cjs",
     "typecheck": "npx tsc -p tsconfig.app.json && npx tsc -p tsconfig.node.json && npx tsc -p packages/core/tsconfig.json && npx tsc -p packages/agentic-harness/tsconfig.json",
-"typecheck:mobile": "npx tsc --noEmit -p apps/mobile/tsconfig.json",
+    "typecheck:mobile": "npx tsc --noEmit -p apps/mobile/tsconfig.json",
     "build:check": "npm run typecheck && npm run audit:contracts && npm run icons:mobile:check && npx vite build",
     "lint": "eslint .",
     "preview": "npx vite preview",
@@ -47,6 +47,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@partyhause/agentic-harness": "0.1.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -95,8 +96,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vite": "7.1.9",
     "zod": "^3.22.2",
-    "zustand": "^4.4.1",
-    "@partyhause/agentic-harness": "0.1.0"
+    "zustand": "^4.4.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -109,6 +109,7 @@
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "@types/testing-library__jest-dom": "^5.14.9",
+    "@types/workbox-sw": "^4.3.7",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "@vitest/ui": "^3.2.7",

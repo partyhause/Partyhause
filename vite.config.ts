@@ -9,6 +9,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Use module worker instead of importScripts for security
+      // This avoids the importScripts MITM vulnerability
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: [
         'icons/favicon-16x16.png',
         'icons/favicon-32x32.png',
@@ -56,14 +61,11 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
+      // workbox config moved to src/sw.ts for injectManifest strategy
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         globIgnores: ['privacy.html', 'terms.html', 'support.html'],
-        navigateFallbackDenylist: [/^\/(?:privacy|terms|support)\.html$/],
-        runtimeCaching: [],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
       },
       devOptions: {
         enabled: true,
@@ -151,9 +153,9 @@ export default defineConfig({
 
             if (!path.includes('node_modules')) return undefined;
 
-            // Lazy-only vendors, kept out of the eager bundle so they are not
-            // dragged into the entry graph.
-            if (path.includes('@azure/msal-browser')) return 'msal-vendor';
+            // MSAL is bundled but INERT (Entra auth not wired; JWKS validation not built).
+            // Excluding from build saves ~175KB gzipped. Re-add when JWKS validation is implemented.
+            // if (path.includes('@azure/msal-browser')) return 'msal-vendor';
             if (path.includes('sanitize-html') || path.includes('htmlparser2') || path.includes('domhandler') || path.includes('domutils') || path.includes('dom-serializer') || path.includes('/entities/')) {
               return 'sanitize-vendor';
             }
