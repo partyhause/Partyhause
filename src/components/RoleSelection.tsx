@@ -12,7 +12,7 @@ interface RoleOption {
   title: string;
   desc: string;
   color: string;
-  border: string;
+  ring: string;
   /** Shown as a badge when the role's destination is not built yet. */
   notice?: string;
 }
@@ -23,16 +23,16 @@ const ROLES: RoleOption[] = [
     icon: Ticket,
     title: 'Attendee',
     desc: 'Discover events, RSVP, and connect with friends',
-    color: 'bg-blue-50 text-blue-600',
-    border: 'border-blue-200 hover:border-blue-400',
+    color: 'bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-400',
+    ring: 'ring-blue-400',
   },
   {
     role: 'creator',
     icon: Sparkles,
     title: 'Event Creator',
     desc: 'Host events, manage guests, and build your community',
-    color: 'bg-orange-50 text-orange-600',
-    border: 'border-orange-200 hover:border-orange-400',
+    color: 'bg-orange-50 text-orange-600 border-orange-200 hover:border-orange-400',
+    ring: 'ring-orange-400',
   },
   {
     role: 'vendor',
@@ -45,8 +45,8 @@ const ROLES: RoleOption[] = [
     // people are entitled to register their intent, but the description now
     // matches what happens next.
     desc: 'Register your interest in listing services',
-    color: 'bg-purple-50 text-purple-600',
-    border: 'border-purple-200 hover:border-purple-400',
+    color: 'bg-purple-50 text-purple-600 border-purple-200 hover:border-purple-400',
+    ring: 'ring-purple-400',
     notice: 'Marketplace not open yet',
   },
 ];
@@ -94,20 +94,18 @@ export const RoleSelection = () => {
         </div>
 
         <div className="space-y-3">
-          {ROLES.map(({ role, icon: Icon, title, desc, color, border, notice }) => (
+          {ROLES.map(({ role, icon: Icon, title, desc, color, ring, notice }) => (
             <button
               key={role}
               onClick={() => setSelected(role)}
               className={cn(
                 'w-full flex items-center gap-4 p-4 rounded-2xl border-2 bg-card text-left transition-all',
-                border,
+                color,
                 selected === role && 'ring-2 ring-offset-2',
-                selected === role && role === 'user' && 'ring-blue-400',
-                selected === role && role === 'creator' && 'ring-orange-400',
-                selected === role && role === 'vendor' && 'ring-purple-400',
+                selected === role && ring,
               )}
             >
-              <div className={`p-3 rounded-xl flex-shrink-0 ${color}`}>
+              <div className={`p-3 rounded-xl flex-shrink-0 ${color.split(' ')[0]} ${color.split(' ')[1]}`}>
                 <Icon className="h-6 w-6" />
               </div>
               <div className="flex-1 min-w-0">
@@ -122,7 +120,7 @@ export const RoleSelection = () => {
                 <p className="text-sm text-muted-foreground mt-0.5">{desc}</p>
               </div>
               {selected === role && (
-                <CheckCircle2 className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
               )}
             </button>
           ))}

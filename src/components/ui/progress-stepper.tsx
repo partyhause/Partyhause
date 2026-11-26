@@ -35,9 +35,9 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                 <motion.div
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                    isCompleted && "bg-orange-500 border-orange-500",
-                    isCurrent && "bg-white border-orange-500 shadow-lg ring-4 ring-orange-100",
-                    isUpcoming && "bg-gray-100 border-gray-300"
+                    isCompleted && "bg-primary border-primary",
+                    isCurrent && "bg-background border-primary shadow-lg ring-4 ring-primary/20",
+                    isUpcoming && "bg-muted border-border"
                   )}
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -48,7 +48,7 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                   ) : isCurrent ? (
                     <PastelIcon icon={Circle} tone="coral" className="w-5 h-5" />
                   ) : (
-                    <span className="text-gray-400 text-sm font-semibold">{index + 1}</span>
+                    <span className="text-muted-foreground text-sm font-semibold">{index + 1}</span>
                   )}
                 </motion.div>
                 
@@ -56,14 +56,14 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                 <div className="mt-2 text-center max-w-[120px]">
                   <p className={cn(
                     "text-sm font-semibold transition-colors",
-                    isCurrent && "text-orange-500",
-                    isCompleted && "text-gray-900",
-                    isUpcoming && "text-gray-400"
+                    isCurrent && "text-primary",
+                    isCompleted && "text-foreground",
+                    isUpcoming && "text-muted-foreground"
                   )}>
                     {step.label}
                   </p>
                   {step.description && (
-                    <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
                   )}
                 </div>
               </div>
@@ -71,9 +71,9 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
               {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div className="flex-1 h-0.5 mx-4 relative">
-                  <div className="absolute inset-0 bg-gray-200" />
+                  <div className="absolute inset-0 bg-border" />
                   <motion.div
-                    className="absolute inset-0 bg-orange-500"
+                    className="absolute inset-0 bg-primary"
                     initial={{ width: '0%' }}
                     animate={{ width: isCompleted ? '100%' : '0%' }}
                     transition={{ duration: 0.5, delay: 0.2 }}
@@ -98,9 +98,9 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
               <motion.div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 shrink-0",
-                  isCompleted && "bg-orange-500 border-orange-500",
-                  isCurrent && "bg-white border-orange-500 shadow-lg ring-2 ring-orange-100",
-                  isUpcoming && "bg-gray-100 border-gray-300"
+                  isCompleted && "bg-primary border-primary",
+                  isCurrent && "bg-background border-primary shadow-lg ring-2 ring-primary/20",
+                  isUpcoming && "bg-muted border-border"
                 )}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -111,7 +111,7 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
                 ) : isCurrent ? (
                   <PastelIcon icon={Circle} tone="coral" className="w-4 h-4" />
                 ) : (
-                  <span className="text-gray-400 text-xs font-semibold">{index + 1}</span>
+                  <span className="text-muted-foreground text-xs font-semibold">{index + 1}</span>
                 )}
               </motion.div>
               
@@ -119,24 +119,24 @@ export function ProgressStepper({ steps, currentStep, completedSteps, className 
               <div className="ml-3 flex-1">
                 <p className={cn(
                   "text-sm font-semibold transition-colors",
-                  isCurrent && "text-orange-500",
-                  isCompleted && "text-gray-900",
-                  isUpcoming && "text-gray-400"
+                  isCurrent && "text-primary",
+                  isCompleted && "text-foreground",
+                  isUpcoming && "text-muted-foreground"
                 )}>
                   {step.label}
                 </p>
                 {step.description && (
-                  <p className="text-xs text-gray-500 mt-0.5">{step.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                 )}
               </div>
               
               {/* Connector Line (Mobile) */}
               {index < steps.length - 1 && (
                 <div className="absolute left-4 mt-8 w-0.5 h-8 -ml-0.5">
-                  <div className="h-full bg-gray-200" />
+                  <div className="h-full bg-border" />
                   {isCompleted && (
                     <motion.div
-                      className="absolute inset-0 bg-orange-500"
+                      className="absolute inset-0 bg-primary"
                       initial={{ height: '0%' }}
                       animate={{ height: '100%' }}
                       transition={{ duration: 0.3 }}
@@ -167,16 +167,16 @@ export function CompactProgressBar({
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-foreground">
           {label || 'Progress'}
         </span>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted-foreground">
           {current} of {total}
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full"
+          className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
