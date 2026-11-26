@@ -65,13 +65,17 @@ def _guest_payload(guest):
         'email': guest.email,
         'normalized_email': guest.normalized_email,
         'rsvp_status': guest.rsvp_status,
+        'rsvpStatus': guest.rsvp_status,  # camelCase for client
         'rsvp_responded_at': (
             guest.rsvp_responded_at.isoformat() if guest.rsvp_responded_at else None
         ),
         'checked_in': guest.checked_in,
+        'checkedIn': guest.checked_in,  # camelCase for client
         'checked_in_at': guest.checked_in_at.isoformat() if guest.checked_in_at else None,
         'user_id': str(guest.user_id) if guest.user_id else None,
         'revision': guest.revision,
+        'plus_ones': guest.plus_ones,
+        'plusOnes': guest.plus_ones,  # camelCase for client
         'created_at': guest.created_at.isoformat(),
     }
 
@@ -222,14 +226,15 @@ class UpdateGuestView(SessionAuthMixin, APIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-        if 'rsvp_status' in data:
-            new_status = data['rsvp_status']
-            if new_status not in RSVP_STATUSES:
+        # Accept both snake_case and camelCase field names
+        rsvp_status = data.get('rsvp_status') or data.get('rsvpStatus')
+        if rsvp_status is not None:
+            if rsvp_status not in RSVP_STATUSES:
                 return Response(
                     {'error': 'Invalid RSVP status'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if new_status in ('accepted', 'confirmed') and guest.event.max_guests:
+            if rsvp_status in ('accepted', 'confirmed') and guest.event.max_guests:
                 accepted_count = (
                     Guest.objects.filter(
                         event=guest.event, rsvp_status__in=['accepted', 'confirmed']
@@ -242,23 +247,35 @@ class UpdateGuestView(SessionAuthMixin, APIView):
                         {'error': 'Event at capacity'},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            guest.rsvp_status = new_status
+            guest.rsvp_status = rsvp_status
             guest.rsvp_responded_at = timezone.now()
 
-        if can_manage and 'checked_in' in data:
-            checked_in = bool(data['checked_in'])
+        checked_in = data.get('checked_in') or data.get('checkedIn')
+        if can_manage and checked_in is not None:
+            checked_in = bool(checked_in)
             guest.checked_in = checked_in
             guest.is_checked_in = checked_in
             guest.checked_in_at = timezone.now() if checked_in else None
 
-        if can_manage and 'name' in data:
-            guest.name = (data.get('name') or '').strip() or guest.name
-        if can_manage and 'email' in data:
-            email = (data.get('email') or '').strip()
-            if not email:
-                return Response({'error': 'email cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
-            guest.email = email
-            guest.normalized_email = email.lower()
+        if can_manage:
+            plus_ones = data.get('plus_ones') or data.get('plusOnes')
+            if plus_ones is not None:
+                try:
+                    guest.plus_ones = int(plus_ones)
+                except (TypeError, ValueError):
+                    return Response(
+                        {'error': 'plus_ones must be an integer'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            if 'name' in data:
+                guest.name = (data.get('name') or '').strip() or guest.name
+            if 'email' in data:
+                email = (data.get('email') or '').strip()
+                if not email:
+                    return Response({'error': 'email cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+                guest.email = email
+                guest.normalized_email = email.lower()
 
         guest.revision += 1
         guest.save()
@@ -337,7 +354,7 @@ class UpdateRSVPView(SessionAuthMixin, APIView):
         ):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-        new_status = request.data.get('status') or request.data.get('rsvp_status')
+        new_status = request.data.get('status') or request.data.get('rsvp_status') or request.data.get('rsvpStatus')
         if new_status not in RSVP_STATUSES:
             return Response({'error': 'Invalid RSVP status'}, status=status.HTTP_400_BAD_REQUEST)
 

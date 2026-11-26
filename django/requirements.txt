@@ -15,3 +15,7 @@ whitenoise==6.11.0
 gunicorn==22.0.0
 azure-communication-email==1.1.0
 resend==0.8.0
+bleach==6.2.0
+httpx==0.28.1
+azure-messaging-webpubsubservice==1.4.0
+nest-asyncio==1.6.0

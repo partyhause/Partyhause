@@ -48,12 +48,16 @@ class TemplateUsage(models.Model):
         on_delete=models.CASCADE,
         db_column='template_id',
         related_name='template_usage',
+        null=True,
+        blank=True,
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         db_column='user_id',
         related_name='template_usage_records',
+        null=True,
+        blank=True,
     )
     event_id = models.UUIDField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     'ai_chat',
     'external_events',
     'health',
+    'partyhause',
 ]
 
 MIDDLEWARE = [
@@ -303,6 +304,12 @@ else:
 # Must be the publicly reachable frontend (e.g. https://partyhause.uk), not
 # localhost, or real users cannot open the links.
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
+
+# Legal document versions. The onboarding flow gates acceptance of the
+# current versions. Changing these constants bumps the version for new
+# signups; existing users are prompted to re-accept on next visit.
+CURRENT_TERMS_VERSION = os.environ.get('CURRENT_TERMS_VERSION', '2026-09-01')
+CURRENT_PRIVACY_VERSION = os.environ.get('CURRENT_PRIVACY_VERSION', '2026-09-01')
 
 # Invitation links are bearer credentials. Seven days is the same window the
 # email says, and a re-send revokes the previous link.

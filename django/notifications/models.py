@@ -19,11 +19,24 @@ class Notification(models.Model):
         related_name='notifications',
         db_column='user_id',
     )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='notifications_acted',
+        db_column='actor_id',
+        null=True,
+        blank=True,
+    )
     title = models.CharField(max_length=255)
     message = models.TextField(blank=True, null=True)
     type = models.CharField(max_length=50, default='info')
     is_read = models.BooleanField(default=False)
+    # The client contract calls this `action_data`; `data` is retained because
+    # rows written before the rename still carry it.
     data = models.JSONField(default=dict)
+    action_data = models.JSONField(default=dict)
+    post_id = models.CharField(max_length=255, blank=True, null=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
