@@ -6,9 +6,11 @@ urlpatterns = [
     path('api/auth/', include('accounts.urls')),
     path('api/events/', include('events.urls')),
     path('api/guests/', include('guests.urls')),
-    # PartyBoard routes
+    # PartyBoard routes. Tasks and stickies are separate URL trees: mounting
+    # the sticky router under tasks/ made /api/partyboard/tasks/ resolve to
+    # IndexStickiesView and 400 with "eventId required".
     path('api/partyboard/stickies/', include('partyboard.urls')),
-    path('api/partyboard/tasks/', include('partyboard.urls')),
+    path('api/partyboard/tasks/', include('partyboard.task_urls')),
     # Users
     path('api/users/', include('users.urls')),
     # Notifications
@@ -29,7 +31,10 @@ urlpatterns = [
     path('api/send-email/', include('sendemail.urls')),
     # External event ingestion
     path('api/external-events/', include('external_events.urls')),
-    # Storage
+    # Storage and the relational event schedule
+    path('api/storage/', include('storage.urls')),
+    path('api/timeline/', include('timeline.urls')),
+    # Realtime
     path('api/realtime/', include('realtime.urls')),
     # MVP account
     path('api/mvp/account/', include('account.urls')),

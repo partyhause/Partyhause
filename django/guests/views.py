@@ -1,334 +1,377 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
+import logging
+import uuid
+
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.session_auth import SessionAuthMixin
+from events.models import Event, EventCoHost
+
 from .models import Guest
-from events.models import Event
+
+logger = logging.getLogger(__name__)
+
+RSVP_STATUSES = {'accepted', 'confirmed', 'declined', 'maybe', 'pending'}
+
+
+def _co_host(event, user):
+    if not event or not user or not user.is_authenticated:
+        return None
+    return EventCoHost.objects.filter(event=event, user=user).first()
 
 
 def can_manage_guests(event, user):
-    return event.host_id == str(user.id)
+    """Host or a co-host with an editing role."""
+    if not event or not user or not user.is_authenticated:
+        return False
+    if event.host_id == user.id:
+        return True
+    co_host = _co_host(event, user)
+    if co_host is None:
+        return False
+    return co_host.role in ('host', 'co-host', 'editor', 'organizer')
 
 
 def can_invite_guests(event, user):
-    return event.host_id == str(user.id)
+    if can_manage_guests(event, user):
+        return True
+    co_host = _co_host(event, user)
+    if co_host is None:
+        return False
+    return bool((co_host.permissions or {}).get('can_invite'))
 
 
 def is_own_guest_record(guest, user):
-    if not user:
+    if not guest or not user or not user.is_authenticated:
         return False
-    return (guest.user_id == str(user.id) or
-            (user.email and guest.email.lower() == user.email.lower()))
+    if guest.user_id and str(guest.user_id) == str(user.id):
+        return True
+    return bool(
+        user.email
+        and guest.email
+        and guest.email.strip().lower() == user.email.strip().lower()
+    )
 
 
-class IndexGuestsView(APIView):
-    """GET /api/guests/ — List guests or get single guest"""
-    permission_classes = [AllowAny]
+def _guest_payload(guest):
+    return {
+        'id': str(guest.id),
+        'event_id': str(guest.event_id),
+        'name': guest.name,
+        'email': guest.email,
+        'normalized_email': guest.normalized_email,
+        'rsvp_status': guest.rsvp_status,
+        'rsvp_responded_at': (
+            guest.rsvp_responded_at.isoformat() if guest.rsvp_responded_at else None
+        ),
+        'checked_in': guest.checked_in,
+        'checked_in_at': guest.checked_in_at.isoformat() if guest.checked_in_at else None,
+        'user_id': str(guest.user_id) if guest.user_id else None,
+        'revision': guest.revision,
+        'created_at': guest.created_at.isoformat(),
+    }
+
+
+def _parse_uuid(value):
+    try:
+        return uuid.UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+class IndexGuestsView(SessionAuthMixin, APIView):
+    """GET /api/guests/?eventId=... — list an event's guest list.
+
+    The list is not public: it contains every guest's address. A host or
+    co-host may read it. A guest reading a single record (`?id=`) must be
+    that guest.
+    """
 
     def get(self, request):
-        try:
-            user = request.user if request.user.is_authenticated else None
-            event_id = request.query_params.get('eventId')
-            guest_id = request.query_params.get('id')
+        event_id = request.query_params.get('eventId') or request.query_params.get('event_id')
+        guest_id = request.query_params.get('id')
 
-            if guest_id:
-                # Get single guest by id
-                guest = Guest.objects.filter(id=guest_id).first()
-                if not guest:
-                    return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        if guest_id:
+            guest_uuid = _parse_uuid(guest_id)
+            if guest_uuid is None:
+                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+            guest = Guest.objects.select_related('event').filter(id=guest_uuid).first()
+            if guest is None:
+                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+            if not (
+                can_manage_guests(guest.event, request.user)
+                or is_own_guest_record(guest, request.user)
+            ):
+                # 404 rather than 403: a probe must not learn that the id exists.
+                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'guest': _guest_payload(guest)})
 
-                # RLS parity: hosts/co-hosts see any guest of their event;
-                # a guest may read their OWN record.
-                if user and not (
-                    str(guest.event.host_id) == str(user.id) or
-                    (user.email and guest.email.lower() == user.email.lower())
-                ):
-                    event = Event.objects.filter(id=guest.event_id).first()
-                    if not event or not can_manage_guests(event, user):
-                        return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not event_id:
+            return Response(
+                {'error': 'eventId is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        event_uuid = _parse_uuid(event_id)
+        if event_uuid is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        event = Event.objects.filter(id=event_uuid).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not can_manage_guests(event, request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-                data = {
-                    'id': str(guest.id),
-                    'event_id': str(guest.event.id) if guest.event else None,
-                    'name': guest.name,
-                    'email': guest.email,
-                    'normalized_email': guest.normalized_email,
-                    'rsvp_status': guest.rsvp_status,
-                    'checked_in': guest.checked_in,
-                    'checked_in_at': guest.checked_in_at.isoformat() if guest.checked_in_at else None,
-                    'user_id': str(guest.user_id) if guest.user_id else None,
-                    'created_at': guest.created_at.isoformat()
-                }
-                return Response({'guest': data})
-
-            if event_id:
-                event = Event.objects.filter(id=event_id).first()
-                if not event:
-                    return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-                if user:
-                    if not (event.host_id == str(user.id) or
-                            (user.email and Guest.objects.filter(event=event, email__iexact=user.email).exists())):
-                        pass
-
-                guests = Guest.objects.filter(event_id=event_id)
-            else:
-                guests = Guest.objects.all()
-
-            data = [{
-                'id': str(g.id),
-                'event_id': str(g.event.id) if g.event else None,
-                'name': g.name,
-                'email': g.email,
-                'normalized_email': g.normalized_email,
-                'rsvp_status': g.rsvp_status,
-                'checked_in': g.checked_in,
-                'checked_in_at': g.checked_in_at.isoformat() if g.checked_in_at else None,
-                'user_id': str(g.user_id) if g.user_id else None,
-                'created_at': g.created_at.isoformat()
-            } for g in guests]
-
-            accepted = sum(1 for g in data if g['rsvp_status'] in ['accepted', 'confirmed'])
-            declined = sum(1 for g in data if g['rsvp_status'] == 'declined')
-            pending = sum(1 for g in data if g['rsvp_status'] == 'pending')
-
-            return Response({
-                'guests': data,
-                'stats': {
-                    'total': len(data),
-                    'accepted': accepted,
-                    'declined': declined,
-                    'pending': pending,
-                },
-                'count': len(data)
-            })
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        guests = Guest.objects.filter(event=event).order_by('created_at')
+        data = [_guest_payload(guest) for guest in guests]
+        return Response({
+            'guests': data,
+            'stats': {
+                'total': len(data),
+                'accepted': sum(1 for g in data if g['rsvp_status'] in ('accepted', 'confirmed')),
+                'declined': sum(1 for g in data if g['rsvp_status'] == 'declined'),
+                'pending': sum(1 for g in data if g['rsvp_status'] == 'pending'),
+                'checked_in': sum(1 for g in data if g['checked_in']),
+            },
+            'count': len(data),
+        })
 
 
-class CreateGuestView(APIView):
-    """POST /api/guests/ — Create guest"""
-    permission_classes = [AllowAny]
+class CreateGuestView(SessionAuthMixin, APIView):
+    """POST /api/guests/ — add one guest to an event."""
 
     def post(self, request):
-        try:
-            data = request.data
-            event_id = data.get('event_id')
+        event_id = request.data.get('event_id') or request.data.get('eventId')
+        event_uuid = _parse_uuid(event_id)
+        if event_uuid is None:
+            return Response({'error': 'event_id required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not event_id:
-                return Response({'error': 'event_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        event = Event.objects.filter(id=event_uuid).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not can_invite_guests(event, request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            if not can_invite_guests(event, request.user if request.user.is_authenticated else None):
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            # Check capacity
-            if event.max_guests:
-                accepted_count = Guest.objects.filter(event=event, rsvp_status__in=['accepted', 'confirmed']).count()
-                if accepted_count >= event.max_guests:
-                    return Response({'error': 'Event at capacity'}, status=status.HTTP_400_BAD_REQUEST)
-
-            guest = Guest.objects.create(
-                event=event,
-                name=data.get('name'),
-                email=data.get('email'),
-                rsvp_status=data.get('rsvp_status', 'pending'),
-                user_id=data.get('user_id')
+        name = (request.data.get('name') or '').strip()
+        email = (request.data.get('email') or '').strip()
+        if not name or not email:
+            return Response(
+                {'error': 'name and email are required'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-            # Send the invitation email (ACS primary, Resend fallback).
-            try:
-                from guests.email_service import GuestInvitationService
-                GuestInvitationService(event).send_invitation(guest)
-            except Exception as exc:  # noqa: BLE001
-                import logging
-                logging.getLogger(__name__).error(
-                    'Invitation email failed for %s: %s', data.get('email'), exc
-                )
+        if event.max_guests and Guest.objects.filter(event=event).count() >= event.max_guests:
+            return Response({'error': 'Event at capacity'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                'id': str(guest.id),
-                'name': guest.name,
-                'email': guest.email,
-                'rsvp_status': guest.rsvp_status,
-                'qr_code': f'partyhause://checkin/{event_id}/{guest.id}'
-            }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        rsvp_status = request.data.get('rsvp_status', 'pending')
+        if rsvp_status not in RSVP_STATUSES:
+            return Response({'error': 'Invalid RSVP status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            guest = Guest.objects.create(
+                event=event,
+                name=name,
+                email=email,
+                rsvp_status=rsvp_status,
+            )
+        except ValidationError:
+            return Response({'error': 'Invalid guest data'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception('Could not create guest for event %s', event.id)
+            return Response(
+                {'error': 'A guest with that email may already exist'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        try:
+            from guests.email_service import GuestInvitationService
+            GuestInvitationService(event).send_invitation(guest)
+        except Exception:
+            # The guest exists even if mail failed; the host can resend.
+            logger.exception('Invitation email failed for %s', email)
+
+        payload = _guest_payload(guest)
+        payload['qr_code'] = f'partyhause://checkin/{event.id}/{guest.id}'
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
-class UpdateGuestView(APIView):
-    """PUT /api/guests/:id — Update guest"""
-    permission_classes = [AllowAny]
+class UpdateGuestView(SessionAuthMixin, APIView):
+    """PUT/DELETE /api/guests/:id — update or remove a guest."""
 
     def put(self, request, guest_id):
-        try:
-            guest = Guest.objects.filter(id=guest_id).first()
-            if not guest:
-                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        guest = Guest.objects.select_related('event').filter(id=guest_id).first()
+        if guest is None:
+            return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            event = guest.event
-            can_manage = can_manage_guests(event, request.user if request.user.is_authenticated else None)
-            is_own = is_own_guest_record(guest, request.user if request.user.is_authenticated else None)
+        can_manage = can_manage_guests(guest.event, request.user)
+        is_own = is_own_guest_record(guest, request.user)
+        if not (can_manage or is_own):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-            if not (can_manage or is_own):
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        data = request.data
+        if not can_manage:
+            # A guest may answer for themselves and nothing else. Without this
+            # an invitee could rename the seat, change its address, or check
+            # themselves in.
+            forbidden = {'name', 'email', 'checked_in', 'user_id', 'ticket_type'}
+            if forbidden.intersection(data.keys()):
+                return Response(
+                    {'error': 'Guests may only update their own RSVP'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
-            data = request.data
-
-            # Handle RSVP update
-            if 'rsvp_status' in data:
-                new_status = data['rsvp_status']
-                if new_status in ['accepted', 'confirmed', 'declined', 'maybe', 'pending']:
-                    if new_status in ['accepted', 'confirmed']:
-                        if event.max_guests:
-                            accepted_count = Guest.objects.filter(event=event, rsvp_status__in=['accepted', 'confirmed']).exclude(id=guest.id).count()
-                            if accepted_count >= event.max_guests:
-                                return Response({'error': 'Event at capacity'}, status=status.HTTP_400_BAD_REQUEST)
-                    guest.rsvp_status = new_status
-
-            if 'checked_in' in data and can_manage:
-                guest.checked_in = data['checked_in']
-                if data['checked_in']:
-                    guest.checked_in_at = timezone.now()
-
-            guest.save()
-
-            return Response({
-                'id': str(guest.id),
-                'rsvp_status': guest.rsvp_status,
-                'checked_in': guest.checked_in
-            })
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, guest_id):
-        """DELETE /api/guests/:id — Remove guest"""
-        try:
-            guest = Guest.objects.filter(id=guest_id).first()
-            if not guest:
-                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            event = guest.event
-            if not can_manage_guests(event, request.user if request.user.is_authenticated else None):
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            guest.delete()
-            return Response({'status': 'deleted'})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class BulkCreateGuestsView(APIView):
-    """POST /api/guests/bulk — Bulk create guests"""
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        try:
-            data = request.data
-            event_id = data.get('event_id')
-            guests_data = data.get('guests', [])
-
-            if not event_id:
-                return Response({'error': 'event_id required'}, status=status.HTTP_400_BAD_REQUEST)
-
-            event = Event.objects.filter(id=event_id).first()
-            if not event:
-                return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            if not request.user.is_authenticated or not can_invite_guests(event, request.user):
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-
-            created = []
-            errors = []
-
-            for guest_data in guests_data:
-                try:
-                    guest = Guest.objects.create(
-                        event=event,
-                        name=guest_data.get('name'),
-                        email=guest_data.get('email'),
-                        rsvp_status='pending'
+        if 'rsvp_status' in data:
+            new_status = data['rsvp_status']
+            if new_status not in RSVP_STATUSES:
+                return Response(
+                    {'error': 'Invalid RSVP status'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if new_status in ('accepted', 'confirmed') and guest.event.max_guests:
+                accepted_count = (
+                    Guest.objects.filter(
+                        event=guest.event, rsvp_status__in=['accepted', 'confirmed']
                     )
-                    created.append({'id': str(guest.id), 'email': guest.email})
-                except Exception as e:
-                    errors.append({'email': guest_data.get('email'), 'error': str(e)})
-
-            return Response({
-                'created': len(created),
-                'errors': len(errors),
-                'guests': created
-            }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UpdateRSVPView(APIView):
-    """POST /api/guests/:id/rsvp — Update RSVP"""
-    permission_classes = [AllowAny]
-
-    def post(self, request, guest_id):
-        try:
-            guest = Guest.objects.filter(id=guest_id).first()
-            if not guest:
-                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            event = guest.event
-            new_status = request.data.get('status')
-
-            if new_status not in ['accepted', 'confirmed', 'declined', 'maybe', 'pending']:
-                return Response({'error': 'Invalid RSVP status'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Capacity check on accept/confirm
-            if new_status in ['accepted', 'confirmed']:
-                if event.max_guests:
-                    accepted_count = Guest.objects.filter(event=event, rsvp_status__in=['accepted', 'confirmed']).exclude(id=guest.id).count()
-                    if accepted_count >= event.max_guests:
-                        return Response({'error': 'Event at capacity'}, status=status.HTTP_400_BAD_REQUEST)
-
+                    .exclude(id=guest.id)
+                    .count()
+                )
+                if accepted_count >= guest.event.max_guests:
+                    return Response(
+                        {'error': 'Event at capacity'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             guest.rsvp_status = new_status
             guest.rsvp_responded_at = timezone.now()
-            guest.save()
 
-            return Response({
-                'id': str(guest.id),
-                'rsvp_status': guest.rsvp_status,
-                'rsvp_responded_at': guest.rsvp_responded_at.isoformat() if guest.rsvp_responded_at else None
-            })
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        if can_manage and 'checked_in' in data:
+            checked_in = bool(data['checked_in'])
+            guest.checked_in = checked_in
+            guest.is_checked_in = checked_in
+            guest.checked_in_at = timezone.now() if checked_in else None
+
+        if can_manage and 'name' in data:
+            guest.name = (data.get('name') or '').strip() or guest.name
+        if can_manage and 'email' in data:
+            email = (data.get('email') or '').strip()
+            if not email:
+                return Response({'error': 'email cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+            guest.email = email
+            guest.normalized_email = email.lower()
+
+        guest.revision += 1
+        guest.save()
+        return Response(_guest_payload(guest))
+
+    def delete(self, request, guest_id):
+        guest = Guest.objects.select_related('event').filter(id=guest_id).first()
+        if guest is None:
+            return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not can_manage_guests(guest.event, request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        guest.delete()
+        return Response({'status': 'deleted'})
 
 
-class CheckInGuestView(APIView):
-    """POST /api/guests/:id/check-in — Check in guest"""
-    permission_classes = [AllowAny]
+class BulkCreateGuestsView(SessionAuthMixin, APIView):
+    """POST /api/guests/bulk — add several guests in one request."""
+
+    def post(self, request):
+        event_id = request.data.get('event_id') or request.data.get('eventId')
+        guests_data = request.data.get('guests', [])
+        event_uuid = _parse_uuid(event_id)
+        if event_uuid is None:
+            return Response({'error': 'event_id required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        event = Event.objects.filter(id=event_uuid).first()
+        if event is None:
+            return Response({'error': 'Event not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not can_invite_guests(event, request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        if not isinstance(guests_data, list) or not guests_data:
+            return Response({'error': 'guests must be a non-empty list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        created = []
+        errors = []
+        with transaction.atomic():
+            for guest_data in guests_data:
+                name = (guest_data.get('name') or '').strip()
+                email = (guest_data.get('email') or '').strip()
+                if not name or not email:
+                    errors.append({'email': email, 'error': 'name and email are required'})
+                    continue
+                if event.max_guests and Guest.objects.filter(event=event).count() >= event.max_guests:
+                    errors.append({'email': email, 'error': 'Event at capacity'})
+                    continue
+                try:
+                    guest, was_created = Guest.objects.get_or_create(
+                        event=event,
+                        normalized_email=email.lower(),
+                        defaults={'name': name, 'email': email},
+                    )
+                except Exception as exc:
+                    errors.append({'email': email, 'error': str(exc)})
+                    continue
+                created.append(
+                    {'id': str(guest.id), 'email': guest.email, 'created': was_created}
+                )
+
+        return Response(
+            {'created': len(created), 'errors': len(errors), 'guests': created},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class UpdateRSVPView(SessionAuthMixin, APIView):
+    """POST /api/guests/:id/rsvp — record an answer."""
 
     def post(self, request, guest_id):
-        try:
-            guest = Guest.objects.filter(id=guest_id).first()
-            if not guest:
-                return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        guest = Guest.objects.select_related('event').filter(id=guest_id).first()
+        if guest is None:
+            return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            event = guest.event
-            if not can_manage_guests(event, request.user if request.user.is_authenticated else None):
-                return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        if not (
+            can_manage_guests(guest.event, request.user)
+            or is_own_guest_record(guest, request.user)
+        ):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
-            guest.checked_in = True
-            guest.checked_in_at = timezone.now()
-            guest.save()
+        new_status = request.data.get('status') or request.data.get('rsvp_status')
+        if new_status not in RSVP_STATUSES:
+            return Response({'error': 'Invalid RSVP status'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                'id': str(guest.id),
-                'checked_in': guest.checked_in,
-                'checked_in_at': guest.checked_in_at.isoformat() if guest.checked_in_at else None
-            })
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        if new_status in ('accepted', 'confirmed') and guest.event.max_guests:
+            accepted_count = (
+                Guest.objects.filter(
+                    event=guest.event, rsvp_status__in=['accepted', 'confirmed']
+                )
+                .exclude(id=guest.id)
+                .count()
+            )
+            if accepted_count >= guest.event.max_guests:
+                return Response({'error': 'Event at capacity'}, status=status.HTTP_400_BAD_REQUEST)
+
+        guest.rsvp_status = new_status
+        guest.rsvp_responded_at = timezone.now()
+        guest.revision += 1
+        guest.save()
+        return Response(_guest_payload(guest))
+
+
+class CheckInGuestView(SessionAuthMixin, APIView):
+    """POST /api/guests/:id/check-in — host-only door check-in."""
+
+    def post(self, request, guest_id):
+        guest = Guest.objects.select_related('event').filter(id=guest_id).first()
+        if guest is None:
+            return Response({'error': 'Guest not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not can_manage_guests(guest.event, request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        guest.checked_in = True
+        guest.is_checked_in = True
+        guest.checked_in_at = timezone.now()
+        guest.revision += 1
+        guest.save()
+        return Response(_guest_payload(guest))

@@ -104,14 +104,14 @@ export type { SerialisedEvent as PartyEvent } from './contracts';
 
 export type UserRole = 'user' | 'creator' | 'vendor';
 
-/** POST /api/accounts/login and POST /api/accounts/signup. */
+/** POST /api/auth/login and POST /api/auth/signup. */
 export interface AuthSession {
   user: AuthUser;
   token: string;
 }
 
 /**
- * POST /api/accounts/signup.
+ * POST /api/auth/signup.
  *
  * Note the absence of a token. Signup creates the account and sends a
  * confirmation link; it does not establish a session. The route used to return

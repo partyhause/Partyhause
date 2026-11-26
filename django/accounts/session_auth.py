@@ -2,12 +2,28 @@ import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth.models import AnonymousUser
+from rest_framework.exceptions import APIException
 
 User = get_user_model()
-SECRET = settings.SECRET_KEY
+SECRET = settings.JWT_SECRET
 ALGORITHM = 'HS256'
 EXPIRY = timedelta(days=7)
+
+
+class SessionAuthRequired(APIException):
+    """Carry the 401/403 response produced by `_verify_token` through DRF.
+
+    `initial()` cannot return a Response, so it raises this instead. DRF's
+    exception handler renders `detail` at `status_code`, preserving the exact
+    body the explicit call sites already returned.
+    """
+
+    def __init__(self, response):
+        self.status_code = response.status_code
+        self.detail = response.data
+        super().__init__(self.detail)
+
 
 
 def sign_token(user):
@@ -40,19 +56,33 @@ class SessionAuthMixin:
 
     REQUIRES_VERIFIED = True
 
+    # A public read (system templates, a provider catalogue) opts out
+    # explicitly. Every other view using this mixin is authenticated in
+    # `initial()` even if its handler forgets to call `_verify_token`, which is
+    # the failure mode that left /api/send-email and /api/partyplates open.
+    ALLOW_ANONYMOUS = False
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        try:
+            self._verify_token()
+        except _SessionAuthStop as exc:
+            if not self.ALLOW_ANONYMOUS:
+                raise SessionAuthRequired(exc.args[0])
+            request.user = AnonymousUser()
+            request._email_verified = False
+
     def _verify_token(self):
         auth_header = self.request.META.get('HTTP_AUTHORIZATION', '')
-        if auth_header.startswith('Bearer '):
-            token = auth_header.split(' ', 1)[1]
-        else:
-            # Fall back to the JWT stored in the Django session (set at
-            # login/signup/verify-email) so browser requests with only the
-            # session cookie are authenticated too.
-            token = self.request.session.get('auth_token')
-            if not token:
-                self._unauthorized('Missing Authorization header')
+        if not auth_header.startswith('Bearer '):
+            # Bearer only. The session-cookie fallback was removed because
+            # /api/* is CSRF-exempt: accepting the cookie turned every endpoint
+            # into a CSRF target. The web and mobile clients both send the
+            # stored token in the Authorization header.
+            self._unauthorized('Missing Authorization header')
+        token = auth_header.split(' ', 1)[1]
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
         except jwt.ExpiredSignatureError:
             self._unauthorized('Token expired')
         except jwt.InvalidTokenError:
@@ -61,7 +91,7 @@ class SessionAuthMixin:
         user_id = payload.get('sub')
         try:
             user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
+        except (User.DoesNotExist, ValueError, TypeError):
             self._unauthorized('User not found')
         if getattr(user, 'token_version', 0) != token_version:
             self._unauthorized('Token revoked')

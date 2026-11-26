@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from django.utils import timezone
 from datetime import datetime
 from datetime import timedelta
+import uuid
 
 from .models import EventTemplate
 from .serializers import EventTemplateSerializer
@@ -49,21 +50,21 @@ class EventTemplateListView(SessionAuthMixin, APIView):
     can render them as "Discover" vs "Mine".
     """
 
-    def get(self, request):
-        try:
-            self._verify_token()
-        except _SessionAuthStop:
-            # Unauthenticated callers still see public system templates.
-            self.request.user = None
+    ALLOW_ANONYMOUS = True
 
-        user = self.request.user
+    def get(self, request):
+        user = request.user
 
         try:
             system_qs = EventTemplate.objects.filter(author_id__isnull=True, published=True)
-            user_qs = EventTemplate.objects.filter(author_id=user.id).order_by('-created_at') if user and user.is_authenticated else EventTemplate.objects.none()
+            user_qs = (
+                EventTemplate.objects.filter(author_id=user.id).order_by('-created_at')
+                if user and user.is_authenticated
+                else EventTemplate.objects.none()
+            )
         except Exception:
-            # Table may not exist yet (migration not applied). Return empty lists
-            # so the frontend doesn't crash.
+            # Table may not exist yet (migration not applied). Return empty
+            # lists so the frontend does not crash.
             system_qs = EventTemplate.objects.none()
             user_qs = EventTemplate.objects.none()
 
@@ -84,22 +85,41 @@ class EventTemplateListView(SessionAuthMixin, APIView):
 
     def post(self, request):
         """Create a new template owned by the authenticated user."""
+        serializer = EventTemplateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        slug = serializer.validated_data.get('slug') or ''
+        if not slug:
+            base = (serializer.validated_data.get('name') or 'template').lower()
+            slug = f"user_{request.user.id}_{base}".replace(' ', '_')
+        if EventTemplate.objects.filter(slug=slug).exists():
+            slug = f"{slug}-{uuid.uuid4().hex[:8]}"
+
         try:
-            self._verify_token()
-        except _SessionAuthStop as e:
-            return e.args[0]
-        try:
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            template = serializer.save(
+                author=request.user,
+                slug=slug,
+                published=False,
+            )
         except Exception:
-            return Response({'error': 'Template table not available yet'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response(
+                {'error': 'Could not create the template'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            EventTemplateSerializer(template).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
-class EventTemplateDetailView(APIView):
+class EventTemplateDetailView(SessionAuthMixin, APIView):
     """GET/PUT/DELETE /api/event-templates/:id/ — Template details.
 
     GET is public (mirrors Express). PUT/DELETE require ownership.
     """
+
+    ALLOW_ANONYMOUS = True
 
     def get(self, request, template_id):
         try:
