@@ -82,7 +82,8 @@ export interface PartyState {
   fetchingEventId: string | null;
   setUser: (user: User | null) => void;
   setEvents: (events: Event[]) => void;
-  setCurrentEvent: (event: Event | null) => Promise<void>;
+  setCurrentEvent: (event: Event | null) => void;
+  loadEventGuests: (eventId: string) => void;
   setGuests: (guests: Guest[]) => void;
   addGuest: (guest: Guest) => void;
   removeGuest: (guestId: string) => void;
@@ -180,40 +181,41 @@ export const usePartyStore = create<PartyState>()(
         };
       }),
 
-      setCurrentEvent: async (event) => {
+      // Synchronous setter: only updates currentEvent. Guest loading is
+      // delegated to `loadEventGuards` to avoid async work in a Zustand setter,
+      // which causes race conditions with concurrent `setUser`/`setEvents` calls.
+      setCurrentEvent: (event) => {
         const state = get();
 
-        console.log('🔎 setCurrentEvent called with id=', event?.id);
-        console.log('    currentEvent id=', state.currentEvent?.id, 'fetchingEventId=', state.fetchingEventId);
-        console.log('    loadedEventIds=', Array.from(state.loadedEventIds));
-
         if (!event) {
-          console.log('    setCurrentEvent: clearing currentEvent');
-          set({ currentEvent: null, guests: [] });
+          set({ currentEvent: null, guests: [], fetchingEventId: null, isLoading: false });
           return;
         }
 
         if (state.currentEvent?.id === event.id && state.loadedEventIds.has(event.id)) {
-          console.log('    setCurrentEvent: early return (already current and loaded)', event.id);
           return;
         }
 
         if (state.fetchingEventId === event.id) {
-          console.log('    setCurrentEvent: early return (already fetching)', event.id);
           return;
         }
 
         const normalizedEvent = { ...event, description: event.description ?? null };
-
-        console.log('    setCurrentEvent: proceeding to set and fetch guests for', normalizedEvent.id);
         set({ currentEvent: normalizedEvent, fetchingEventId: normalizedEvent.id, isLoading: true });
+      },
+
+      // Async guest loader: called after setCurrentEvent to fetch guests.
+      // Separated to keep setters synchronous and avoid race conditions.
+      loadEventGuests: async (eventId) => {
+        const state = get();
+        if (state.fetchingEventId !== eventId) return;
 
         try {
-          const guests = await eventService.getEventGuests(normalizedEvent.id);
+          const guests = await eventService.getEventGuests(eventId);
           set((s) => ({
             ...s,
             guests,
-            loadedEventIds: new Set([...s.loadedEventIds, normalizedEvent.id]),
+            loadedEventIds: new Set([...s.loadedEventIds, eventId]),
             fetchingEventId: null,
             isLoading: false
           }));

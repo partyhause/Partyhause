@@ -19,12 +19,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { eventService } from '@/lib/events';
 
 export const EventManagement = () => {
-  const { currentEvent, events, setCurrentEvent, setEvents, guests, isLoading } = usePartyStore();
+  const { currentEvent, events, setCurrentEvent, setEvents, guests, isLoading, loadEventGuests } = usePartyStore();
   const navigate = useNavigate();
-  // Ref to track if we've already tried to load guests for this event
-  const guestLoadAttempted = useRef<Set<string>>(new Set());
-  // Ref to track the last guest count for this event to avoid unnecessary re-fetches
-  const lastGuestCount = useRef<Map<string, number>>(new Map());
   useEffect(() => {
     if (currentEvent || events.length === 0 || isLoading) return;
     // Auto-select the most recent event when arriving without context
@@ -34,27 +30,12 @@ export const EventManagement = () => {
       const db = new Date(b.start_date || b.date || 0).getTime();
       return db - da;
     })[0];
-    void setCurrentEvent(latest);
-  }, [currentEvent, events, isLoading, setCurrentEvent]);
+    setCurrentEvent(latest);
+    loadEventGuests(latest.id);
+  }, [currentEvent, events, isLoading, setCurrentEvent, loadEventGuests]);
 
-  useEffect(() => {
-    if (!currentEvent || isLoading) return;
-
-    const eventId = currentEvent.id;
-    const eventGuests = guests.filter(g => g.event_id === eventId);
-    const currentGuestCount = eventGuests.length;
-    const previousGuestCount = lastGuestCount.current.get(eventId) || 0;
-
-    // Only fetch if we haven't tried before AND the guest count hasn't changed
-    // This prevents infinite loops when guests array updates but count stays the same
-    if (!guestLoadAttempted.current.has(eventId) && currentGuestCount === previousGuestCount) {
-      guestLoadAttempted.current.add(eventId);
-      setCurrentEvent(currentEvent);
-    }
-
-    // Update the last known count
-    lastGuestCount.current.set(eventId, currentGuestCount);
-  }, [currentEvent?.id, guests.length, isLoading, setCurrentEvent]);
+  // Guest loading is now handled by the store's loadEventGuests after setCurrentEvent.
+  // The store manages deduplication and loading state internally.
 
   const [showAddGuest, setShowAddGuest] = useState(false);
   const [guestForm, setGuestForm] = useState({ name: '', email: '' });
@@ -104,6 +85,7 @@ export const EventManagement = () => {
     // Refreshing only `currentEvent` leaves the dashboard showing a draft
     // badge for an event that is published, which reads as a failed action.
     setCurrentEvent(result.event);
+    loadEventGuests(result.event.id);
     setEvents(events.map(event => (event.id === result.event.id ? result.event : event)));
     setIsPublishing(false);
   };
