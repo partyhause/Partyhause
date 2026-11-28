@@ -295,7 +295,7 @@ export function JoinEventPage() {
               <div className="flex gap-2" role="tablist">
                 <Button
                   aria-selected={mode === 'signin'}
-                  className={mode === 'signin' ? 'flex-1 bg-[#b53120] hover:bg-[#8f261a]' : 'flex-1'}
+                  className={mode === 'signin' ? 'flex-1 bg-primary hover:bg-primary/90' : 'flex-1'}
                   onClick={() => { setMode('signin'); setIdentifyError(null); }}
                   role="tab"
                   type="button"
@@ -305,7 +305,7 @@ export function JoinEventPage() {
                 </Button>
                 <Button
                   aria-selected={mode === 'signup'}
-                  className={mode === 'signup' ? 'flex-1 bg-[#b53120] hover:bg-[#8f261a]' : 'flex-1'}
+                  className={mode === 'signup' ? 'flex-1 bg-primary hover:bg-primary/90' : 'flex-1'}
                   onClick={() => { setMode('signup'); setIdentifyError(null); }}
                   role="tab"
                   type="button"
@@ -371,7 +371,7 @@ export function JoinEventPage() {
                   </p>
                 ) : null}
                 <Button
-                  className="min-h-12 w-full bg-[#b53120] text-base font-bold hover:bg-[#8f261a]"
+                  className="min-h-12 w-full bg-primary text-base font-bold hover:bg-primary/90"
                   disabled={identifying}
                   type="submit"
                 >
@@ -386,7 +386,7 @@ export function JoinEventPage() {
               {viewer ? (
                 <p className="text-sm text-[#675650]">
                   Responding as <strong className="text-[#2d211d]">{viewer.email}</strong>.{' '}
-                  <button className="font-semibold text-[#8f2c1f] underline" onClick={signOutViewer} type="button">
+                  <button className="font-semibold text-primary underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={signOutViewer} type="button">
                     Not you?
                   </button>
                 </p>
@@ -411,7 +411,7 @@ export function JoinEventPage() {
               </fieldset>
               {message ? <p aria-live="polite" className="rounded-lg bg-[#eaf7ef] px-4 py-3 font-medium text-[#17643e]">{message}</p> : null}
               {error ? <p aria-live="assertive" className="rounded-lg bg-[#fff0f0] px-4 py-3 text-[#9b2327]" role="alert">{error}</p> : null}
-              <Button className="min-h-12 w-full bg-[#b53120] text-base font-bold hover:bg-[#8f261a]" disabled={!choice || submitting} type="submit">
+              <Button className="min-h-12 w-full bg-primary text-base font-bold hover:bg-primary/90" disabled={!choice || submitting} type="submit">
                 {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving response...</> : 'Submit RSVP'}
               </Button>
             </form>

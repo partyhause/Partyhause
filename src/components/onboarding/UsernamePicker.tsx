@@ -9,13 +9,14 @@
  * repository came to disagree.
  *
  * COLOUR
- *   The solid button is `coral-700 #C02A16`, not `--primary`. docs/BRAND.md
- *   section 4.1 records that white on `coral-500 #FF5233` measures 3.23:1 and
- *   fails WCAG 2.1 AA for body text, and that the app ships that exact pair on
- *   every button today. New surfaces do not inherit a known defect; coral-700
+ *   The solid button is `coral-700 #C02A16`, which is exactly `--primary`
+ *   (src/tokens/mobile-aligned.css:12 maps the two). docs/BRAND.md section 4.1
+ *   records that white on `coral-500 #FF5233` measures 3.23:1 and fails WCAG
+ *   2.1 AA for body text, and that the app ships that exact pair on every
+ *   button today. New surfaces do not inherit a known defect; coral-700
  *   measures 5.86:1 and passes. The focus ring is `coral-600 #EA361A` per
  *   section 4.2, which is the lightest step that passes 1.4.11 on the tinted
- *   surfaces this app actually uses.
+ *   surfaces this app actually uses; it is `--ring` (mobile-aligned.css:87).
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -26,9 +27,14 @@ import {
   type OnboardingState,
 } from '@/hooks/use-onboarding';
 
-/** docs/BRAND.md section 4.1 and 4.3. */
-const CORAL_700 = '#C02A16';
-const CORAL_600 = '#EA361A';
+/**
+ * docs/BRAND.md section 4.1 and 4.3. The colours are Tailwind tokens
+ * (`tailwind.config.ts:19` exposes the palette so components write
+ * `bg-coral-700` rather than reaching for a raw hex, which is how three
+ * competing palettes accumulated before). This file previously duplicated
+ * `--primary` as a JS literal and applied it through an inline style.
+ */
+const CORAL_700_CLASS = 'text-primary';
 
 interface UsernamePickerProps {
   /** Server-supplied limits, suggestions and current handle. */
@@ -175,8 +181,7 @@ export function UsernamePicker({
             maxLength={limits.max_length}
             aria-describedby="username-picker-status"
             aria-invalid={status.kind === 'unavailable' || status.kind === 'error'}
-            className="w-full rounded-lg border border-input bg-background py-2.5 pl-7 pr-10 font-mono text-base text-foreground outline-none transition focus:border-transparent focus:ring-2 disabled:opacity-60"
-            style={{ ['--tw-ring-color' as string]: CORAL_600 }}
+            className="w-full rounded-lg border border-input bg-background py-2.5 pl-7 pr-10 font-mono text-base text-foreground outline-none transition focus:border-transparent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2">
             {status.kind === 'checking' ? (
@@ -186,7 +191,7 @@ export function UsernamePicker({
               <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             ) : null}
             {status.kind === 'unavailable' || status.kind === 'error' ? (
-              <AlertCircle className="h-4 w-4" style={{ color: CORAL_700 }} aria-hidden="true" />
+              <AlertCircle className={`h-4 w-4 ${CORAL_700_CLASS}`} aria-hidden="true" />
             ) : null}
           </span>
         </div>
@@ -208,7 +213,7 @@ export function UsernamePicker({
             <span className="text-emerald-700">@{status.username} is available.</span>
           ) : null}
           {status.kind === 'unavailable' || status.kind === 'error' ? (
-            <span style={{ color: CORAL_700 }}>{status.message}</span>
+            <span className={CORAL_700_CLASS}>{status.message}</span>
           ) : null}
         </p>
       </div>
@@ -245,7 +250,7 @@ export function UsernamePicker({
       )}
 
       {submitError ? (
-        <p role="alert" className="mt-3 text-sm" style={{ color: CORAL_700 }}>
+        <p role="alert" className={`mt-3 text-sm ${CORAL_700_CLASS}`}>
           {submitError}
         </p>
       ) : null}
@@ -255,8 +260,7 @@ export function UsernamePicker({
           type="button"
           onClick={() => void handleSubmit()}
           disabled={!canSubmit}
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: CORAL_700 }}
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />

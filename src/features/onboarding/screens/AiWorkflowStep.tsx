@@ -20,8 +20,6 @@ import { JourneyShell } from '@/features/onboarding/JourneyShell';
 import { useFunnelSave, useFunnelState } from '@/features/onboarding/useOnboardingJourney';
 import { ONBOARDING_ROUTE } from '@/features/onboarding/journeyRoutes';
 
-const CORAL_700 = '#C02A16';
-
 interface ChipGroup {
   key: 'ai_before' | 'ai_during' | 'ai_after';
   label: string;
@@ -136,7 +134,7 @@ export function AiWorkflowStep() {
       </div>
 
       {error ? (
-        <p role="alert" className="mt-4 text-sm" style={{ color: CORAL_700 }}>
+        <p role="alert" className="mt-4 text-sm text-primary">
           {error}
         </p>
       ) : null}
@@ -145,8 +143,7 @@ export function AiWorkflowStep() {
         type="button"
         onClick={() => void handleSubmit()}
         disabled={!anyPick || isSaving}
-        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ backgroundColor: CORAL_700 }}
+        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSaving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : 'Continue'}
       </button>

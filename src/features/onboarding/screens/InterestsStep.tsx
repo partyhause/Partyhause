@@ -29,9 +29,6 @@ import { Loader2 } from 'lucide-react';
 import { apiPatch } from '@/lib/api-client';
 import { ONBOARDING_ROUTE } from '@/features/onboarding/journeyRoutes';
 
-/** docs/BRAND.md section 4.1: coral-700 passes AA for text, the 500 does not. */
-const CORAL_700 = '#C02A16';
-
 /** Verbatim from the mobile screen: components/screens/OnboardingInterestsScreen.tsx. */
 const INTERESTS = ['Birthday', 'Wedding', 'Corporate', 'Community', 'House Party', 'Festival', 'Other'] as const;
 
@@ -128,7 +125,7 @@ export function InterestsStep() {
           </p>
         ) : null}
         {error ? (
-          <p role="alert" className="mt-4 text-sm" style={{ color: CORAL_700 }}>
+          <p role="alert" className="mt-4 text-sm text-primary">
             {error}
           </p>
         ) : null}
@@ -137,8 +134,7 @@ export function InterestsStep() {
           type="button"
           onClick={continueJourney}
           disabled={saving}
-          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: CORAL_700 }}
+          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue
         </button>

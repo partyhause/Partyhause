@@ -338,6 +338,28 @@
     box-shadow: var(--shadow-liquid-md);
     color: hsl(var(--accent-orange));
   }
+
+  /* Focus visibility, applied once for every brand button class.
+     The shadcn `Button` component emits
+     `focus-visible:ring-2 focus-visible:ring-ring` unconditionally, so every
+     button in the product is keyboard-reachable except the ones styled with
+     these classes: none of them declared a focus rule, which left the
+     expressive layer silently without one. `--ring` is coral-600, the
+     lightest step that passes WCAG 1.4.11 on the tinted surfaces these
+     buttons sit on (docs/BRAND.md section 4.2).
+     `:focus-visible` rather than `:focus` so a pointer click does not leave a
+     ring behind — matching the Tailwind default on `Button`. */
+  .btn-liquid-metal:focus-visible,
+  .btn-iridescent:focus-visible,
+  .btn-glass:focus-visible,
+  .btn-floating:focus-visible,
+  .btn-soft-secondary:focus-visible,
+  .btn-party:focus-visible,
+  .icon-btn-liquid:focus-visible,
+  .icon-btn-iridescent:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
   
   /* ============================================ */
   /* 3. 3D ICON BUTTONS                          */
@@ -1432,13 +1454,33 @@
 .bg-accent-amber { background: hsl(var(--accent-amber)); }
 .bg-accent-coral { background: hsl(var(--accent-coral)); }
 
-/* Solid Color Text - Burnt Orange Theme */
+/* Solid Color Text - Burnt Orange Theme
+
+   The three hand-written utilities that used to sit here (`.text-white`,
+   `.text-primary`, `.text-secondary`) each referenced a custom property that
+   is defined nowhere in this repository — `--text-primary`,
+   `--text-secondary`, `--text-white`. Unset custom properties make
+   `hsl(var(--…))` an invalid declaration, so the browser drops the rule
+   entirely. Nothing rendered from them.
+
+   `.text-white` was harmless: Tailwind's own `.text-white` still resolves, so
+   the 70 components using it kept working.
+
+   `.text-primary` was not harmless. It loaded AFTER the Tailwind utilities and
+   matched their specificity, so it SHADOWED the working Tailwind rule
+   `.text-primary { color: hsl(var(--primary)) }` and suppressed it. Every one
+   of the 28 components that write `text-primary` — all of which intend the
+   coral-700 brand colour — silently rendered the inherited `--foreground`
+   neutral-900 instead. That is the mechanism that made the palette tokens in
+   `tailwind.config.ts` inert for text without any error appearing anywhere.
+
+   All three are deleted rather than repaired. The Tailwind utilities are the
+   designated implementation (`tailwind.config.ts` exposes the scale "so
+   components can write `bg-coral-700` / `text-neutral-700` instead of reaching
+   for a raw hex, which is how three competing palettes accumulated before"). */
 .text-burnt-orange { color: hsl(var(--burnt-orange)); }
 .text-burnt-orange-dark { color: hsl(var(--burnt-orange-dark)); }
 .text-burnt-orange-light { color: hsl(var(--burnt-orange-light)); }
-.text-white { color: hsl(var(--text-white)); }
-.text-primary { color: hsl(var(--text-primary)); }
-.text-secondary { color: hsl(var(--text-secondary)); }
 
 /* Liquid Metal Shadows */
 .shadow-liquid-sm { box-shadow: var(--shadow-liquid-sm); }

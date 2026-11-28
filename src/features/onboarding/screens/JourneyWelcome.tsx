@@ -28,9 +28,6 @@ import { ArrowRight, CalendarCheck, MessageCircle, Sparkles } from 'lucide-react
 import { useFunnelState } from '@/features/onboarding/useOnboardingJourney';
 import { routeForCurrentStep } from '@/features/onboarding/journeyRoutes';
 
-/** docs/BRAND.md section 4.1: coral-700 passes AA for text, the 500 does not. */
-const CORAL_700 = '#C02A16';
-
 const HIGHLIGHTS = [
   {
     icon: Sparkles,
@@ -93,8 +90,7 @@ export function JourneyWelcome() {
         <button
           type="button"
           onClick={() => navigate(next)}
-          className="mt-12 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-base font-semibold text-white transition"
-          style={{ backgroundColor: CORAL_700 }}
+          className="mt-12 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Continue
           <ArrowRight className="h-5 w-5" aria-hidden="true" />

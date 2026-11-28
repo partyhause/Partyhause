@@ -28,8 +28,6 @@ import { JourneyShell } from '@/features/onboarding/JourneyShell';
 import { useFunnelState, useTrialStart } from '@/features/onboarding/useOnboardingJourney';
 import { ONBOARDING_ROUTE } from '@/features/onboarding/journeyRoutes';
 
-const CORAL_700 = '#C02A16';
-
 export function PlanStep() {
   const { state } = useFunnelState();
   const { start, isStarting } = useTrialStart();
@@ -83,7 +81,7 @@ export function PlanStep() {
       </div>
 
       {error ? (
-        <p role="alert" className="mt-4 text-sm" style={{ color: CORAL_700 }}>
+        <p role="alert" className="mt-4 text-sm text-primary">
           {error}
         </p>
       ) : null}
@@ -93,8 +91,7 @@ export function PlanStep() {
           type="button"
           onClick={() => void handleStartTrial()}
           disabled={isStarting}
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: CORAL_700 }}
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isStarting ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : copy.cta}
         </button>

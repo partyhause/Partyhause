@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { useRenderSafety } from '@/lib/render-safety';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -188,20 +189,21 @@ export class HardenedErrorBoundary extends Component<Props, State> {
               )}
 
               <div className="space-y-2">
-                <button
+                <Button
                   onClick={this.handleRetry}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md transition-colors"
+                  className="w-full"
                   disabled={this.state.errorCount > 3}
                 >
                   {this.state.errorCount > 3 ? 'Too Many Errors' : 'Try Again'}
-                </button>
-                
-                <button
+                </Button>
+
+                <Button
+                  variant="secondary"
                   onClick={this.handleReload}
-                  className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 px-4 py-2 rounded-md transition-colors"
+                  className="w-full"
                 >
                   Reload Page
-                </button>
+                </Button>
               </div>
 
               {this.state.errorCount > 3 && (

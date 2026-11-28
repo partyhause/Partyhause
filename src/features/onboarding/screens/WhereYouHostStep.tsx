@@ -25,9 +25,6 @@ import { apiPut } from '@/lib/api-client';
 import { useFunnelState } from '@/features/onboarding/useOnboardingJourney';
 import { routeForCurrentStep } from '@/features/onboarding/journeyRoutes';
 
-/** docs/BRAND.md section 4.1: coral-700 passes AA for text, the 500 does not. */
-const CORAL_700 = '#C02A16';
-
 /** The server's cap for the profile location field. */
 const LOCATION_MAX = 120;
 
@@ -121,12 +118,12 @@ export function WhereYouHostStep() {
         </div>
 
         {joined.length > LOCATION_MAX ? (
-          <p role="alert" className="mt-3 text-sm" style={{ color: CORAL_700 }}>
+          <p role="alert" className="mt-3 text-sm text-primary">
             That is longer than {LOCATION_MAX} characters. Try just the city.
           </p>
         ) : null}
         {error ? (
-          <p role="alert" className="mt-3 text-sm" style={{ color: CORAL_700 }}>
+          <p role="alert" className="mt-3 text-sm text-primary">
             {error}
           </p>
         ) : null}
@@ -135,8 +132,7 @@ export function WhereYouHostStep() {
           type="button"
           onClick={() => void saveAndContinue()}
           disabled={!canContinue}
-          className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: CORAL_700 }}
+          className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : 'Continue'}
         </button>

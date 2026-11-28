@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 interface Props { children: React.ReactNode }
 
@@ -37,13 +38,13 @@ export class ErrorBoundary extends React.Component<Props, { error: Error | null 
               An unexpected error occurred. Reloading usually clears it. If it keeps
               happening, the message below is the useful part of a bug report.
             </p>
-            <button
+            <Button
               type="button"
               onClick={() => window.location.reload()}
-              className="mb-4 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="mb-4"
             >
               Reload the page
-            </button>
+            </Button>
             <details className="whitespace-pre-wrap text-sm text-muted-foreground max-h-48 overflow-auto">
               <summary className="cursor-pointer font-medium">Error detail</summary>
               {this.state.error?.message}

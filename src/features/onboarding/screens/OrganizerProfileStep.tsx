@@ -26,10 +26,6 @@ import {
 } from '@/features/onboarding/useOnboardingJourney';
 import { ONBOARDING_ROUTE } from '@/features/onboarding/journeyRoutes';
 
-/** docs/BRAND.md section 4.1: coral-700 passes AA for text, the 500 does not. */
-const CORAL_700 = '#C02A16';
-const CORAL_600 = '#EA361A';
-
 type OrganizerType = NonNullable<FunnelAnswers['organizer_type']>;
 type EventsPerYear = NonNullable<FunnelAnswers['events_per_year']>;
 type GuestCount = NonNullable<FunnelAnswers['typical_guest_count']>;
@@ -166,7 +162,7 @@ export function OrganizerProfileStep() {
       </fieldset>
 
       {error ? (
-        <p role="alert" className="mt-4 text-sm" style={{ color: CORAL_700 }}>
+        <p role="alert" className="mt-4 text-sm text-primary">
           {error}
         </p>
       ) : null}
@@ -175,15 +171,13 @@ export function OrganizerProfileStep() {
         type="button"
         onClick={() => void handleSubmit()}
         disabled={organizerType === null || isSaving}
-        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ backgroundColor: CORAL_700 }}
+        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSaving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : 'Continue'}
       </button>
       <p className="mt-2 text-center text-xs text-muted-foreground">
         Picks a kind to continue. The two optional questions can be skipped.
       </p>
-      <span className="hidden" style={{ ['--tw-ring-color' as string]: CORAL_600 }} />
     </JourneyShell>
   );
 }

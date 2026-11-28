@@ -34,9 +34,6 @@ import {
 import { ONBOARDING_ROUTE } from '@/features/onboarding/journeyRoutes';
 import { usePartyStore } from '@/store/usePartyStore';
 
-/** docs/BRAND.md section 4.1: coral-700 passes AA for text, the 500 does not. */
-const CORAL_700 = '#C02A16';
-
 export function ProfileStep() {
   const { state } = useFunnelState();
   const { save } = useFunnelSave();
@@ -173,7 +170,7 @@ export function ProfileStep() {
         </div>
 
         {error ? (
-          <p role="alert" className="mt-4 text-sm" style={{ color: CORAL_700 }}>
+          <p role="alert" className="mt-4 text-sm text-primary">
             {error}
           </p>
         ) : null}
@@ -182,8 +179,7 @@ export function ProfileStep() {
           type="button"
           onClick={handleDone}
           disabled={saving}
-          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: CORAL_700 }}
+          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : 'Continue'}
         </button>

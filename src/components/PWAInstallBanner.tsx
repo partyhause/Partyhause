@@ -152,10 +152,10 @@ export const PWAInstallBanner = () => {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent"
           >
-            <div className="max-w-2xl mx-auto bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-6 relative">
+            <div className="max-w-2xl mx-auto bg-gradient-to-br from-primary to-coral-800 rounded-2xl shadow-2xl p-6 relative">
               <button
                 onClick={handleDismiss}
-                className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-primary-foreground/80 hover:text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="Dismiss"
               >
                 <X className="w-5 h-5" />
@@ -177,15 +177,15 @@ export const PWAInstallBanner = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={handleInstallClick}
-                      className="flex-1 bg-white hover:bg-gray-100 text-indigo-600 font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg"
+                      className="flex-1 bg-card text-primary font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       {getPlatformIcon()}
                       <span>Install Now</span>
                     </button>
-                    
+
                     <button
                       onClick={() => setShowInstructions(true)}
-                      className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors backdrop-blur-sm"
+                      className="px-6 py-3 border border-input bg-background text-foreground font-medium rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       How?
                     </button>
@@ -226,7 +226,7 @@ export const PWAInstallBanner = () => {
               className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-gradient-to-br from-indigo-600 to-purple-600 p-6 rounded-t-3xl">
+              <div className="sticky top-0 bg-gradient-to-br from-primary to-coral-800 p-6 rounded-t-3xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
@@ -241,7 +241,8 @@ export const PWAInstallBanner = () => {
                   </div>
                   <button
                     onClick={() => setShowInstructions(false)}
-                    className="text-white/80 hover:text-white transition-colors"
+                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Close"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -435,7 +436,7 @@ export const PWAInstallBanner = () => {
 
                 <button
                   onClick={() => setShowInstructions(false)}
-                  className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105"
+                  className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 rounded-xl transition-all transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   Got it!
                 </button>
