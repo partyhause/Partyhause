@@ -1,10 +1,10 @@
-import uuid
 from django.db import models
 from django.conf import settings
 
+from partyhause.model_utils import uuid_str
 
 class OnboardingResponse(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -21,7 +21,7 @@ class OnboardingResponse(models.Model):
 
 
 class AgenticConsent(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

@@ -1,12 +1,12 @@
-import uuid
 from django.db import models
 from django.conf import settings
 
+from partyhause.model_utils import uuid_str
 
 class EventTemplate(models.Model):
     """Mirrors Prisma `templates` table — managed by Django migrations."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -42,7 +42,7 @@ class EventTemplate(models.Model):
 class TemplateUsage(models.Model):
     """Mirrors Prisma `template_usage` table — managed by Django migrations."""
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     template = models.ForeignKey(
         EventTemplate,
         on_delete=models.CASCADE,
@@ -59,7 +59,7 @@ class TemplateUsage(models.Model):
         null=True,
         blank=True,
     )
-    event_id = models.UUIDField(blank=True, null=True)
+    event_id = models.CharField(blank=True, null=True, max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

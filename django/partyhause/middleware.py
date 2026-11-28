@@ -117,21 +117,53 @@ class AuthBypassMiddleware:
 class SlashTolerantMiddleware:
     """
     Make Django API endpoints accept both /path and /path/.
-    Rewrite POST/PUT/PATCH/DELETE to the slash variant before URL resolution.
+
+    Rewrites the incoming path to whichever variant actually resolves, so a
+    client and the URLconf cannot disagree about the trailing slash. Both
+    directions are handled and every method is included: GET reads were the
+    half that was missing, which is why every partycrew listing 404'd while
+    the POST writes kept working.
+
+    It runs before CommonMiddleware on purpose (see settings.py). APPEND_SLASH
+    only redirects when the slash-less path fails to resolve, so it never
+    redirects for us here; doing the rewrite in-process also avoids the 301
+    that would turn a POST into a GET and drop its body.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.path.startswith('/api/') and not request.path.endswith('/') and request.path != '/':
-            if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
-                from django.urls import resolve
-                from django.http import Http404
-                try:
-                    resolve(request.path + '/')
-                    request.path_info = request.path + '/'
-                    request.path = request.path + '/'
-                except Http404:
-                    pass
+        if request.path.startswith('/api/') and request.path != '/':
+            candidate = _slash_variant_that_resolves(request.path)
+            if candidate is not None:
+                request.path = candidate
+                request.path_info = candidate
         return self.get_response(request)
+
+
+def _slash_variant_that_resolves(path):  # noqa: N802  (kept module-level so tests can call it directly)
+    """
+    Return the slash-ful or slash-less variant of `path` that resolves, or None.
+
+    None means "leave the path alone": either it already resolves as-is, or
+    neither variant exists and the real 404 is the correct answer. Importing
+    resolve inside the call keeps module import free of a Django URLconf
+    dependency, which matters for management commands that import this module
+    before apps are ready.
+    """
+    from django.urls import resolve
+    from django.http import Http404
+
+    if not path.endswith('/'):
+        try:
+            resolve(path + '/')
+            return path + '/'
+        except Http404:
+            return None
+    else:
+        try:
+            resolve(path.rstrip('/'))
+            return path.rstrip('/')
+        except Http404:
+            return None

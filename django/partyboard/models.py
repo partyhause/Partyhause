@@ -1,18 +1,18 @@
-import uuid
 
 from django.conf import settings
 from django.db import models
 
+from partyhause.model_utils import uuid_str
 
 class PartyBoardSticky(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,
         related_name='partyboard_stickies',
         db_column='event_id',
     )
-    session_id = models.UUIDField(blank=True, null=True)
+    session_id = models.CharField(blank=True, null=True, max_length=64)
     type = models.CharField(max_length=20, default='note')
     position_x = models.IntegerField(default=0)
     position_y = models.IntegerField(default=0)
@@ -42,7 +42,7 @@ class PartyBoardSticky(models.Model):
 
 
 class PartyBoardStickyVote(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     sticky = models.ForeignKey(
         PartyBoardSticky,
         on_delete=models.CASCADE,
@@ -67,7 +67,7 @@ class PartyBoardStickyVote(models.Model):
 
 
 class PartyBoardTask(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,

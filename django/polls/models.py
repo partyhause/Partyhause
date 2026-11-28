@@ -1,11 +1,11 @@
-import uuid
 
 from django.conf import settings
 from django.db import models
 
+from partyhause.model_utils import uuid_str
 
 class Poll(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,
@@ -39,7 +39,7 @@ class Poll(models.Model):
 
 
 class PollOption(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     poll = models.ForeignKey(
         Poll, on_delete=models.CASCADE, related_name='options', db_column='poll_id'
     )
@@ -55,7 +55,7 @@ class PollOption(models.Model):
 
 
 class PollVote(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     poll = models.ForeignKey(
         Poll, on_delete=models.CASCADE, related_name='votes', db_column='poll_id'
     )

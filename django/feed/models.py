@@ -1,10 +1,10 @@
-import uuid
 from django.db import models
 from django.conf import settings
 
+from partyhause.model_utils import uuid_str
 
 class PartycrewPost(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,
@@ -32,7 +32,7 @@ class PartycrewPost(models.Model):
 
 
 class PostLike(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     post = models.ForeignKey(
         PartycrewPost,
         on_delete=models.CASCADE,
@@ -53,7 +53,7 @@ class PostLike(models.Model):
 
 
 class PostComment(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     post = models.ForeignKey(
         PartycrewPost,
         on_delete=models.CASCADE,
@@ -79,7 +79,7 @@ class PostComment(models.Model):
 
 
 class PostShare(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     post = models.ForeignKey(
         PartycrewPost,
         on_delete=models.CASCADE,

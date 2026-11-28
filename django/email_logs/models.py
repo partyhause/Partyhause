@@ -1,10 +1,10 @@
-import uuid
 from django.db import models
 from django.conf import settings
 
+from partyhause.model_utils import uuid_str
 
 class EmailLog(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,
@@ -28,7 +28,7 @@ class EmailLog(models.Model):
     provider = models.CharField(max_length=50, default='acs')
     provider_message_id = models.CharField(max_length=255, blank=True, null=True)
     resend_email_id = models.CharField(max_length=255, blank=True, null=True)
-    template_id = models.UUIDField(blank=True, null=True)
+    template_id = models.CharField(blank=True, null=True, max_length=64)
     template_body = models.TextField(blank=True, null=True)
     sent_at = models.DateTimeField(blank=True, null=True)
     delivered_at = models.DateTimeField(blank=True, null=True)
@@ -51,7 +51,7 @@ class EmailLog(models.Model):
 
 
 class EmailEvent(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     email_log = models.ForeignKey(
         EmailLog,
         on_delete=models.CASCADE,

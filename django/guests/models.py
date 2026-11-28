@@ -1,9 +1,10 @@
-import uuid
 from django.db import models
 from django.conf import settings
 
+from partyhause.model_utils import uuid_str
+
 class Guest(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='guests', db_column='event_id')
     name = models.CharField(max_length=255)
     email = models.EmailField()
@@ -13,7 +14,7 @@ class Guest(models.Model):
     is_checked_in = models.BooleanField(default=False)
     email_status = models.CharField(max_length=20, default='not_sent', blank=True, null=True)
     last_email_sent_at = models.DateTimeField(blank=True, null=True)
-    email_log_id = models.UUIDField(blank=True, null=True)
+    email_log_id = models.CharField(blank=True, null=True, max_length=64)
     phone = models.CharField(max_length=50, blank=True, null=True)
     rsvp_status = models.CharField(max_length=20, default='pending')
     ticket_type = models.CharField(max_length=100, blank=True, null=True)
@@ -26,7 +27,7 @@ class Guest(models.Model):
     checked_in_at = models.DateTimeField(blank=True, null=True)
     role = models.CharField(max_length=20, default='guest')
     metadata = models.JSONField(default=dict)
-    user_id = models.UUIDField(blank=True, null=True)
+    user_id = models.CharField(blank=True, null=True, max_length=64)
     cost_share_enabled = models.BooleanField(default=False)
     cost_share_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     payment_status = models.CharField(max_length=20, default='unpaid')

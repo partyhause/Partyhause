@@ -1,8 +1,8 @@
-import uuid
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from partyhause.model_utils import uuid_str
 
 class TimelineBlock(models.Model):
     """A row of the `timeline_blocks` table.
@@ -23,7 +23,7 @@ class TimelineBlock(models.Model):
         ('custom', 'Custom'),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(
         'events.Event',
         on_delete=models.CASCADE,

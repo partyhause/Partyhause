@@ -1,8 +1,9 @@
-import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
+
+from partyhause.model_utils import uuid_str
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -20,7 +21,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.TextField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.TextField(primary_key=True, default=uuid_str, editable=False)
     password = models.CharField(max_length=128)
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)

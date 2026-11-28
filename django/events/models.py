@@ -1,10 +1,11 @@
-import uuid
 from django.db import models
 from django.conf import settings as django_settings
 from django.utils import timezone
 
+from partyhause.model_utils import uuid_str
+
 class Event(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     host = models.ForeignKey(django_settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_events', db_column='host_id')
     name = models.CharField(max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
@@ -102,7 +103,7 @@ class Event(models.Model):
         }
 
 class EventCoHost(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, default=uuid_str, editable=False, max_length=64)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='co_hosts', db_column='event_id')
     user = models.ForeignKey(django_settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='co_hosted_events', db_column='user_id')
     role = models.CharField(max_length=50, default='co-host')
